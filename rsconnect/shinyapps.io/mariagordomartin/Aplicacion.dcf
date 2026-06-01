@@ -1,0 +1,12 @@
+name: Aplicacion
+title: Aplicacion
+username: mariagordomartin
+account: mariagordomartin
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16831035
+bundleId: 12064453
+url: https://mariagordomartin.shinyapps.io/Aplicacion/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
