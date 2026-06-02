@@ -1,101 +1,162 @@
-# =====================================================
-# AGRUPAMIENTO - SELECTOR FINAL
-# =====================================================
+# =====================================================================
+#  AGRUPAMIENTO - SELECTOR MAESTRO (NOTACIÓN CORREGIDA K_MEANS Y DBSCAN)
+# =====================================================================
 
 Agrupamiento_UI <- function(id){
   ns <- NS(id)
   
   tagList(
-    h2("Técnicas de agrupamiento"),
-    
     selectInput(
       ns("tecnica"),
-      "Selecciona la técnica",
-      choices = c("K-means", "Jerarquicos", "DBSCAN"),
-      selected = "K-means"
+      "Seleccione algoritmo de agrupamiento:",
+      choices = c(
+        "Visión General de la Familia" = "GENERAL", 
+        "Clústeres Jerárquicos" = "JERARQUICO", 
+        "K-Means" = "KMEANS", 
+        "DBSCAN" = "DBSCAN"
+      ),
+      selected = "GENERAL"
     ),
-    
     br(),
-    
-    tabsetPanel(
-      tabPanel("Teoría", uiOutput(ns("teoria_ui"))),
-      tabPanel("Análisis", uiOutput(ns("analisis_ui"))),
-      tabPanel("Autoevaluación", uiOutput(ns("auto_ui")))
-  ))
+    uiOutput(ns("interfaz_maestra_dinamica"))
+  )
 }
 
 Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
-  
   moduleServer(id, function(input, output, session){
     ns <- session$ns
     
-    renderContenido <- function(tecnica){
-      
-      # ==========================
-      # k_means
-      # ==========================
-      if(tecnica == "K-means"){
-        # UI
-        output$teoria_ui  <- renderUI({ K_means_Teoria_UI(ns("k_means_teoria")) })
-        output$analisis_ui <- renderUI({ K_means_Analisis_UI(ns("k_means_analisis")) })
-        output$auto_ui    <- renderUI({ K_means_Auto_UI(ns("k_means_auto")) })
-        
-        # Servidores
-        K_means_Teoria_Server("k_means_teoria")
-        K_means_Analisis_Server("k_means_analisis", datos = reactive({
-          if(!is.null(datos())) datos() else datos_ejemplo$K_means
-        }), datos_ejemplo = datos_ejemplo)
-        K_means_Auto_Server("k_means_auto")
-      }
-      
-      # ==========================
-      # Jerarquicos
-      # ==========================
-      if(tecnica == "Jerarquicos"){
-        # UI
-        output$teoria_ui  <- renderUI({ Jerarquicos_Teoria_UI(ns("Jerarquicos_teoria")) })
-        output$analisis_ui <- renderUI({ Jerarquicos_Analisis_UI(ns("Jerarquicos_analisis")) })
-        output$auto_ui    <- renderUI({ Jerarquicos_Auto_UI(ns("Jerarquicos_auto")) })
-        
-        # Servidores
-        Jerarquicos_Teoria_Server("Jerarquicos_teoria")
-        Jerarquicos_Analisis_Server("Jerarquicos_analisis", datos = reactive({
-          if(!is.null(datos())) datos() else datos_ejemplo$Jerarquicos
-        }), datos_ejemplo = datos_ejemplo)
-        Jerarquicos_Auto_Server("Jerarquicos_auto")
-      }
-      # ==========================
-      # DBSCAN
-      # ==========================
-      if(tecnica == "DBSCAN"){
-        # UI
-        output$teoria_ui  <- renderUI({ DBSCAN_Teoria_UI(ns("DBSCAN_teoria")) })
-        output$analisis_ui <- renderUI({ DBSCAN_Analisis_UI(ns("DBSCAN_analisis")) })
-        output$auto_ui    <- renderUI({ DBSCAN_Auto_UI(ns("DBSCAN_auto")) })
-        
-        # Servidores
-        DBSCAN_Teoria_Server("DBSCAN_teoria")
-        DBSCAN_Analisis_Server("DBSCAN_analisis", datos = reactive({
-          if(!is.null(datos())) datos() else datos_ejemplo$DBSCAN
-        }), datos_ejemplo = datos_ejemplo)
-        DBSCAN_Auto_Server("DBSCAN_auto")
-      }
-    }
-    
-    # ------------------------------
-    # Inicializar con técnica por defecto
-    # ------------------------------
-    renderContenido("K-means")
-    
-    # ------------------------------
-    # Observador para cambios de técnica
-    # ------------------------------
-    observeEvent(input$tecnica, {
-      req(input$tecnica)
-      renderContenido(input$tecnica)
+    datos_ok <- reactive({
+      if (!is.null(datos())) datos() else NULL
     })
     
+    # =====================================================
+    # RENDERIZACIÓN DE MINIGRÁFICOS CONCEPTUALES
+    # =====================================================
+    output$plot_mini_jerarquico <- renderPlot({
+      par(mar = c(2, 2, 1.5, 1))
+      plot(1, type = "n", xlab = "", ylab = "", xlim = c(0, 10), ylim = c(0, 10), axes = FALSE, main = "Dendrograma (Árbol)", col.main = "#1e3a8a", cex.main = 0.9)
+      box(col = "#e2e8f0")
+      lines(c(2, 2, 4, 4), c(0, 4, 4, 0), col = "#3b82f6", lwd = 2)
+      lines(c(6, 6, 8, 8), c(0, 6, 6, 0), col = "#3b82f6", lwd = 2)
+      lines(c(3, 3, 7, 7), c(4, 9, 9, 6), col = "#93c5fd", lwd = 2)
+      lines(c(5, 5), c(9, 10), col = "#1e40af", lwd = 2)
+      points(c(2, 4, 6, 8), c(0, 0, 0, 0), pch = 21, bg = "white", col = "#1e3a8a", cex = 1.2)
+    })
+    
+    output$plot_mini_kmeans <- renderPlot({
+      par(mar = c(2, 2, 1.5, 1))
+      set.seed(123)
+      g1_x <- rnorm(30, mean = 2, sd = 0.5); g1_y <- rnorm(30, mean = 2, sd = 0.5)
+      g2_x <- rnorm(30, mean = 6, sd = 0.5); g2_y <- rnorm(30, mean = 6, sd = 0.5)
+      plot(c(g1_x, g2_x), c(g1_y, g2_y), col = c(rep("#a7f3d0", 30), rep("#93c5fd", 30)), pch = 16, xlab = "", ylab = "", axes = FALSE, main = "Partición por Proximidad", col.main = "#047857", cex.main = 0.9)
+      box(col = "#e2e8f0")
+      points(2, 2, pch = 4, col = "#10b981", lwd = 4, cex = 1.8)
+      points(6, 6, pch = 4, col = "#3b82f6", lwd = 4, cex = 1.8)
+    })
+    
+    output$plot_mini_dbscan <- renderPlot({
+      par(mar = c(2, 2, 1.5, 1))
+      set.seed(456)
+      cx <- seq(1, 5, length.out = 40); cy <- sin(cx) + rnorm(40, sd = 0.15)
+      rx <- c(1.5, 4.2, 5.5); ry <- c(3.5, -2.1, 1.2)
+      plot(c(cx, rx), c(cy, ry), col = c(rep("#fde047", 40), rep("#64748b", 3)), pch = 16, xlab = "", ylab = "", axes = FALSE, main = "Densidad y Ruido", col.main = "#b45309", cex.main = 0.9)
+      box(col = "#e2e8f0")
+      symbols(c(2.5, 4), c(sin(2.5), sin(4)), circles = c(0.4, 0.4), inches = FALSE, add = TRUE, fg = "#f59e0b", lty = 2)
+    })
+    
+    # =====================================================
+    # INTERFAZ DINÁMICA CON NOTACIÓN SINCRONIZADA
+    # =====================================================
+    output$interfaz_maestra_dinamica <- renderUI({
+      req(input$tecnica)
+      
+      # 1. VISIÓN GENERAL DE LA FAMILIA
+      if (input$tecnica == "GENERAL") {
+        return(
+          tags$div(
+            style = "padding: 10px;",
+            h3("La Familia de Algoritmos de Agrupamiento (Clustering)", style = "font-weight: 700; color: #1a365d;"),
+            p("Técnicas de aprendizaje no supervisado para identificar agrupaciones naturales y patrones ocultos en tus datos:", style = "color: #64748b;"),
+            br(),
+            bslib::layout_column_wrap(
+              width = 1/3,
+              heights_equal = "row",
+              bslib::card(
+                style = "border-top: 4px solid #3b82f6;",
+                bslib::card_header(tags$b("Clústeres Jerárquicos")),
+                bslib::card_body(p("Construye una jerarquía de grupos de forma ascendente reflejada en un árbol."), plotOutput(ns("plot_mini_jerarquico"), height = "135px"))
+              ),
+              bslib::card(
+                style = "border-top: 4px solid #10b981;",
+                bslib::card_header(tags$b("Algoritmo K-Means")),
+                bslib::card_body(p("Divide los datos particionando el espacio en K grupos esféricos."), plotOutput(ns("plot_mini_kmeans"), height = "135px"))
+              ),
+              bslib::card(
+                style = "border-top: 4px solid #f59e0b;",
+                bslib::card_header(tags$b("Algoritmo DBSCAN")),
+                bslib::card_body(p("Agrupa por regiones de alta densidad conectada, aislando el ruido."), plotOutput(ns("plot_mini_dbscan"), height = "135px"))
+              )
+            )
+          )
+        )
+      }
+      
+      # 2. CLÚSTERES JERÁRQUICOS (Notación: Jerarquicos_*)
+      if (input$tecnica == "JERARQUICO") {
+        Jerarquicos_Teoria_Server("jerarquico_teoria")
+        Jerarquicos_Analisis_Server("jerarquico_analisis", 
+                                    datos = reactive({ if (!is.null(datos_ok())) datos_ok() else datos_ejemplo$JERARQUICO }), 
+                                    datos_ejemplo = datos_ejemplo)
+        Jerarquicos_Auto_Server("jerarquico_auto")
+        
+        return(
+          tabsetPanel(
+            tabPanel("Teoría", Jerarquicos_Teoria_UI(ns("jerarquico_teoria"))),
+            tabPanel("Análisis", Jerarquicos_Analisis_UI(ns("jerarquico_analisis"))),
+            tabPanel("Autoevaluación", Jerarquicos_Auto_UI(ns("jerarquico_auto")))
+          )
+        )
+      }
+      
+      # 3. K-MEANS (Notación: K_Means_*)
+      if (input$tecnica == "KMEANS") {
+        K_means_Teoria_Server("kmeans_teoria")
+        K_means_Analisis_Server("kmeans_analisis", 
+                                datos = reactive({ if (!is.null(datos_ok())) datos_ok() else datos_ejemplo$KMEANS }), 
+                                datos_ejemplo = datos_ejemplo)
+        K_means_Auto_Server("kmeans_auto")
+        
+        return(
+          tabsetPanel(
+            tabPanel("Teoría", K_means_Teoria_UI(ns("kmeans_teoria"))),
+            tabPanel("Análisis", K_means_Analisis_UI(ns("kmeans_analisis"))),
+            tabPanel("Autoevaluación", K_means_Auto_UI(ns("kmeans_auto")))
+          )
+        )
+      }
+      
+      # 4. DBSCAN (Notación: DBSCAN_*)
+      if (input$tecnica == "DBSCAN") {
+        DBSCAN_Teoria_Server("dbscan_teoria")
+        DBSCAN_Analisis_Server("dbscan_analisis", 
+                               datos = reactive({ if (!is.null(datos_ok())) datos_ok() else datos_ejemplo$DBSCAN }), 
+                               datos_ejemplo = datos_ejemplo)
+        DBSCAN_Auto_Server("dbscan_auto")
+        
+        return(
+          tabsetPanel(
+            tabPanel("Teoría", DBSCAN_Teoria_UI(ns("dbscan_teoria"))),
+            tabPanel("Análisis", DBSCAN_Analisis_UI(ns("dbscan_analisis"))),
+            tabPanel("Autoevaluación", DBSCAN_Auto_UI(ns("dbscan_auto")))
+          )
+        )
+      }
+    })
+    
+    observeEvent(session$userData$reset_agrupamiento, {
+      updateSelectInput(session, "tecnica", selected = "GENERAL")
+    }, ignoreInit = TRUE)
   })
 }
-    
-    
+

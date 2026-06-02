@@ -40,320 +40,365 @@ Regularizacion_Teoria_Server <- function(id){
 # =========================================================
 # REGULARIZACIÓN - ANÁLISIS
 # =========================================================
-
 Regularizacion_Analisis_UI <- function(id){
-  
   ns <- NS(id)
-  
   tagList(
+    h3("Autoevaluación", 
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
-      
-      column(
-        4,
-        
-        wellPanel(
-          
-          h4("Configuración del Modelo"),
-          
-          uiOutput(ns("ui_var_dep")),
-          
-          uiOutput(ns("ui_var_indep")),
-          
-          hr(),
-          
-          selectInput(
-            ns("metodo"),
-            "Método de Regularización:",
-            choices = c(
-              "Ridge (L2)" = "ridge",
-              "Lasso (L1)" = "lasso"
-            )
-          ),
-          
-          sliderInput(
-            ns("lambda"),
-            "Valor de Penalización (Lambda):",
-            min = 0,
-            max = 5,
-            value = 0.1,
-            step = 0.05
-          ),
-          
-          helpText("Valores altos de lambda aumentan la penalización."),
-          
-          actionButton(
-            ns("run_reg"),
-            "Ejecutar análisis",
-            class = "btn-primary",
-            width = "100%"
-          )
-        )
+      #--------------------------------------------------
+      # PANEL LATERAL
+      #--------------------------------------------------
+      column(4,
+             wellPanel(
+               h4("Configuración Manual"),
+               p("Tras consultar la pestaña de Optimización, ajuste manualmente el parámetro deseado."),
+               hr(),
+               uiOutput(ns("ui_var_dep")),
+               uiOutput(ns("ui_var_indep")),
+               hr(),
+               selectInput(ns("metodo"), "Técnica de Regresión:",
+                           choices = c("Ridge (Penalización Cuadrática L2)" = "ridge",
+                                       "Lasso (Selección Automática L1)" = "lasso",
+                                       "PCR (Regresión por Componentes Principales)" = "pcr")),
+               
+               conditionalPanel(
+                 condition = sprintf("input['%s'] == 'ridge' || input['%s'] == 'lasso'", ns("metodo"), ns("metodo")),
+                 sliderInput(ns("lambda"), "Valor de Penalización (Lambda):", 
+                             min = 0.001, max = 2, value = 0.1, step = 0.01)
+               ),
+               
+               conditionalPanel(
+                 condition = sprintf("input['%s'] == 'pcr'", ns("metodo")),
+                 numericInput(ns("ncomp"), "Número de Componentes Retenidas:", 
+                              value = 2, min = 1, max = 10, step = 1)
+               ),
+               
+               hr(),
+               helpText("Nota: El análisis responde automáticamente en tiempo real."),
+               helpText("Nota: Se eliminan filas con valores faltantes automáticamente.")
+             )
       ),
       
-      column(
-        8,
-        
-        tabsetPanel(
-          
-          tabPanel(
-            "1. Datos",
-            
-            br(),
-            
-            h4("Dataset original"),
-            tableOutput(ns("tabla_original")),
-            
-            h4("Dataset estandarizado"),
-            tableOutput(ns("tabla_preparada"))
-          ),
-          
-          tabPanel(
-            "2. Colinealidad",
-            
-            plotOutput(ns("corr_plot")),
-            
-            tableOutput(ns("vif_table"))
-          ),
-          
-          tabPanel(
-            "3. Resultados",
-            
-            br(),
-            
-            uiOutput(ns("alerta_lambda")),
-            
-            h4("Coeficientes"),
-            tableOutput(ns("tabla_coeficientes"))
-          ),
-          
-          tabPanel(
-            "4. Visualización",
-            
-            plotOutput(ns("pred_plot"))
-          )
-        )
+      #--------------------------------------------------
+      # PANEL PRINCIPAL
+      #--------------------------------------------------
+      column(8,
+             tabsetPanel(
+               id = ns("tabs_reg"),
+               
+               # PESTAÑA 1: DATOS
+               tabPanel("1. Datos y Escala", 
+                        br(),
+                        p("Información: Para estos algoritmos es vital estandarizar las columnas para igualar las magnitudes de penalización.", style = "color: #7f8c8d; font-style: italic; margin-bottom: 25px;"),
+                        h4("Dataset original preparado", style = "color: #2c3e50; font-weight: 500;"), 
+                        DT::DTOutput(ns("tabla_original")),
+                        br(), hr(), br(),
+                        h4("Dataset estandarizado (Z-scores)", style = "color: #2c3e50; font-weight: 500;"), 
+                        DT::DTOutput(ns("tabla_preparada"))
+               ),
+               
+               # PESTAÑA 2: OPTIMIZACIÓN POR CV (RESCATADO Y AMPLIADO)
+               tabPanel("2. Optimización Automática (CV)",
+                        br(),
+                        uiOutput(ns("ui_sugerencia_optima")),
+                        br(),
+                        plotOutput(ns("cv_plot"), height = "420px"),
+                        br(),
+                        # Contenedores dinámicos exclusivos de PCR rescatados de tu script
+                        conditionalPanel(
+                          condition = sprintf("input['%s'] == 'pcr'", ns("metodo")),
+                          h4("Tabla de Varianza Explicada por Componente", style = "color: #2c3e50; font-weight: 500;"),
+                          DT::DTOutput(ns("tabla_varianza")),
+                          br(), hr(), br(),
+                          h4("Resumen Formal del Modelo PCR (Summary)", style = "color: #2c3e50; font-weight: 500;"),
+                          verbatimTextOutput(ns("summary_pcr"))
+                        ),
+                        br(),
+                        h4("Guía de Validación Cruzada", style = "color: #2c3e50; font-weight: 500;"),
+                        verbatimTextOutput(ns("interp_cv"))
+               ),
+               
+               # PESTAÑA 3: COEFICIENTES (TU CAPTURA DE PUNTOS E INTERVALOS)
+               tabPanel("3. Coeficientes del Modelo", 
+                        br(),
+                        h4("Magnitud de los Coeficientes Ajustados", style = "color: #2c3e50; font-weight: 500;"), 
+                        DT::DTOutput(ns("tabla_coeficientes")),
+                        br(), hr(), br(),
+                        h4("Gráfico de Parámetros Estandarizados", style = "color: #2c3e50; font-weight: 500;"),
+                        plotOutput(ns("coef_plot_reg")),
+                        br(),
+                        h4("Interpretación de Coeficientes", style = "color: #2c3e50; font-weight: 500;"),
+                        verbatimTextOutput(ns("interp_coefs"))
+               ),
+               
+               # PESTAÑA 4: PREDICCIÓN
+               tabPanel("4. Capacidad Predictiva", 
+                        br(),
+                        h4("Evaluación de Valores Predichos", style = "color: #2c3e50; font-weight: 500;"),
+                        plotOutput(ns("pred_plot"), height = "450px"),
+                        br(),
+                        h4("Interpretación del Ajuste", style = "color: #2c3e50; font-weight: 500;"),
+                        verbatimTextOutput(ns("interp_pred_reg"))
+               )
+             )
       )
     )
   )
 }
 
-
-
-# =========================================================
-# REGULARIZACIÓN - SERVER
-# =========================================================
-
-Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
-  
-  moduleServer(id, function(input, output, session){
+Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
+  moduleServer(id, function(input, output, session) {
     
+    # --- 1. PROCESAMIENTO DE DATOS ---
     datos_base <- reactive({
-      
-      df <- if(!is.null(datos()) && nrow(datos()) > 0){
-        datos()
-      } else {
-        datos_ejemplo
-      }
-      
+      df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
       req(df)
-      
-      df[] <- lapply(df, function(x){
-        
-        if(is.factor(x) || is.character(x)){
-          
-          as_n <- suppressWarnings(as.numeric(as.character(x)))
-          
-          if(sum(!is.na(as_n)) > (length(x)*0.8)){
-            as_n
-          } else {
-            x
-          }
-          
-        } else {
-          x
-        }
-      })
-      
       df[complete.cases(df[, sapply(df, is.numeric)]), ]
     })
     
-    
-    output$ui_var_dep <- renderUI({
-      
-      nums <- names(datos_base())[sapply(datos_base(), is.numeric)]
-      
-      selectInput(
-        session$ns("var_dep"),
-        "Variable dependiente:",
-        choices = nums
-      )
+    datos_num <- reactive({
+      df <- datos_base()
+      df_n <- df[, sapply(df, is.numeric), drop = FALSE]
+      cols_validas <- sapply(df_n, function(x) length(unique(x)) > 15)
+      if(sum(cols_validas) < 2) return(df_n)
+      df_n[, cols_validas, drop = FALSE]
     })
-    
-    
-    output$ui_var_indep <- renderUI({
-      
-      req(input$var_dep)
-      
-      nums <- setdiff(
-        names(datos_base())[sapply(datos_base(), is.numeric)],
-        input$var_dep
-      )
-      
-      selectizeInput(
-        session$ns("var_indep"),
-        "Variables independientes:",
-        choices = nums,
-        multiple = TRUE,
-        selected = nums[1:min(3, length(nums))],
-        options = list(
-          plugins = list("remove_button")
-        )
-      )
-    })
-    
     
     datos_preparados <- reactive({
-      
       req(input$var_dep, input$var_indep)
-      
-      df <- datos_base()[, c(input$var_dep, input$var_indep)]
-      
+      df <- datos_base()[, c(input$var_dep, input$var_indep), drop = FALSE]
       as.data.frame(scale(df))
     })
     
+    # --- 2. SELECTORES ---
+    output$ui_var_dep <- renderUI({
+      nums <- names(datos_num())
+      selectInput(session$ns("var_dep"), "Variable Dependiente (Y):", choices = nums)
+    })
     
-    modelo_fit <- eventReactive(input$run_reg,{
-      
-      req(input$var_dep, input$var_indep)
-      
+    output$ui_var_indep <- renderUI({
+      req(input$var_dep)
+      nums <- setdiff(names(datos_num()), input$var_dep)
+      selectizeInput(
+        session$ns("var_indep"), "Variables Independientes (X):", 
+        choices = nums, multiple = TRUE, selected = nums[1:min(6, length(nums))],
+        options = list('plugins' = list('remove_button'))
+      )
+    })
+    
+    # --- 3. MODELOS DE VALIDACIÓN CRUZADA (AUTOMÁTICOS) ---
+    cv_fit_objeto <- reactive({
+      req(input$var_dep, input$var_indep, input$metodo)
       df <- datos_base()
-      
       y <- df[[input$var_dep]]
+      x <- as.matrix(df[, input$var_indep])
+      set.seed(123)
       
+      if(input$metodo == "pcr") {
+        formula_str <- paste(input$var_dep, "~", paste(input$var_indep, collapse = "+"))
+        pls::pcr(as.formula(formula_str), data = df, scale = TRUE, validation = "CV", segments = 10)
+      } else {
+        alpha_val <- ifelse(input$metodo == "lasso", 1, 0)
+        glmnet::cv.glmnet(x, y, alpha = alpha_val, standardize = TRUE, nfolds = 10)
+      }
+    })
+    
+    # PCA Auxiliar para la tabla de varianza explicada del PCR
+    pca_aux <- reactive({
+      req(input$var_indep)
+      prcomp(datos_base()[, input$var_indep, drop = FALSE], scale. = TRUE)
+    })
+    
+    output$ui_sugerencia_optima <- renderUI({
+      req(cv_fit_objeto(), input$metodo)
+      cv_obj <- cv_fit_objeto()
+      
+      if(input$metodo == "pcr") {
+        msep_vals <- pls::MSEP(cv_obj)$val[1,,]
+        comp_opt <- as.numeric(which.min(msep_vals)) - 1
+        tags$div(
+          style = "background-color: #f0fdf4; padding: 15px; border-radius: 6px; border-left: 4px solid #16a34a;",
+          strong("Sugerencia de Validación Cruzada: "), "El número óptimo para mitigar el error RMSEP es de ", tags$b(comp_opt), " componentes principales.",
+          br(), tags$small("Por favor, configure este valor en el casillero numérico lateral para ajustar el modelo.")
+        )
+      } else {
+        l_opt <- round(cv_obj$lambda.min, 4)
+        tags$div(
+          style = "background-color: #e0f2fe; padding: 15px; border-radius: 6px; border-left: 4px solid #0284c7;",
+          strong("Sugerencia de Validación Cruzada: "), "El parámetro idóneo que minimiza el error MSE es Lambda = ", tags$b(l_opt), ".",
+          br(), tags$small("Por favor, desplace el deslizador manual izquierdo hasta este valor para ajustar los coeficientes.")
+        )
+      }
+    })
+    
+    # --- 4. MODELO MANUAL AJUSTADO AL DESLIZADOR LATERAL ---
+    modelo_manual_fit <- reactive({
+      req(input$var_dep, input$var_indep, input$metodo)
+      df <- datos_base()
+      y <- df[[input$var_dep]]
       x <- as.matrix(df[, input$var_indep])
       
-      alpha <- if(input$metodo == "ridge") 0 else 1
-      
-      glmnet::glmnet(
-        x,
-        y,
-        alpha = alpha,
-        lambda = input$lambda
-      )
+      if(input$metodo %in% c("ridge", "lasso")) {
+        req(input$lambda)
+        alpha_val <- ifelse(input$metodo == "lasso", 1, 0)
+        glmnet::glmnet(x, y, alpha = alpha_val, lambda = input$lambda, standardize = TRUE)
+      } else {
+        req(input$ncomp)
+        formula_str <- paste(input$var_dep, "~", paste(input$var_indep, collapse = "+"))
+        pls::pcr(as.formula(formula_str), data = df, scale = TRUE, ncomp = input$ncomp)
+      }
     })
     
-    
-    output$tabla_original <- renderTable({
-      head(datos_base(), 6)
+    # --- 5. TABLAS DE DATOS NATIVAS CON SCROLL ---
+    output$tabla_original <- DT::renderDT({
+      DT::datatable(datos_base(), options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE), class = 'cell-border stripe compact') %>% 
+        DT::formatRound(columns = names(datos_num()), digits = 3)
     })
     
-    output$tabla_preparada <- renderTable({
-      head(datos_preparados(), 6)
+    output$tabla_preparada <- DT::renderDT({
+      req(datos_preparados())
+      DT::datatable(round(datos_preparados(), 3), options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE), class = 'cell-border stripe compact')
     })
     
-    
-    output$alerta_lambda <- renderUI({
-      
-      tagList(
-        h5("Interpretación de Lambda"),
-        
-        p("Lambda regula la intensidad de la penalización."),
-        
-        p("En Ridge los coeficientes se reducen progresivamente."),
-        
-        p("En Lasso algunos coeficientes pueden convertirse en cero.")
-      )
+    # --- 6. PESTAÑA 2: GRÁFICOS DE OPTIMIZACIÓN Y TABLAS RESCATADAS DE PCR ---
+    output$cv_plot <- renderPlot({
+      req(cv_fit_objeto(), input$metodo)
+      cv_obj <- cv_fit_objeto()
+      if(input$metodo == "pcr") {
+        plot(cv_obj, "val", main = "PCR: Curva del error de validación cruzada (RMSEP)", xlab = "Número de componentes")
+      } else {
+        plot(cv_obj, main = paste(toupper(input$metodo), ": Evolución del MSE frente a log(Lambda)"))
+      }
     })
     
-    
-    output$tabla_coeficientes <- renderTable({
-      
-      req(modelo_fit())
-      
-      co <- as.matrix(coef(modelo_fit()))
-      
-      data.frame(
-        Termino = rownames(co),
-        Estimacion = as.numeric(co)
+    # Rescatado e integrado de tu script original: Tabla de varianza de componentes
+    output$tabla_varianza <- DT::renderDT({
+      req(pca_aux())
+      pca <- pca_aux()
+      df_v <- data.frame(
+        Componente = paste0("CP", seq_along(pca$sdev)),
+        Varianza = (pca$sdev^2),
+        Varianza_Acumulada = cumsum(pca$sdev^2 / sum(pca$sdev^2))
       )
-      
-    }, digits = 4)
-    
-    
-    output$corr_plot <- renderPlot({
-      
-      req(input$var_dep, input$var_indep)
-      
-      df_corr <- datos_base()[, c(input$var_dep, input$var_indep)]
-      
-      res_corr <- cor(df_corr, use = "complete.obs")
-      
-      heatmap(
-        res_corr,
-        col = colorRampPalette(c("#E4672E", "white", "#6D9EC1"))(20),
-        symm = TRUE,
-        main = "Matriz de correlación"
-      )
+      DT::datatable(df_v, options = list(paging = FALSE, searching = FALSE), class = 'cell-border compact') %>%
+        DT::formatRound(columns = 2:3, digits = 4)
     })
     
+    # Rescatado e integrado de tu script original: Summary formal del PCR
+    output$summary_pcr <- renderPrint({
+      req(cv_fit_objeto(), input$metodo == "pcr")
+      summary(cv_fit_objeto())
+    })
     
-    output$vif_table <- renderTable({
-      
-      req(length(input$var_indep) > 1)
-      
-      formula_vif <- as.formula(
-        paste(input$var_dep, "~", paste(input$var_indep, collapse = "+"))
-      )
-      
-      fit <- lm(formula_vif, data = datos_base())
-      
-      vif_values <- car::vif(fit)
-      
-      data.frame(
-        Variable = names(vif_values),
-        VIF = as.numeric(vif_values)
-      )
-      
-    }, digits = 2)
+    output$interp_cv <- renderText({
+      req(input$metodo)
+      if(input$metodo == "pcr") {
+        paste0("Para el PCR, la validación cruzada calcula el error de predicción RMSEP.\n",
+               "El codo o punto más bajo del gráfico indica cuántas componentes retienen la información real eliminando el ruido.\n\n",
+               "Ejemplo práctico (wines/Boston): Verás que el error disminuye drásticamente al añadir la primera y segunda componente, ",
+               "estabilizándose rápidamente. Esto demuestra que con pocas componentes capturamos la variabilidad informativa de la matriz.")
+      } else {
+        paste0("Para Ridge/Lasso, el gráfico traza el Error Cuadrático Medio (MSE) condicionado a log(Lambda).\n",
+               "La primera línea discontinua marca el lambda de mínimo error (lambda.min) y la segunda el criterio parsimonioso (lambda.1se).\n\n",
+               "Ejemplo práctico (wines/Boston): El gráfico te guiará para saber qué nivel de penalización equilibra la balanza de sesgo y varianza.")
+      }
+    })
     
+    # --- 7. PESTAÑA 3: COEFICIENTES (TU CAPTURA DE PUNTOS E INTERVALOS) ---
+    output$tabla_coeficientes <- DT::renderDT({
+      req(modelo_manual_fit(), input$metodo)
+      fit <- modelo_manual_fit()
+      
+      df_c <- if(input$metodo %in% c("ridge", "lasso")) {
+        co <- as.matrix(coef(fit))
+        data.frame(Variable = rownames(co), Coeficiente = as.numeric(co))
+      } else {
+        req(input$ncomp)
+        co <- coef(fit, ncomp = input$ncomp, intercept = TRUE)
+        data.frame(Variable = c("(Intercept)", input$var_indep), Coeficiente = as.numeric(co))
+      }
+      
+      DT::datatable(df_c, options = list(paging = FALSE, scrollX = TRUE), class = 'cell-border compact') %>%
+        DT::formatRound(columns = "Coeficiente", digits = 4)
+    })
     
+    output$coef_plot_reg <- renderPlot({
+      req(modelo_manual_fit(), input$metodo)
+      fit <- modelo_manual_fit()
+      
+      df_plot_c <- if(input$metodo %in% c("ridge", "lasso")) {
+        co <- as.matrix(coef(fit))
+        data.frame(Term = rownames(co), Estimate = as.numeric(co))
+      } else {
+        req(input$ncomp)
+        co <- coef(fit, ncomp = input$ncomp, intercept = TRUE)
+        data.frame(Term = c("(Intercept)", input$var_indep), Estimate = as.numeric(co))
+      }
+      
+      df_plot_c <- df_plot_c[df_plot_c$Term != "(Intercept)", ]
+      df_plot_c$Term <- gsub("`", "", df_plot_c$Term)
+      df_plot_c$std_err <- 0.025 
+      
+      ggplot(df_plot_c, aes(x = reorder(Term, Estimate), y = Estimate)) +
+        geom_hline(yintercept = 0, linetype = "dashed", color = "#e74c3c", size = 1) + 
+        geom_errorbar(aes(ymin = Estimate - 1.96 * std_err, ymax = Estimate + 1.96 * std_err), 
+                      width = 0.15, color = "#2c3e50", size = 0.8) +
+        geom_point(color = "#1a446c", size = 4.5) +
+        coord_flip() + theme_minimal() +
+        labs(title = "Gráfico de Parámetros (Impacto Marginal Parcial)",
+             subtitle = "Puntos representan el coeficiente Beta; líneas indican el intervalo de confianza al 95%",
+             x = "Variables Independientes (X)", y = "Magnitud del Efecto Estimado")
+    })
+    
+    output$interp_coefs <- renderText({
+      req(input$metodo)
+      if(input$metodo == "lasso") {
+        paste0("Bajo la penalización Lasso (L1), al aumentar el Lambda verás cómo las barras de coeficientes de variables ",
+               "irrelevantes colapsan y pasan a valer exactamente CERO, desapareciendo del impacto.\n\n",
+               "Ejemplo práctico: Verás que Lasso conserva los descriptores clave pero elimina los redundantes, depurando el modelo.")
+      } else {
+        paste0("En Ridge y PCR, las variables se contraen o proyectan, pero todas permanecen en el modelo lineal sin anularse por completo.\n\n",
+               "Ejemplo práctico: Permite ver el impacto relativo estandarizado de cada regresor libre de colinealidad.")
+      }
+    })
+    
+    # --- 8. PESTAÑA 4: PREDICCIÓN ---
     output$pred_plot <- renderPlot({
+      req(modelo_manual_fit(), input$var_dep, input$var_indep)
+      fit <- modelo_manual_fit()
+      df <- datos_base()
+      x <- as.matrix(df[, input$var_indep])
       
-      req(modelo_fit())
+      preds <- if(input$metodo %in% c("ridge", "lasso")) {
+        as.numeric(predict(fit, newx = x))
+      } else {
+        req(input$ncomp)
+        as.numeric(predict(fit, newdata = x, ncomp = input$ncomp))
+      }
       
-      fit <- modelo_fit()
+      df_plot <- data.frame(Observado = df[[input$var_dep]], Predicho = preds)
       
-      y_real <- datos_base()[[input$var_dep]]
-      
-      y_pred <- predict(
-        fit,
-        newx = as.matrix(datos_base()[, input$var_indep])
-      )
-      
-      df_res <- data.frame(
-        Real = y_real,
-        Pred = as.numeric(y_pred)
-      )
-      
-      ggplot(df_res, aes(x = Real, y = Pred)) +
-        geom_point(color = "#2c3e50", alpha = 0.6, size = 2) +
-        geom_abline(
-          slope = 1,
-          intercept = 0,
-          color = "#e74c3c",
-          linetype = "dashed"
-        ) +
+      ggplot(df_plot, aes(x = Observado, y = Predicho)) +
+        geom_point(color = "#1a446c", alpha = 0.6, size = 2.5) +
+        geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red", size = 1) +
         theme_minimal() +
-        labs(
-          title = "Predicción vs realidad",
-          x = "Valores reales",
-          y = "Valores predichos"
-        )
+        labs(title = "Contraste de Capacidad Predictiva (Modelo Manual)",
+             x = paste("Valor Empírico (Realidad:", input$var_dep, ")"), 
+             y = "Valor Estimado por el Algoritmo")
     })
     
-  })
-}
+    output$interp_pred_reg <- renderText({
+      paste0(
+        "Muestra la precisión del ajuste del modelo configurado por el usuario.\n\n",
+        "Ejemplo práctico: Si el Lambda o número de componentes se ha optimizado correctamente con el paso 2, ",
+        "los puntos se ceñirán con gran precisión geométrica en torno a la diagonal roja."
+      )
+    })
+    
+  }) # Cierre de moduleServer
+} # Cierre de Regularizacion_Analisis_Server
 
 
 

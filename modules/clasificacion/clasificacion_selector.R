@@ -1,85 +1,117 @@
-# =====================================================
-# Clasificacion - SELECTOR 
-# =====================================================
+# =====================================================================
+#  CLASIFICACIÓN - SELECTOR MAESTRO DINÁMICO (CON TABS CONDICIONALES)
+# =====================================================================
+
 Clasificacion_UI <- function(id){
   ns <- NS(id)
   
   tagList(
-    h2("Técnicas de clasificación"),
-    
     selectInput(
       ns("tecnica"),
-      "Selecciona la técnica",
-      choices = c("LDA", "Árboles de decisión"),
-      selected = "LDA"
+      "Seleccione técnica de clasificación:",
+      choices = c(
+        "Visión General de la Familia" = "GENERAL",
+        "LDA (Análisis Discriminante Lineal)" = "LDA",
+        "Árboles de decisión" = "ARBOLES"
+      ),
+      selected = "GENERAL"
     ),
-    
     br(),
-    
-    tabsetPanel(
-      tabPanel("Teoría", uiOutput(ns("teoria_ui"))),
-      tabPanel("Análisis", uiOutput(ns("analisis_ui"))),
-      tabPanel("Autoevaluación", uiOutput(ns("auto_ui")))
-    ))
+    uiOutput(ns("interfaz_maestra_dinamica"))
+  )
 }
 
 Clasificacion_Server <- function(id, datos, datos_ejemplo = NULL){
-  
   moduleServer(id, function(input, output, session){
     ns <- session$ns
     
-    renderContenido <- function(tecnica){
-      
-      # ==========================
-      # LDA
-      # ==========================
-      if(tecnica == "LDA"){
-        # UI
-        output$teoria_ui  <- renderUI({ LDA_Teoria_UI(ns("LDA_teoria")) })
-        output$analisis_ui <- renderUI({ LDA_Analisis_UI(ns("LDA_analisis")) })
-        output$auto_ui    <- renderUI({ LDA_Auto_UI(ns("LDA_auto")) })
-        
-        # Servidores
-        LDA_Teoria_Server("LDA_teoria")
-        LDA_Analisis_Server("LDA_analisis", datos = reactive({
-          if(!is.null(datos())) datos() else datos_ejemplo$LDA
-        }), datos_ejemplo = datos_ejemplo)
-        LDA_Auto_Server("LDA_auto")
-      }
-      
-      # ==========================
-      # Árboles de decisión
-      # ==========================
-      if(tecnica == "Árboles de decisión"){
-        # UI
-        output$teoria_ui  <- renderUI({ Arboles_Teoria_UI(ns("Arboles_teoria")) })
-        output$analisis_ui <- renderUI({ Arboles_Analisis_UI(ns("Arboles_analisis")) })
-        output$auto_ui    <- renderUI({ Arboles_Auto_UI(ns("Arboles_auto")) })
-        
-        # Servidores
-        Arboles_Teoria_Server("Arboles_teoria")
-        Arboles_Analisis_Server("Arboles_analisis", datos = reactive({
-          if(!is.null(datos())) datos() else datos_ejemplo$Arboles
-        }), datos_ejemplo = datos_ejemplo)
-        Arboles_Auto_Server("Arboles_auto")
-      }
-      
-      
-      
-    }
-    
-    # ------------------------------
-    # Inicializar con técnica por defecto
-    # ------------------------------
-    renderContenido("LDA")
-    
-    # ------------------------------
-    # Observador para cambios de técnica
-    # ------------------------------
-    observeEvent(input$tecnica, {
-      req(input$tecnica)
-      renderContenido(input$tecnica)
+    datos_ok <- reactive({
+      if (!is.null(datos())) datos() else NULL
     })
     
+    # =====================================================
+    # RENDERIZACIÓN DE MINIGRÁFICOS CONCEPTUALES
+    # =====================================================
+    
+    # 1. Gráfico de LDA (Dos campanas de Gauss con la frontera de decisión lineal óptima)
+    output$plot_mini_lda <- renderPlot({
+      par(mar = c(2, 2, 1.5, 1))
+      curve(dnorm(x, mean = -1.5, sd = 1), from = -5, to = 5, col = "#3b82f6", lwd = 2.5, axes = FALSE, xlab = "", ylab = "", main = "Separación Lineal Óptima", col.main = "#1a365d", cex.main = 0.9)
+      box(col = "#e2e8f0")
+      curve(dnorm(x, mean = 1.5, sd = 1), from = -5, to = 5, col = "#10b981", lwd = 2.5, add = TRUE)
+      # Frontera divisoria equidistante
+      abline(v = 0, col = "#ef4444", lwd = 2, lty = 2)
+      text(-2.5, 0.15, "Clase A", col = "#1e3a8a", font = 2, cex = 0.8)
+      text(2.5, 0.15, "Clase B", col = "#047857", font = 2, cex = 0.8)
+    })
+    
+    # 2. Gráfico de Árboles (Estructura jerárquica de decisión Sí/No)
+    output$plot_mini_arboles <- renderPlot({
+      par(mar = c(1, 1, 1.5, 1))
+      plot(1, type = "n", xlab = "", ylab = "", xlim = c(0, 10), ylim = c(0, 10), axes = FALSE, main = "Particiones de Espacio", col.main = "#047857", cex.main = 0.9)
+      box(col = "#e2e8f0")
+      # Nodo Raíz
+      rect(3.5, 8, 6.5, 9.8, border = "#3b82f6", col = "#eff6ff", lwd = 2)
+      text(5, 8.9, "¿Variable X > 5?", col = "#1e3a8a", font = 2, cex = 0.8)
+      # Ramas
+      arrows(4, 8, 2, 5, length = 0.08, col = "#64748b")
+      arrows(6, 8, 8, 5, length = 0.08, col = "#64748b")
+      text(2.5, 6.8, "Sí", col = "#047857", cex = 0.8)
+      text(7.5, 6.8, "No", col = "#b91c1c", cex = 0.8)
+      # Nodos Hoja
+      rect(0.5, 3.2, 3.5, 5, border = "#10b981", col = "#ecfdf5")
+      text(2, 4.1, "Clase Verde", col = "#047857", cex = 0.8)
+      rect(6.5, 3.2, 9.5, 5, border = "#ef4444", col = "#fdf2f2")
+      text(8, 4.1, "Clase Roja", col = "#b91c1c", cex = 0.8)
+    })
+    
+    # =====================================================
+    # INTERFAZ MAESTRA ATÓMICA
+    # =====================================================
+    output$interfaz_maestra_dinamica <- renderUI({
+      req(input$tecnica)
+      
+      if (input$tecnica == "GENERAL") {
+        return(
+          tags$div(
+            style = "padding: 10px;",
+            h3("La Familia de Técnicas de Clasificación", style = "font-weight: 700; color: #1a365d;"),
+            p("Algoritmos de aprendizaje supervisado diseñados para asignar etiquetas categóricas concretas a los elementos basándose en sus atributos multivariantes:", style = "color: #64748b;"),
+            br(),
+            bslib::layout_column_wrap(
+              width = 1/2, # Dos columnas balanceadas
+              heights_equal = "row",
+              bslib::card(
+                style = "border-top: 4px solid #3b82f6;",
+                bslib::card_header(tags$b("LDA (Análisis Discriminante Lineal)")),
+                bslib::card_body(p("Enfoque probabilístico bayesiano que asume distribución normal homocedástica para trazar fronteras lineales de separación óptimas."), plotOutput(ns("plot_mini_lda"), height = "135px"))
+              ),
+              bslib::card(
+                style = "border-top: 4px solid #10b981;",
+                bslib::card_header(tags$b("Árboles de Decisión")),
+                bslib::card_body(p("Estructura estratificada no paramétrica que segmenta recursivamente el espacio muestral según criterios de pureza como el índice Gini."), plotOutput(ns("plot_mini_arboles"), height = "135px"))
+              )
+            )
+          )
+        )
+      }
+      
+      # Sincronización exacta con tus nombres de funciones reales (`LDA_teoria` y `Arboles_teoria`)
+      if (input$tecnica == "LDA") {
+        LDA_Teoria_Server("LDA_teoria")
+        LDA_Analisis_Server("LDA_analisis", datos = reactive({ if(!is.null(datos_ok())) datos_ok() else datos_ejemplo$LDA }), datos_ejemplo = datos_ejemplo)
+        LDA_Auto_Server("LDA_auto")
+        return(tabsetPanel(tabPanel("Teoría", LDA_Teoria_UI(ns("LDA_teoria"))), tabPanel("Análisis", LDA_Analisis_UI(ns("LDA_analisis"))), tabPanel("Autoevaluación", LDA_Auto_UI(ns("LDA_auto")))))
+      }
+      
+      if (input$tecnica == "ARBOLES") {
+        Arboles_Teoria_Server("Arboles_teoria")
+        Arboles_Analisis_Server("Arboles_analisis", datos = reactive({ if(!is.null(datos_ok())) datos_ok() else datos_ejemplo$Arboles }), datos_ejemplo = datos_ejemplo)
+        Arboles_Auto_Server("Arboles_auto")
+        return(tabsetPanel(tabPanel("Teoría", Arboles_Teoria_UI(ns("Arboles_teoria"))), tabPanel("Análisis", Arboles_Analisis_UI(ns("Arboles_analisis"))), tabPanel("Autoevaluación", Arboles_Auto_UI(ns("Arboles_auto")))))
+      }
+    })
+    
+    observeEvent(session$userData$reset_clasificacion, { updateSelectInput(session, "tecnica", selected = "GENERAL") }, ignoreInit = TRUE)
   })
 }

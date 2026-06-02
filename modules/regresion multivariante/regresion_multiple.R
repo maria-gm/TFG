@@ -206,7 +206,7 @@ Regresion_multiple_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
     # Título personalizado corporativo unificado
-    h3("Autoevaluación", 
+    h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
@@ -268,6 +268,10 @@ Regresion_multiple_Analisis_UI <- function(id){
                         br(),
                         h4("Métricas de Bondad de Ajuste", style = "color: #2c3e50; font-weight: 500;"), 
                         DT::DTOutput(ns("tabla_metricas")),
+                        br(),
+                        h4("Coeficientes del Modelo"), DT::DTOutput(ns("tabla_coeficientes")),
+                        br(),
+                        h4("Gráfico de Impacto de los Coeficientes"), plotOutput(ns("coef_plot_mco")), # AÑADIDO
                         br(),
                         h4("Interpretación de Resultados", style = "color: #2c3e50; font-weight: 500;"),
                         verbatimTextOutput(ns("interp_resultados_reg"))
@@ -389,7 +393,6 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
         DT::formatRound(columns = "Valor", digits = 4)
     })
     
-    # --- 5. DIAGNÓSTICO: COLINEALIDAD (REACTIVO) ---
     # --- 5. DIAGNÓSTICO: COLINEALIDAD (MANTENIENDO EL HEATMAP CLÁSICO DE TU MEMORIA) ---
     output$corr_plot <- renderPlot({
       req(input$var_dep, input$var_indep)
@@ -432,6 +435,26 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
              x = paste("Realidad (Y:", input$var_dep, ")"),
              y = "Predicción estimada por el modelo MCO")
     })
+    output$coef_plot_mco <- renderPlot({
+      req(modelo_fit())
+      df_c <- broom::tidy(modelo_fit())
+      
+      # Quitamos el intercepto para poder comparar la magnitud real de las variables independientes
+      df_c <- df_c[df_c$term != "(Intercept)", ]
+      
+      # Construimos el gráfico de parámetros con intervalos de confianza del 95%
+      ggplot(df_c, aes(x = reorder(term, estimate), y = estimate)) +
+        geom_hline(yintercept = 0, linetype = "dashed", color = "red", size = 1) + # Línea crítica del cero
+        geom_errorbar(aes(ymin = estimate - 1.96 * std.error, ymax = estimate + 1.96 * std.error), 
+                      width = 0.2, color = "#2c3e50", size = 0.8) +
+        geom_point(color = "#1a446c", size = 4) +
+        coord_flip() + # Volteamos el gráfico para leer los nombres horizontalmente
+        theme_minimal() +
+        labs(title = "Gráfico de Parámetros (Impacto Marginal Parcial)",
+             subtitle = "Puntos representan el coeficiente Beta; líneas indican el intervalo de confianza al 95%",
+             x = "Variables Independientes (X)",
+             y = "Magnitud del Efecto Estimado")
+    })
     
     output$interp_resultados_reg <- renderText({
       req(input$var_indep)
@@ -448,7 +471,7 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
         "El gráfico de dispersión contrasta el valor empírico frente a la estimación. La línea discontinua roja representa la predicción perfecta (1:1).\n\n",
         "Ejemplo práctico (Dataset 'penguins'): Cuanto más estrecha y concentrada sea la nube de puntos en torno a la diagonal de referencia, ",
         "mayor será el R-cuadrado del modelo, demostrando la fidelidad explicativa de las características físicas de los pingüinos analizados."
-      )
+        )
     })
     
   }) # Cierre de moduleServer

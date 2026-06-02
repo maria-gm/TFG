@@ -219,7 +219,7 @@ AF_Analisis_UI <- function(id){
   tagList(
     
     # Título personalizado idéntico al de ACP
-    h3("Autoevaluación", 
+    h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
