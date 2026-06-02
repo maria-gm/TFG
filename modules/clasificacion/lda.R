@@ -2,7 +2,6 @@
 #  Análisis discriminante lineal
 # =====================================================
 
-
 # -------------------------------
 # TEORIA
 # -------------------------------
@@ -170,566 +169,410 @@ LDA_Teoria_Server <- function(id){
 }
 
 
-
-# -------------------------------
-# ANALISIS
-# -------------------------------
-
-# =====================================================
-# LDA - UI
-# =====================================================
-
-LDA_Analisis_UI <- function(id){
-  
+# =============================================================================
+# MODULO: ANALISIS DISCRIMINANTE LINEAL (LDA) 
+# =============================================================================
+# =============================================================================
+# MODULO: ANALISIS DISCRIMINANTE LINEAL (LDA) - UI
+# =============================================================================
+# =============================================================================
+# MODULO: ANALISIS DISCRIMINANTE LINEAL (LDA) - UI
+# =============================================================================
+# =============================================================================
+# MODULO: ANALISIS DISCRIMINANTE LINEAL (LDA) - UI
+# =============================================================================
+LDA_Analisis_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    
-    h3("Análisis Discriminante Lineal (LDA)"),
-    
-    br(),
+    h3("Análisis Discriminante Lineal (LDA)", 
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
-      
-      # =====================================================
-      # PANEL IZQUIERDO
-      # =====================================================
-      
+      #--------------------------------------------------
+      # PANEL LATERAL
+      #--------------------------------------------------
       column(
-        
         width = 3,
-        
         wellPanel(
-          
-          h4("Configuración del modelo"),
+          h4("Configuración"),
+          p("El modelo se recalcula de forma reactiva instantánea al alterar cualquier parámetro."),
+          hr(),
           
           uiOutput(ns("target_ui")),
-          
           br(),
-          
           uiOutput(ns("predictors_ui")),
           
-          br(),
-          
-          checkboxInput(
-            ns("scale_data"),
-            "Estandarizar variables",
-            value = TRUE
+          hr(),
+          helpText(
+            "LDA maximiza la separación entre las categorías de la variable objetivo utilizando combinaciones lineales de los predictores."
           ),
           
-          br(),
-          
-          actionButton(
-            ns("run_lda"),
-            "Ejecutar modelo",
-            class = "btn-primary btn-block"
-          )
-          
+          uiOutput(ns("ui_dl_lda")) 
         )
       ),
       
-      # =====================================================
-      # PANEL DERECHO
-      # =====================================================
-      
+      #--------------------------------------------------
+      # PANEL PRINCIPAL
+      #--------------------------------------------------
       column(
-        
         width = 9,
-        
         tabsetPanel(
+          id = ns("tabs_lda"),
           
-          # =====================================================
-          # TAB 1
-          # =====================================================
-          
+          #================================================
+          # 1. DATOS (TABLAS CORREGIDAS CON SCROLL NATAL)
+          #================================================
           tabPanel(
-            
-            "Espacio Discriminante",
-            
-            br(),
-            
-            plotOutput(
-              ns("lda_plot"),
-              height = "650px"
-            )
-            
-          ),
-          
-          # =====================================================
-          # TAB 2
-          # =====================================================
-          
-          tabPanel(
-            
-            "Clasificación",
-            
-            br(),
-            
-            h4("Matriz de Confusión"),
-            
-            tableOutput(ns("conf_matrix"))
-            
-          ),
-          
-          # =====================================================
-          # TAB 3
-          # =====================================================
-          
-          tabPanel(
-            
-            "Coeficientes",
-            
-            br(),
-            
-            tableOutput(ns("coef_table"))
-            
-          ),
-          
-          # =====================================================
-          # TAB 4
-          # =====================================================
-          
-          tabPanel(
-            
-            "Métricas",
-            
-            br(),
-            
-            tableOutput(ns("metricas"))
-            
-          ),
-          
-          # =====================================================
-          # TAB 5
-          # =====================================================
-          
-          tabPanel(
-            
             "Datos",
-            
+            value = "datos",
             br(),
+            p("Información: La variable objetivo define los grupos de clasificación y los predictores deben ser de tipo numérico.", 
+              style = "color: #7f8c8d; font-style: italic; margin-bottom: 25px;"),
             
-            h4("Dataset Original"),
+            h4("Dataset original", style = "color: #2c3e50; font-weight: 500;"),
+            DT::DTOutput(ns("dataset")),
             
-            tableOutput(ns("dataset")),
+            br(), hr(), br(),
             
-            br(),
-            
-            h4("Dataset Preparado"),
-            
-            tableOutput(ns("dataset_std"))
-            
-          )
+            h4("Dataset preparado / estandarizado", style = "color: #2c3e50; font-weight: 500;"),
+            DT::DTOutput(ns("dataset_std"))
+          ),
           
+          #================================================
+          # 2. ESPACIO DISCRIMINANTE
+          #================================================
+          tabPanel(
+            "Espacio Discriminante",
+            value = "espacio",
+            br(),
+            wellPanel(p("Proyección de las muestras sobre los ejes discriminantes.")),
+            plotOutput(ns("lda_plot"), height = "550px"),
+            br(),
+            h4("Interpretación del Espacio Discriminante"),
+            verbatimTextOutput(ns("interp_grafico"))
+          ),
+          
+          #================================================
+          # 3. CLASIFICACIÓN
+          #================================================
+          tabPanel(
+            "Clasificación y Matriz",
+            value = "clasificacion",
+            br(),
+            wellPanel(p("Evaluación de la capacidad predictiva sobre los datos reales.")),
+            h4("Matriz de Confusión"),
+            DT::DTOutput(ns("conf_matrix")),
+            br(),
+            h4("Métricas de Rendimiento"),
+            DT::DTOutput(ns("metricas_table")),
+            br(),
+            h4("Análisis de Clasificación (Caso Vinos)"),
+            verbatimTextOutput(ns("interp_clasificacion"))
+          ),
+          
+          #================================================
+          # 4. COEFICIENTES
+          #================================================
+          tabPanel(
+            "Coeficientes (LD)",
+            value = "coeficientes",
+            br(),
+            wellPanel(p("Pesos asignados a cada variable numérica para estructurar las funciones discriminantes.")),
+            h4("Coeficientes Lineales de las Funciones"),
+            DT::DTOutput(ns("coef_table")),
+            br(),
+            h4("Interpretación de Variables"),
+            verbatimTextOutput(ns("interp_coeficientes"))
+          )
         )
-        
       )
-      
     )
-    
   )
-  
 }
 
 
-
-# =====================================================
-# LDA - SERVER
-# =====================================================
-
-LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
-  
-  moduleServer(id, function(input, output, session){
+# =============================================================================
+# MODULO: ANALISIS DISCRIMINANTE LINEAL (LDA) - SERVER
+# =============================================================================
+# =============================================================================
+# MODULO: ANALISIS DISCRIMINANTE LINEAL (LDA) - SERVER
+# =============================================================================
+LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
+  moduleServer(id, function(input, output, session) {
     
-    # =====================================================
-    # 1. DATOS BASE
-    # =====================================================
+    ns <- session$ns
+    filas_omitidas <- reactiveVal(0)
     
+    #--------------------------------------------------
+    # 1. TRATAMIENTO DE DATOS REACTIVOS
+    #--------------------------------------------------
     datos_base <- reactive({
-      
-      df <- if(!is.null(datos()) && nrow(datos()) > 0){
-        datos()
-      } else {
-        datos_ejemplo
-      }
-      
+      df <- if (!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
       req(df)
       
-      # Conversión inteligente
-      df[] <- lapply(df, function(x){
-        
-        if(is.factor(x) || is.character(x)){
-          
+      df[] <- lapply(df, function(x) {
+        if (is.factor(x) || is.character(x)) {
           as_n <- suppressWarnings(as.numeric(as.character(x)))
-          
-          if(sum(!is.na(as_n)) > (length(x)*0.8)){
-            as_n
-          } else {
-            x
-          }
-          
+          if (sum(!is.na(as_n)) > (length(x) * 0.8)) as_n else x
         } else {
           x
         }
-        
       })
       
-      na.omit(df)
+      filas_antes <- nrow(df)
+      df_limpio <- na.omit(df)
+      filas_despues <- nrow(df_limpio)
+      filas_omitidas(filas_antes - filas_despues)
       
+      df_limpio
     })
     
-    
-    
-    # =====================================================
-    # 2. SELECTORES
-    # =====================================================
-    
+    #--------------------------------------------------
+    # 2. SELECTORES INTERACTIVOS DIRECTOS
+    #--------------------------------------------------
     output$target_ui <- renderUI({
-      
+      req(datos_base())
       selectInput(
-        session$ns("target_var"),
+        ns("target_var"),
         "Variable Objetivo (Grupos):",
         choices = names(datos_base()),
         selected = names(datos_base())[ncol(datos_base())]
       )
-      
     })
     
-    
     output$predictors_ui <- renderUI({
-      
       req(input$target_var)
-      
       nums <- names(datos_base())[sapply(datos_base(), is.numeric)]
-      
       opciones_x <- setdiff(nums, input$target_var)
       
       selectizeInput(
-        
-        session$ns("predictor_vars"),
-        
-        "Variables Predictoras:",
-        
+        ns("predictor_vars"),
+        "Variables Predictoras (Numéricas):",
         choices = opciones_x,
-        
         multiple = TRUE,
-        
-        selected = opciones_x[1:min(2, length(opciones_x))],
-        
-        options = list(
-          plugins = list("remove_button"),
-          create = TRUE,
-          persist = FALSE
-        )
-        
+        selected = opciones_x[1:min(4, length(opciones_x))],
+        options = list(plugins = list("remove_button"), persist = FALSE)
       )
-      
     })
     
-    
-    
-    # =====================================================
-    # 3. DATOS PREPARADOS
-    # =====================================================
-    
+    #--------------------------------------------------
+    # 3. GENERACIÓN DE DATASETS (ESTANDARIZACIÓN AUTOMÁTICA)
+    #--------------------------------------------------
     datos_std <- reactive({
-      
-      req(input$target_var,
-          input$predictor_vars)
-      
-      df <- datos_base()[,
-                         c(input$target_var,
-                           input$predictor_vars)]
-      
+      req(input$target_var, input$predictor_vars)
+      df <- datos_base()[, c(input$target_var, input$predictor_vars), drop = FALSE]
       df[[input$target_var]] <- as.factor(df[[input$target_var]])
       
-      if(input$scale_data){
-        
-        df[, input$predictor_vars] <- scale(
-          df[, input$predictor_vars]
-        )
-        
+      if (length(input$predictor_vars) > 1) {
+        df[, input$predictor_vars] <- scale(df[, input$predictor_vars])
       }
-      
       df
-      
     })
     
-    
-    
-    # =====================================================
-    # 4. TABLAS
-    # =====================================================
-    
-    output$dataset <- renderTable({
-      head(datos_base(), 6)
+    #--------------------------------------------------
+    # CONFIGURACIÓN CORRECTA DE BARRAS (NATURALES DE DT)
+    #--------------------------------------------------
+    output$dataset <- DT::renderDT({
+      req(datos_base())
+      DT::datatable(
+        datos_base(), 
+        options = list(
+          pageLength = 25,          # Permite más filas visibles dentro del scroll vertical
+          scrollX = TRUE,           # Barra de desplazamiento horizontal única
+          scrollY = "300px",        # Barra de desplazamiento vertical hacia abajo nativa
+          scrollCollapse = TRUE,    # Colapsa el contenedor si hay pocas filas
+          autoWidth = TRUE,
+          dom = 'rtip'              # Remueve controles superiores duplicados
+        ),
+        rownames = FALSE,
+        style = "bootstrap"
+      )
     })
     
-    output$dataset_std <- renderTable({
-      head(datos_std(), 6)
+    output$dataset_std <- DT::renderDT({
+      req(datos_std())
+      DT::datatable(
+        datos_std(), 
+        options = list(
+          pageLength = 25,          
+          scrollX = TRUE,           
+          scrollY = "300px",        
+          scrollCollapse = TRUE,    
+          autoWidth = TRUE,
+          dom = 'rtip'              
+        ),
+        rownames = FALSE,
+        style = "bootstrap"
+      )
     })
     
-    
-    
-    # =====================================================
-    # 5. MODELO LDA
-    # =====================================================
-    
-    modelo_lda <- eventReactive(input$run_lda, {
-      
-      req(input$target_var,
-          input$predictor_vars)
-      
+    #--------------------------------------------------
+    # 4. EJECUCIÓN DEL MODELO AUTOMÁTICO
+    #--------------------------------------------------
+    modelo_lda <- reactive({
+      req(input$target_var, input$predictor_vars)
       df <- datos_std()
       
+      validate(
+        need(length(levels(df[[input$target_var]])) >= 2, 
+             "La variable objetivo debe contar con un mínimo de 2 categorías válidas.")
+      )
+      
       formula_lda <- as.formula(
-        
-        paste(
-          input$target_var,
-          "~",
-          paste(input$predictor_vars,
-                collapse = " + ")
-        )
-        
+        paste(input$target_var, "~", paste(input$predictor_vars, collapse = " + "))
       )
-      
-      MASS::lda(
-        formula_lda,
-        data = df
-      )
-      
+      MASS::lda(formula_lda, data = df)
     })
-    
-    
-    
-    # =====================================================
-    # 6. PREDICCIONES
-    # =====================================================
     
     predicciones <- reactive({
-      
       req(modelo_lda())
-      
       pred <- predict(modelo_lda())
-      
-      data.frame(
-        
+      df_res <- data.frame(
         Real = datos_std()[[input$target_var]],
-        
-        Predicho = pred$class,
-        
-        pred$x
-        
+        Predicho = pred$class
       )
-      
+      if (!is.null(pred$x)) {
+        df_res <- cbind(df_res, pred$x)
+      }
+      df_res
     })
     
-    
-    
-    # =====================================================
-    # 7. VISUALIZACIÓN
-    # =====================================================
+    #--------------------------------------------------
+    # 5. RENDERIZADO DE GRÁFICOS (1D Y 2D)
+    #--------------------------------------------------
     output$lda_plot <- renderPlot({
-      
       req(predicciones())
-      
       df_plot <- predicciones()
       
-      validate(
-        need(
-          "LD2" %in% colnames(df_plot),
-          "El modelo solo tiene una dimensión discriminante."
-        )
-      )
-      
-      # =====================================================
-      # CENTROIDES
-      # =====================================================
-      
-      centroides <- aggregate(
-        cbind(LD1, LD2) ~ Real,
-        data = df_plot,
-        mean
-      )
-      
-      # =====================================================
-      # GRÁFICO LDA
-      # =====================================================
-      
-      ggplot(
+      if ("LD2" %in% colnames(df_plot)) {
+        centroides <- aggregate(cbind(LD1, LD2) ~ Real, data = df_plot, mean)
         
-        df_plot,
+        ggplot2::ggplot(df_plot, ggplot2::aes(x = LD1, y = LD2, color = Real)) +
+          ggplot2::geom_point(size = 2.5, alpha = 0.7) +
+          ggplot2::stat_ellipse(level = 0.95, linetype = 2, alpha = 0.4) +
+          ggplot2::geom_point(data = centroides, ggplot2::aes(x = LD1, y = LD2), 
+                              color = "#2c3e50", shape = 10, size = 6, stroke = 2) +
+          ggplot2::theme_minimal() +
+          ggplot2::labs(title = "Dispersión en el Espacio Canónico Discriminante",
+                        x = "Función Discriminante 1 (LD1)",
+                        y = "Función Discriminante 2 (LD2)",
+                        color = input$target_var) +
+          ggplot2::theme(legend.position = "bottom", text = ggplot2::element_text(size = 13))
         
-        aes(
-          x = LD1,
-          y = LD2,
-          color = Real
-        )
-        
-      ) +
-        
-        # -------------------------------------------------
-      # ZONAS DISCRIMINANTES
-      # -------------------------------------------------
-      
-      stat_ellipse(
-        aes(fill = Real),
-        geom = "polygon",
-        alpha = 0.15,
-        color = NA
-      ) +
-        
-        # -------------------------------------------------
-      # PUNTOS
-      # -------------------------------------------------
-      
-      geom_point(
-        size = 3,
-        alpha = 0.8
-      ) +
-        
-        # -------------------------------------------------
-      # CENTROIDES
-      # -------------------------------------------------
-      
-      geom_point(
-        data = centroides,
-        
-        aes(
-          x = LD1,
-          y = LD2
-        ),
-        
-        shape = 4,
-        size = 6,
-        stroke = 2,
-        color = "black"
-      ) +
-        
-        # -------------------------------------------------
-      # ETIQUETAS CENTROIDES
-      # -------------------------------------------------
-      
-      geom_text(
-        
-        data = centroides,
-        
-        aes(
-          x = LD1,
-          y = LD2,
-          label = Real
-        ),
-        
-        color = "black",
-        
-        vjust = -1,
-        
-        fontface = "bold",
-        
-        inherit.aes = FALSE
-      ) +
-        
-        # -------------------------------------------------
-      # TEMA
-      # -------------------------------------------------
-      
-      theme_minimal(base_size = 14) +
-        
-        labs(
-          
-          title = "Espacio Discriminante",
-          
-          subtitle = "Representación de las funciones discriminantes",
-          
-          x = "LD1",
-          
-          y = "LD2",
-          
-          color = "Grupo",
-          
-          fill = "Grupo"
-          
-        ) +
-        
-        theme(
-          
-          plot.title = element_text(
-            face = "bold"
-          ),
-          
-          legend.position = "bottom"
-          
-        )
-      
-    })   
-
-    
-    
-    # =====================================================
-    # 8. MATRIZ CONFUSIÓN
-    # =====================================================
-    
-    output$conf_matrix <- renderTable({
-      
-      req(predicciones())
-      
-      table(
-        
-        Real = predicciones()$Real,
-        
-        Predicho = predicciones()$Predicho
-        
-      )
-      
+      } else if ("LD1" %in% colnames(df_plot)) {
+        ggplot2::ggplot(df_plot, ggplot2::aes(x = LD1, fill = Real, color = Real)) +
+          ggplot2::geom_density(alpha = 0.4) +
+          ggplot2::geom_rug(alpha = 0.7) +
+          ggplot2::theme_minimal() +
+          ggplot2::labs(title = "Distribución sobre la Primera Función Discriminante",
+                        x = "Función Discriminante 1 (LD1)",
+                        y = "Densidad",
+                        fill = input$target_var, color = input$target_var) +
+          ggplot2::theme(legend.position = "bottom", text = ggplot2::element_text(size = 13))
+      }
     })
     
-    
-    
-    # =====================================================
-    # 9. MÉTRICAS
-    # =====================================================
-    
-    output$metricas <- renderTable({
-      
+    #--------------------------------------------------
+    # 6. TABLAS DE RESULTADOS CON DT
+    #--------------------------------------------------
+    output$conf_matrix <- DT::renderDT({
       req(predicciones())
-      
-      accuracy <- mean(
-        predicciones()$Real ==
-          predicciones()$Predicho
-      )
-      
-      data.frame(
-        
-        Métrica = "Accuracy",
-        
-        Valor = round(accuracy, 4)
-        
-      )
-      
+      df <- predicciones()
+      matriz <- table(Real = df$Real, Predicho = df$Predicho)
+      DT::datatable(as.data.frame.matrix(matriz), options = list(dom = 't', scrollX = TRUE))
     })
     
-    
-    
-    # =====================================================
-    # 10. COEFICIENTES
-    # =====================================================
-    
-    output$coef_table <- renderTable({
-      
+    output$coef_table <- DT::renderDT({
       req(modelo_lda())
+      DT::datatable(round(as.data.frame(modelo_lda()$scaling), 4), options = list(pageLength = 10, dom = 't', scrollX = TRUE))
+    })
+    
+    output$metricas_table <- DT::renderDT({
+      req(predicciones())
+      df <- predicciones()
+      matriz <- table(df$Real, df$Predicho)
+      acc <- sum(diag(matriz)) / sum(matriz)
       
-      round(
-        as.data.frame(modelo_lda()$scaling),
-        4
+      prec_clase <- diag(matriz) / rowSums(matriz)
+      prec_clase[is.na(prec_clase)] <- 0
+      bal_acc <- mean(prec_clase)
+      
+      res_df <- data.frame(
+        Metrica = c("Exactitud Global (Accuracy)", "Exactitud Balanceada", "Tamaño Muestral (N)"),
+        Valor = c(round(acc, 4), round(bal_acc, 4), sum(matriz))
       )
+      DT::datatable(res_df, options = list(dom = 't'), rownames = FALSE)
+    })
+    
+    #--------------------------------------------------
+    # 7. TEXTOS DE INTERPRETACIÓN
+    #--------------------------------------------------
+    output$interp_grafico <- renderText({
+      req(predicciones())
+      df_p <- predicciones()
       
-    },
-    rownames = TRUE)
+      if ("LD2" %in% colnames(df_p)) {
+        paste0("INTERPRETACIÓN ANALÍTICA (Muestra Vinos):\n",
+               "El gráfico multidimensional muestra la separación espacial óptima lograda por el modelo.\n",
+               "Tomando el ejemplo clásico de 'Wines', la primera función (LD1) suele segregar de forma óptima ",
+               "el Cultivar 1 del Cultivar 3, mientras que LD2 captura la variabilidad específica para aislar el Cultivar 2.\n",
+               "Los centroides marcados indican el núcleo geométrico de cada clúster vinícola; un solapamiento bajo ",
+               "entre las elipses de confianza (95%) valida visualmente el poder de discriminación de tus predictores.")
+      } else {
+        paste0("INTERPRETACIÓN ANALÍTICA:\n",
+               "Al disponer únicamente de dos grupos de clasificación o un predictor limitante, el espacio se reduce a una dimensión (LD1).\n",
+               "Observe el grado de solapamiento en las colinas de densidad. En analíticas de calidad o tipos de vino, un distanciamiento ",
+               "marcado de los picos demuestra que el vector numérico seleccionado es un clasificador robusto.")
+      }
+    })
+    
+    output$interp_clasificacion <- renderText({
+      req(predicciones())
+      df <- predicciones()
+      matriz <- table(df$Real, df$Predicho)
+      acc <- sum(diag(matriz)) / sum(matriz)
+      
+      paste0("ANÁLISIS DE RENDIMIENTO CLASIFICATORIO:\n",
+             "El modelo reporta un nivel de Exactitud Global del ", round(acc * 100, 2), "%.\n\n",
+             "En el ecosistema del dataset 'Wines', algoritmos basados en LDA alcanzan tasas de éxito muy elevadas debido a la naturaleza ",
+             "química y lineal de variables como el 'Alcohol', 'Malic Acid' o 'Ash'. Los valores fuera de la diagonal principal ",
+             "representan botellas clasificadas en un viñedo erróneo (falsos positivos/negativos). Si la exactitud es baja, ",
+             "se sugiere verificar la homocedasticidad y normalidad multivariante de los datos."
+      )
+    })
+    
+    output$interp_coeficientes <- renderText({
+      req(modelo_lda())
+      co <- modelo_lda()$scaling
+      max_var <- rownames(co)[which.max(abs(co[, 1]))]
+      
+      paste0("INTERPRETACIÓN DE CARGAS Y ATRIBUTOS:\n",
+             "Los coeficientes indican la importancia relativa de cada parámetro químico en la composición del vector.\n",
+             "Para la primera combinación lineal (LD1), la variable con mayor influencia absoluta es '", max_var, "'.\n\n",
+             "Haciendo analogía con compuestos de vinos: características como la concentración de 'Proline' o 'Flavanoids' suelen ",
+             "mostrar coeficientes altos en LD1 porque encapsulan las diferencias geológicas primarias de las regiones vinícolas, ",
+             "convirtiéndose en huellas dactilares críticas para discriminar el origen botánico.")
+    })
+    
+    # Lógica de notificación dinámica para valores NA omitidos
+    output$ui_dl_lda <- renderUI({
+      req(datos_base())
+      omitidas <- filas_omitidas()
+      
+      if (omitidas > 0) {
+        p(
+          icon("triangle-exclamation"),
+          paste0(" Información: Se han omitido ", omitidas, " filas del dataset debido a valores faltantes (NA)."),
+          style = "color: #d35400; font-weight: 500; font-size: 12px; margin-top: 15px; background-color: #fdf2e9; padding: 8px; border-left: 3px solid #e67e22; border-radius: 4px;"
+        )
+      } else {
+        return(NULL)
+      }
+    })
     
   })
-  
 }
-
 
 # -------------------------------
 # AUTOEVALUACION
