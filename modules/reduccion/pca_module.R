@@ -792,6 +792,38 @@ PCA_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
+    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
+    tags$head(
+      tags$style(HTML("
+        /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
+        .shiny-input-radiogroup, 
+        .shiny-input-radiogroup .shiny-options-group,
+        .shiny-input-radiogroup .form-check,
+        .shiny-input-radiogroup .radio {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: block !important;
+        }
+        
+        /* Asegura que la etiqueta y el texto ocupen todo el espacio del card */
+        .shiny-input-radiogroup label,
+        .shiny-input-radiogroup .form-check-label {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: inline-block !important;
+          white-space: normal !important; /* Permite saltos lógicos, no prematuros */
+          word-break: break-word !important;
+        }
+        
+        /* Ajuste por si el flexbox de Bootstrap 5 está encogiendo el texto */
+        .form-check {
+          display: flex !important;
+          align-items: center !important;
+          gap: 0.5rem;
+        }
+      "))
+    ),
+    
     h3("Autoevaluación", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     

@@ -180,15 +180,12 @@ Jerarquicos_Teoria_Server <- function(id){
   
 }
 
-
-
 # -------------------------------
 # Análisis
 # -------------------------------
 Jerarquicos_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
-    # Título personalizado idéntico a los módulos anteriores
     h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
@@ -199,13 +196,11 @@ Jerarquicos_Analisis_UI <- function(id){
                p("Seleccione los parámetros para estructurar el árbol jerárquico y definir los clústeres."),
                hr(),
                
-               # --- ESTO SE VE SIEMPRE ---
                selectInput(ns("metodo"), "Método de enlace (Lance-Williams)",
                            choices = c("Ward.D2" = "ward.D2", "Completo" = "complete", "Promedio" = "average", "Single" = "single"),
                            selected = "ward.D2"),
                numericInput(ns("k"), "Número de clústeres", value = 3, min = 2, max = 10),
                
-               # --- ESTO SOLO SE VE EN PCA Y DENDROGRAMA ---
                conditionalPanel(
                  condition = sprintf("input['%s'] == '2. Proyección PCA' || input['%s'] == '3. Árbol (Dendrograma)'", ns("tabs"), ns("tabs")),
                  uiOutput(ns("ui_var_cat")),
@@ -263,18 +258,18 @@ Jerarquicos_Analisis_UI <- function(id){
   )
 }
 
-# -------------------------------
-# Server: Clustering Jerárquico
-# -------------------------------
 Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   
   moduleServer(id, function(input, output, session) {
     
-    # --- 1. DATOS BASE (LIMPIEZA TOTAL) ---
+    # --- 1. DATOS BASE ---
     datos_base <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
       req(df)
-      df[complete.cases(df), , drop = FALSE]
+      df <- df[complete.cases(df), , drop = FALSE]
+      req(nrow(df) > 0)
+      rownames(df) <- 1:nrow(df)
+      df
     })
     
     # --- 2. SELECCIÓN DE NUMÉRICOS ---
@@ -282,48 +277,69 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       df <- datos_base()
       df_n <- df[, sapply(df, is.numeric), drop = FALSE]
       cols_validas <- sapply(df_n, function(x) length(unique(x)) > 15)
-      if(sum(cols_validas) < 2) return(df_n) 
+      if(sum(cols_validas) < 2) {
+        req(ncol(df_n) >= 2)
+        return(df_n)
+      } 
       df_n[, cols_validas, drop = FALSE]
     })
     
     # --- 3. ESCALADO Y DISTANCIA ---
-    datos_scaled <- reactive({ req(ncol(datos_num()) >= 2); scale(datos_num()) })
+    datos_scaled <- reactive({ 
+      df_n <- datos_num()
+      req(ncol(df_n) >= 2)
+      sd_cols <- sapply(df_n, sd, na.rm = TRUE)
+      req(all(sd_cols > 0)) 
+      scale(df_n) 
+    })
     
     matriz_distancia <- reactive({
-      req(datos_scaled())
+      req(datos_scaled(), input$metodo)
       d <- dist(datos_scaled(), method = "euclidean")
       if (input$metodo %in% c("centroid", "median")) d^2 else d
     })
     
     # --- 4. MODELO Y CLÚSTERES ---
-    modelo_hc <- reactive({ req(matriz_distancia()); hclust(matriz_distancia(), method = input$metodo) })
-    res_jerarquico <- reactive({ req(modelo_hc(), input$k); cutree(modelo_hc(), k = input$k) })
+    modelo_hc <- reactive({ 
+      req(matriz_distancia(), input$metodo)
+      hclust(matriz_distancia(), method = input$metodo) 
+    })
+    
+    res_jerarquico <- reactive({ 
+      req(modelo_hc(), input$k)
+      cutree(modelo_hc(), k = input$k) 
+    })
     
     # --- 5. PCA Y UNIÓN DE RESULTADOS ---
-    pca_res_obj <- reactive({ req(datos_scaled()); prcomp(datos_scaled()) })
+    pca_res_obj <- reactive({ 
+      req(datos_scaled()) 
+      prcomp(datos_scaled()) 
+    })
     
     df_final <- reactive({
-      req(pca_res_obj(), res_jerarquico())
+      req(pca_res_obj(), res_jerarquico(), datos_base())
+      n_pca <- nrow(pca_res_obj()$x)
+      n_clusa <- length(res_jerarquico())
+      n_base <- nrow(datos_base())
+      req(n_pca == n_clusa, n_clusa == n_base)
+      
       df_viz <- as.data.frame(pca_res_obj()$x[, 1:2])
       df_viz$cluster <- factor(res_jerarquico())
       
       if(!is.null(input$var_cat) && input$var_cat != "Ninguna" && input$var_cat != "") {
         var_real <- datos_base()[[input$var_cat]]
-        if(length(var_real) == nrow(df_viz)) {
+        if(!is.null(var_real) && length(var_real) == nrow(df_viz)) {
           df_viz$realidad <- as.factor(var_real)
         }
       }
       df_viz
     })
     
-    # --- 6. OUTPUT: TABLAS (ORIGINAL Y ESTANDARIZADA CON SCROLL INTERNO) ---
-    # --- 6. OUTPUT: TABLAS (CORREGIDO: ORIGINAL COMPLETO VS NUMÉRICO PURO) ---
+    # --- 6. OUTPUT: TABLAS ---
     output$tabla_resumen <- DT::renderDT({
       df_completo <- datos_base()
       req(df_completo)
-      
       DT::datatable(
-        # Muestra el dataset original entero con sus columnas categóricas de referencia
         df_completo, 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
         class = 'cell-border stripe hover compact'
@@ -333,23 +349,20 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     
     output$tabla_scale <- DT::renderDT({
       req(datos_scaled())
-      
       DT::datatable(
-        # Matriz pura de números tipificados (Z-scores) que ingresa al algoritmo
         round(as.data.frame(datos_scaled()), 3), 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
         class = 'cell-border stripe hover compact'
       )
     })
     
-    
-    # --- 7. OUTPUT: PROYECCIÓN PCA (INTERPRETACIÓN FIJA EN WARD) ---
+    # --- 7. OUTPUT: PROYECCIÓN PCA ---
     output$pca_plot <- renderPlot({
-      validate(need(df_final(), "Sincronizando dimensiones..."))
-      df = df_final()
+      req(df_final())
+      df <- df_final()
       p <- ggplot(df, aes(x = PC1, y = PC2))
       
-      if(!is.null(input$var_cat) && input$var_cat != "Ninguna" && input$var_cat != "") {
+      if(!is.null(input$var_cat) && input$var_cat != "Ninguna" && input$var_cat != "" && !is.null(df$realidad)) {
         p <- p + geom_point(aes(color = realidad, shape = cluster), size = 3.5, alpha = 0.8) +
           labs(color = input$var_cat, shape = "Clúster")
       } else {
@@ -367,66 +380,73 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     output$interp_pca_cl <- renderText({
       req(input$k)
       paste0(
-        "Nota analítica: Esta interpretación se fundamenta de manera estándar en el método de minimización de varianza interna de Ward.D2.\n",
-        "La proyección sobre el plano principal del PCA permite constatar espacialmente la nitidez geométrica de los grupos.\n\n",
-        "Ejemplo práctico (Dataset 'penguins'): Al contrastar el agrupamiento obtenido (k=3) frente a la variable categórica ",
-        "'species', descubrirás que bajo el criterio de Ward las elipses delimitan de forma casi perfecta a los pingüinos Gentoo debido a sus marcadas ",
-        "diferencias de peso y aleta, reflejando un solapamiento menor y natural entre las especies Adelie y Chinstrap."
+        "Nota analítica: Esta interpretación se fundamenta en la proyección sobre el plano principal del PCA.\n",
+        "Permite constatar de manera geométrica qué tan nítidas y separadas son las fronteras de los grupos.\n\n",
+        "Caso 'penguins': Al seleccionar k=3 y contrastar con la variable real 'species', comprobará que las elipses ",
+        "asignan con altísima precisión al grupo de los pingüinos Gentoo (caracterizados por mayor tamaño). Las especies ",
+        "Adelie y Chinstrap compartirán un espacio más cercano en el plano de los componentes debido a similitudes morfológicas generalizadas."
       )
     })
     
-    # --- 8. OUTPUT: DENDROGRAMA (COMENTARIOS DINÁMICOS POR MÉTODO DE ENLACE) ---
+    # --- 8. OUTPUT: DENDROGRAMA ---
+    # --- 8. OUTPUT: DENDROGRAMA ---
     output$dendrograma <- renderPlot({
-      req(modelo_hc())
+      req(modelo_hc(), input$k)
+      dend <- as.dendrogram(modelo_hc())
       alturas <- rev(modelo_hc()$height)
-      h_corte <- (alturas[input$k] + alturas[input$k-1]) / 2
+      req(length(alturas) >= input$k)
+      h_corte <- (alturas[input$k] + alturas[max(1, input$k-1)]) / 2
       
-      factoextra::fviz_dend(modelo_hc(), k = input$k, cex = 0.5, lwd = 0.4, k_colors = "jco",
-                            rect = TRUE, rect_fill = TRUE, 
-                            show_labels = (input$mostrar_labels && nrow(datos_base()) <= 50)) +
-        geom_hline(yintercept = h_corte, linetype = "dashed", color = "red") +
-        theme_minimal() + theme(axis.text.x = element_blank())
+      dend_data <- ggdendro::dendro_data(dend, type = "rectangle")
+      
+      p <- ggplot(ggdendro::segment(dend_data)) + 
+        geom_segment(aes(x = x, y = y, xend = xend, yend = yend), 
+                     color = "#2c3e50", 
+                     linewidth = 0.2) + 
+        geom_hline(yintercept = h_corte, linetype = "dashed", color = "red", linewidth = 0.4) +
+        theme_minimal() +
+        labs(title = "Dendrograma de Agrupamiento Jerárquico", x = "", y = "Altura (Distancia)") +
+        theme(
+          axis.text.x = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank()
+        )
+      
+      if (input$mostrar_labels && nrow(datos_base()) <= 50) {
+        p <- p + scale_x_continuous(breaks = dend_data$labels$x, labels = dend_data$labels$label) +
+          theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 7))
+      }
+      p
     })
     
     output$interp_dendro <- renderText({
       req(input$k, input$metodo)
       
-      msg_comun <- paste0(
-        "El dendrograma representa el proceso de agrupación jerárquica. El corte en ", input$k, " grupos se indica mediante la línea discontinua roja.\n\n",
-        "Guía según el método de enlace activo ('", input$metodo, "') aplicado a 'penguins':\n"
+      # Selección dinámica de la frase resumen según el método activo de Lance-Williams
+      frase_metodo <- switch(input$metodo,
+                             "single"   = "El enlace Simple busca vecinos mínimos, provocando un efecto de encadenamiento continuo que tiende a aislar valores atípicos individuales en lugar de agrupar las especies de pingüinos de forma homogénea.",
+                             "ward.D2"  = "El método de Ward maximiza la homogeneidad interna, estructurando el árbol en bifurcaciones altamente simétricas y equilibradas que segmentan con máxima precisión las diferencias físicas reales entre las especies.",
+                             "complete" = "El enlace Completo prioriza la distancia máxima permitiendo identificar subgrupos muy compactos, aunque su estructura es altamente sensible a pingüinos con dimensiones anatómicas extremas o singulares.",
+                             "average"  = "El enlace Promedio suaviza la varianza calculando distancias medias entre grupos, ofreciendo una escala de altura más chata y un punto intermedio que atenúa el encadenamiento sin llegar a la simetría perfecta de Ward.",
+                             "Método de enlace no especificado."
       )
       
-      msg_especifico <- switch(input$metodo,
-                               "ward.D2" = paste0(
-                                 "- Método de Ward: Minimiza la varianza dentro de los clústeres. Genera un árbol con un brazo muy ",
-                                 "limpio y elevado correspondiente a la especie Gentoo (muy pesados), y otro brazo equilibrado que ",
-                                 "subdivide con precisión los grupos Adelie y Chinstrap buscando estructuras esféricas compactas."
-                               ),
-                               "complete" = paste0(
-                                 "- Enlace Completo (Máxima Distancia): Agrupa basándose en los miembros más alejados. Tiende a crear ",
-                                 "clústeres muy compactos y de diámetros similares. En 'penguins', esto fuerza agrupaciones estrictas ",
-                                 "evitando que casos límite o pingüinos de tamaños ambiguos desestabilicen los tres grandes bloques biológicos."
-                               ),
-                               "average" = paste0(
-                                 "- Enlace Promedio (UPGMA): Evalúa la distancia media entre todos los pares de objetos. Es menos sensible a ",
-                                 "valores atípicos que el método completo. En 'penguins', dibuja ramas con saltos de altura más suaves y ",
-                                 "proporcionales, reflejando transiciones morfológicas continuas entre los diferentes ejemplares."
-                               ),
-                               "single" = paste0(
-                                 "- Enlace Simple (Mínima Distancia): Conecta grupos a través de sus vecinos más cercanos. Sufre del fenómeno ",
-                                 "de encadenamiento ('chaining'). Verás que en 'penguins' el dendrograma toma forma de escalera con ramas ",
-                                 "largas y desequilibradas, donde los individuos se van uniendo uno a uno a un solo gran clúster central."
-                               )
+      # Estructura del diagnóstico textual completo enviado a la UI
+      paste0(
+        "Diagnóstico del Árbol (Algoritmo Jerárquico):\n",
+        "El gráfico superior muestra cómo se fusionan las observaciones de abajo hacia arriba. ",
+        "Usted seleccionó el método de enlace '", input$metodo, "' con una división en k = ", input$k, " grupos.\n\n",
+        "Interpretación del método:\n", frase_metodo
       )
-      
-      return(paste0(msg_comun, msg_especifico))
     })
     
-    # --- 9. OUTPUT: PERFIL DE VARIABLES (INTERPRETACIÓN FIJA EN WARD) ---
+    # --- 9. OUTPUT: PERFIL DE VARIABLES ---
     output$boxplot_perfil <- renderPlot({
       req(res_jerarquico(), datos_num())
+      req(length(res_jerarquico()) == nrow(datos_num()))
+      
       df_long <- as.data.frame(datos_num()) %>%
-        mutate(cluster = as.factor(res_jerarquico())) %>%
+        dplyr::mutate(cluster = as.factor(res_jerarquico())) %>%
         tidyr::pivot_longer(cols = -cluster, names_to = "Variable", values_to = "Valor")
       
       ggplot(df_long, aes(x = cluster, y = Valor, fill = cluster)) +
@@ -437,18 +457,20 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         labs(title = "Distribución de variables por clúster")
     })
     
-    output$interp_perfil <- renderText({
+    output$interp_perfil <- renderText({ 
       req(input$k)
+      # INTERPRETACIÓN DE LOS BOXPLOTS
       paste0(
-        "Nota analítica: Esta caracterización de perfiles describe la morfología típica de los grupos generados bajo el método Ward.D2.\n",
-        "Los gráficos de cajas identifican los rasgos diferenciales que definen la naturaleza de cada grupo.\n\n",
-        "Ejemplo práctico (Dataset 'penguins'): El clúster que captura a los pingüinos Gentoo destaca exponencialmente ",
-        "por exhibir cajas desplazadas hacia valores muy elevados en las variables 'body_mass_g' (masa corporal) y ",
-        "'flipper_length_mm' (largo de aleta), mientras que los otros dos grupos se fragmentan según las proporciones del pico."
+        "Análisis de Variables por Grupo (¿Quién es quién?):\n",
+        "Los gráficos de caja permiten mapear la identidad física y características biológicas de cada clúster asignado.\n\n",
+        "Guía de lectura para 'penguins':\n",
+        "- Clúster con valores máximos en 'body_mass_g' (masa corporal) y 'flipper_length_mm' (longitud de aleta): Representa inequívocamente a los individuos de la especie Gentoo.\n",
+        "- Clúster con 'bill_length_mm' (longitud del pico) elevado pero 'bill_depth_mm' (grosor del pico) moderado: Suele asociarse fuertemente con la especie Chinstrap.\n",
+        "- Clúster con picos notablemente más cortos y gruesos ('bill_depth_mm' alto): Corresponde al patrón anatómico estándar de la especie Adelie."
       )
     })
     
-    # --- 10. OUTPUT: VALIDACIÓN SILUETA (INTERPRETACIÓN FIJA EN WARD) ---
+    # --- 10. OUTPUT: VALIDACIÓN SILUETA ---
     output$silhouette_dist <- renderPlot({
       req(res_jerarquico(), matriz_distancia())
       sil <- cluster::silhouette(res_jerarquico(), matriz_distancia())
@@ -458,63 +480,70 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       ggplot(df_sil, aes(x = sil_width, y = cluster, fill = cluster)) +
         geom_violin(alpha = 0.4) + geom_boxplot(width = 0.1, color = "black") +
         geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
-        theme_minimal() + 
-        ggsci::scale_fill_jco() +
-        labs(title = "Consistencia Interna (Silueta)")
+        theme_minimal() + ggsci::scale_fill_jco() + labs(title = "Consistencia Interna (Silueta)")
     })
     
     output$silhouette_map <- renderPlot({
       req(res_jerarquico(), matriz_distancia(), pca_res_obj())
       sil <- cluster::silhouette(res_jerarquico(), matriz_distancia())
       df_viz <- as.data.frame(pca_res_obj()$x[, 1:2])
+      req(nrow(df_viz) == length(res_jerarquico()))
+      
       df_viz$cluster <- factor(res_jerarquico())
       df_viz$sil_width <- sil[, "sil_width"]
       
       ggplot(df_viz, aes(x = PC1, y = PC2, color = cluster)) +
         geom_point(aes(alpha = sil_width, size = sil_width)) +
-        scale_alpha_continuous(range = c(0.1, 1)) +
-        scale_size_continuous(range = c(1, 4)) +
-        theme_minimal() + 
-        ggsci::scale_color_jco() +
-        labs(title = "Mapa de Confianza")
+        scale_alpha_continuous(range = c(0.1, 1)) + scale_size_continuous(range = c(1, 4)) +
+        theme_minimal() + ggsci::scale_color_jco() + labs(title = "Mapa de Confianza")
     })
     
-    output$interp_silueta <- renderText({
+    output$interp_silueta <- renderText({ 
       req(input$k)
       paste0(
-        "Nota analítica: La validación de la silueta cuantifica la consistencia del agrupamiento obtenido bajo el criterio de Ward.D2.\n",
-        "Valores cercanos a 1 demuestran que los objetos están asignados al clúster correcto.\n\n",
-        "Ejemplo práctico (Dataset 'penguins'): Notarás que el clúster esférico asignado a los Gentoo mantiene valores de silueta muy robustos y elevados. ","En contraposición, las observaciones ubicadas en la frontera difusa entre las especies Adelie y Chinstrap presentarán ","coeficientes moderados o negativos, evidenciando las zonas de solapamiento morfológico natural.")})
+        "Métricas de Validación de Silueta:\n",
+        "La silueta mide qué tan bien integrado está un objeto a su clúster asignado en comparación con los demás (rango de -1 a 1).\n\n",
+        "Valores cercanos a 1 implican una asignación perfecta. Valores por debajo de 0 alertan de elementos artificialmente forzados ",
+        "dentro de un grupo erróneo.\n\n",
+        "En este dataset, el grupo correspondiente a Gentoo mostrará una silueta ancha y un 'mapa de confianza' con puntos grandes ",
+        "y sólidos (alta cohesión). Por el contrario, las zonas de contacto limítrofes entre Adelie y Chinstrap mostrarán puntos ",
+        "más pequeños y tenues, indicando la complejidad natural de separar estadísticamente estas dos especies en base a su morfología."
+      )
+    })
+    
     # --- EXTRAS ---
     output$ui_var_cat <- renderUI({
       df <- datos_base()
-    nom_cats <- names(df)[sapply(df, function(x) is.factor(x) || is.character(x) || (is.numeric(x) && length(unique(x)) <= 5))]
-    selectInput(session$ns("var_cat"), "Variable Real (Color):",choices = c("Ninguna", nom_cats), selected = "Ninguna")})
-    output$dl_data <- downloadHandler(filename = function() {paste("Resultados_Clustering_Jerarquico.csv", sep = "")},content = function(file) {req(datos_base(), res_jerarquico())
-      df_export <- datos_base()
-      df_export$Cluster_Asignado <- res_jerarquico()
-      write.csv(df_export, file, row.names = TRUE)
-      })
-    }) 
-  } 
+      req(df)
+      nom_cats <- names(df)[sapply(df, function(x) is.factor(x) || is.character(x) || (is.numeric(x) && length(unique(x)) <= 5))]
+      selectInput(session$ns("var_cat"), "Variable Real (Color):", choices = c("Ninguna", nom_cats), selected = "Ninguna")
+    })
+    
+    output$dl_data <- downloadHandler(
+      filename = function() { paste("Resultados_Clustering_Jerarquico.csv", sep = "") },
+      content = function(file) {
+        req(datos_base(), res_jerarquico())
+        df_export <- datos_base()
+        df_export$Cluster_Asignado <- res_jerarquico()
+        write.csv(df_export, file, row.names = TRUE)
+      }
+    )
+  }) 
+}
 # -------------------------------
 # Autoevaluación
 # -------------------------------
-
 Jerarquicos_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Encabezado estilizado
     h3("Autoevaluación", 
-       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 25px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
-    # 1. Bloque dinámico donde se imprimen las preguntas del AF (ahora van primero)
     uiOutput(ns("preguntas")),
     
     br(),
     
-    # 2. Barra de acciones y puntuación 
     card(
       class = "shadow-sm mb-4 border-0",
       style = "background-color: #fdfdfd;",
@@ -531,33 +560,46 @@ Jerarquicos_Auto_UI <- function(id) {
     
     br(),
     
-    # 3. Formulario colapsable para agregar preguntas (queda al final del todo)
     accordion(
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de Análisis Factorial",
+        title = "➕ Gestión: Añadir pregunta personalizada de PCA",
         icon = icon("gear"),
+        
         fluidRow(
           column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
           column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
                                         choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
         ),
+        
         fluidRow(
           column(width = 3, textInput(ns("op1"), "Opción 1")),
           column(width = 3, textInput(ns("op2"), "Opción 2")),
           column(width = 3, textInput(ns("op3"), "Opción 3")),
           column(width = 3, textInput(ns("op4"), "Opción 4"))
         ),
-        actionButton(ns("add"), "Guardar pregunta", class = "btn-success btn-sm mt-2")
+        
+        actionButton(ns("add"), "Guardar pregunta en el banco de PCA", class = "btn-success btn-sm mt-2")
       )
     )
   )
 }
-
 Jerarquicos_Auto_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
+    mostrar_respuestas <- reactiveVal(FALSE)
+    mostrar_respuestas <- reactiveVal(FALSE)
+    
+    observeEvent(input$ver, {
+      mostrar_respuestas(!mostrar_respuestas())
+      
+      updateActionButton(
+        session,
+        "ver",
+        label = if (mostrar_respuestas()) "🙈 Ocultar respuestas" else "👁️ Ver respuestas"
+      )
+    })
     preguntas_base <- list(
       list(
         texto = "¿Qué es un dendrograma?",
@@ -636,78 +678,79 @@ Jerarquicos_Auto_Server <- function(id) {
       )
     )
     
+    
     preguntas_usuario <- reactiveVal(list())
     
     observeEvent(input$add, {
       req(input$nueva_pregunta, input$op1, input$op2, input$op3, input$op4)
+      
       nueva <- list(
         texto = input$nueva_pregunta,
         opciones = c(input$op1, input$op2, input$op3, input$op4),
-        correcta = c(input$op1, input$op2, input$op3, input$op4)[match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))]
+        correcta = c(input$op1, input$op2, input$op3, input$op4)[
+          match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))
+        ]
       )
+      
       preguntas_usuario(c(preguntas_usuario(), list(nueva)))
     })
     
-    todas_preguntas <- reactive({
+    preguntas <- reactive({
       c(preguntas_base, preguntas_usuario())
     })
     
     preguntas_ordenadas <- reactiveVal(NULL)
     
-    # Selección inicial aleatoria de exactamente 10 preguntas (Aislada contra bucles)
     observe({
-      lista_actual <- todas_preguntas()
-      lista_enriquecida <- lapply(seq_along(lista_actual), function(idx) {
-        p <- lista_actual[[idx]]
-        # Prefijo km_q_ específico para la sección de K-means
-        p$id_unico <- paste0("km_q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
         p
       })
       
       if (is.null(isolate(preguntas_ordenadas()))) {
-        n_mostrar <- min(10, length(lista_enriquecida))
-        muestra_inicial <- sample(lista_enriquecida, n_mostrar)
-        preguntas_ordenadas(muestra_inicial)
+        preguntas_ordenadas(sample(lista_enriquecida, min(10, length(lista_enriquecida))))
       }
     })
     
-    # Reordenación controlada de 10 preguntas con mezcla interna de alternativas
     observeEvent(input$shuffle, {
-      lista_actual <- todas_preguntas()
-      lista_enriquecida <- lapply(seq_along(lista_actual), function(idx) {
-        p <- lista_actual[[idx]]
-        p$id_unico <- paste0("km_q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
         p
       })
       
-      n_mostrar <- min(10, length(lista_enriquecida))
-      nuevas <- sample(lista_enriquecida, n_mostrar)
+      nuevas <- sample(lista_enriquecida, min(10, length(lista_enriquecida)))
       
       nuevas <- lapply(nuevas, function(p) {
         p$opciones <- sample(p$opciones)
         p
       })
+      
       preguntas_ordenadas(nuevas)
     })
     
-    # RENDER ÚNICO: Tarjetas y feedback por ID inmutable (Sin alertas de no respondido)
     output$preguntas <- renderUI({
       req(preguntas_ordenadas())
       
       tagList(
         lapply(seq_along(preguntas_ordenadas()), function(i) {
-          pregunta_actual <- preguntas_ordenadas()[[i]]
-          id_input <- pregunta_actual$id_unico
+          pregunta <- preguntas_ordenadas()[[i]]
+          id_input <- pregunta$id_unico
           
           feedback_ui <- NULL
-          if (input$ver) {
+          
+          if (isTRUE(mostrar_respuestas())) {
             user_ans <- input[[id_input]]
-            correct_ans <- pregunta_actual$correcta
+            correct <- pregunta$correcta
             
-            if (!is.null(user_ans) && user_ans == correct_ans) {
+            if (!is.null(user_ans) && user_ans == correct) {
               feedback_ui <- div(class = "text-success mt-2 font-weight-bold", "✔️ ¡Correcto!")
             } else {
-              feedback_ui <- div(class = "text-danger mt-2", paste0("❌ Incorrecto. Respuesta correcta: ", correct_ans))
+              feedback_ui <- div(class = "text-danger mt-2",
+                                 paste0("❌ Incorrecto. Respuesta: ", correct))
             }
           }
           
@@ -717,10 +760,9 @@ Jerarquicos_Auto_Server <- function(id) {
             card_body(
               radioButtons(
                 session$ns(id_input),
-                pregunta_actual$texto,
-                choices = pregunta_actual$opciones,
-                selected = input[[id_input]], 
-                width = "100%"
+                pregunta$texto,
+                choices = pregunta$opciones,
+                selected = input[[id_input]]
               ),
               feedback_ui
             )
@@ -729,22 +771,21 @@ Jerarquicos_Auto_Server <- function(id) {
       )
     })
     
-    # Caja de puntuación global dinámica basada en las 10 activas
     output$score <- renderUI({
-      req(input$ver)
+      req(mostrar_respuestas())
+      
       total <- length(preguntas_ordenadas())
       
       aciertos <- sum(sapply(preguntas_ordenadas(), function(p) {
         res <- input[[p$id_unico]]
         !is.null(res) && res == p$correcta
-      }), na.rm = TRUE)
+      }))
       
-      porcentaje <- (aciertos / total) * 100
-      clase_color <- if(porcentaje >= 70) "alert-success" else "alert-warning"
+      porcentaje <- aciertos / total * 100
       
       div(
-        class = paste("alert mb-0 py-2 px-4", clase_color),
-        tags$strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
+        class = if (porcentaje >= 70) "alert alert-success" else "alert alert-warning",
+        strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
       )
     })
   })

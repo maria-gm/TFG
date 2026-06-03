@@ -28,7 +28,7 @@ library(ggsci)# paletas de color científicas
 library(bslib) #estilo
 library(shinycssloaders) # menu principal
 library(DT)
-
+library(ggdendro)
 # =====================================================
 # DATASETS DE EJEMPLO
 # =====================================================

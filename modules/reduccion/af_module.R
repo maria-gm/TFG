@@ -5,202 +5,90 @@
 # =====================================================
 #   TEORÍA
 # =====================================================
-AF_Teoria_UI <- function(id) {
+AF_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Única llamada necesaria para activar MathJax en toda la página
-    withMathJax(),
+    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
+    tags$head(
+      tags$style(HTML("
+        /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
+        .shiny-input-radiogroup, 
+        .shiny-input-radiogroup .shiny-options-group,
+        .shiny-input-radiogroup .form-check,
+        .shiny-input-radiogroup .radio {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: block !important;
+        }
+        
+        /* Asegura que la etiqueta y el texto ocupen todo el espacio del card */
+        .shiny-input-radiogroup label,
+        .shiny-input-radiogroup .form-check-label {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: inline-block !important;
+          white-space: normal !important; /* Permite saltos lógicos, no prematuros */
+          word-break: break-word !important;
+        }
+        
+        /* Ajuste por si el flexbox de Bootstrap 5 está encogiendo el texto */
+        .form-check {
+          display: flex !important;
+          align-items: center !important;
+          gap: 0.5rem;
+        }
+      "))
+    ),
     
-    tags$div(
-      style = "padding: 20px; background-color: #fcfdfe;",
-      
-      # =================================================
-      # CABECERA
-      # =================================================
-      h2(
-        "Análisis Factorial (AF)",
-        style = "font-weight: 800; color: #1a365d; margin-bottom: 5px;"
-      ),
-      
-      p(
-        "Técnica multivariante orientada a reducir la dimensionalidad e identificar factores latentes.",
-        style = "color: #64748b; font-size: 1.1rem; margin-bottom: 30px;"
-      ),
-      
-      # =================================================
-      # TARJETAS PRINCIPALES
-      # =================================================
-      bslib::layout_column_wrap(
-        width = 1/3, # Tres columnas perfectas
-        heights_equal = "row",
+    h3("Autoevaluación", 
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
+    
+    uiOutput(ns("preguntas")),
+    
+    br(),
+    
+    card(
+      class = "shadow-sm mb-4 border-0",
+      style = "background-color: #fdfdfd;",
+      card_body(
+        class = "d-flex justify-content-between align-items-center flex-wrap gap-3 py-3",
+        div(
+          class = "d-flex gap-2",
+          actionButton(ns("ver"), "👁️ Ver respuestas", class = "btn-primary"),
+          actionButton(ns("shuffle"), "🔀 Reordenar test", class = "btn-outline-primary")
+        ),
+        uiOutput(ns("score"))
+      )
+    ),
+    
+    br(),
+    
+    accordion(
+      open = FALSE,
+      class = "shadow-sm border-0",
+      accordion_panel(
+        title = "➕ Gestión: Añadir pregunta personalizada de PCA",
+        icon = icon("gear"),
         
-        # =============================================
-        # FUNDAMENTO
-        # =============================================
-        bslib::card(
-          bslib::card_header(
-            tags$b("1. Modelo factorial"),
-            style = "background: #e0e7ff;"
-          ),
-          bslib::card_body(
-            p("El modelo factorial expresa las variables observadas en función de los factores comunes y los factores únicos o específicos:"),
-            p("$$\\mathbf{X} = \\mathbf{AF} + \\mathbf{DU}$$"),
-            tags$ul(
-              style = "margin-top: 10px;",
-              tags$li("\\(\\mathbf{X}\\) : Matriz de datos de las variables observadas.", style = "margin-bottom: 6px;"),
-              tags$li("\\(\\mathbf{A}\\) : Matriz de cargas factoriales (loadings).", style = "margin-bottom: 6px;"),
-              tags$li("\\(\\mathbf{F}\\) : Matriz de los factores comunes.", style = "margin-bottom: 6px;"),
-              tags$li("\\(\\mathbf{D}\\) : Matriz de coeficientes de los factores únicos.", style = "margin-bottom: 6px;"),
-              tags$li("\\(\\mathbf{U}\\) : Matriz de los factores únicos o específicos.")
-            )
-          )
+        fluidRow(
+          column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
+          column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
+                                        choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
         ),
         
-        # =============================================
-        # INTERPRETACIÓN
-        # =============================================
-        bslib::card(
-          bslib::card_header(
-            tags$b("2. Interpretación"),
-            style = "background: #dcfce7;"
-          ),
-          bslib::card_body(
-            p("La evaluación de los resultados se fundamenta en tres pilares prácticos del espacio factorial:"),
-            tags$div(
-              style = "display: flex; flex-direction: column; gap: 12px; margin-top: 15px;",
-              tags$div(
-                style = "border-left: 4px solid #22c55e; padding-left: 10px;",
-                tags$b("Cargas altas:"), " Indican una fuerte relación lineal o asociación entre la variable original y el factor."
-              ),
-              tags$div(
-                style = "border-left: 4px solid #f59e0b; padding-left: 10px;",
-                tags$b("Comunalidades:"), " Miden la proporción de varianza de cada variable que es explicada por los factores comunes."
-              ),
-              tags$div(
-                style = "border-left: 4px solid #3b82f6; padding-left: 10px;",
-                tags$b("Factores:"), " Representan constructos o dimensiones latentes subyacentes que no son directamente observables."
-              )
-            )
-          )
+        fluidRow(
+          column(width = 3, textInput(ns("op1"), "Opción 1")),
+          column(width = 3, textInput(ns("op2"), "Opción 2")),
+          column(width = 3, textInput(ns("op3"), "Opción 3")),
+          column(width = 3, textInput(ns("op4"), "Opción 4"))
         ),
         
-        # =============================================
-        # OBJETIVOS
-        # =============================================
-        bslib::card(
-          bslib::card_header(
-            tags$b("3. Objetivos"),
-            style = "background: #fef3c7;"
-          ),
-          bslib::card_body(
-            p("Esta metodología busca simplificar matrices de datos complejas persiguiendo:"),
-            tags$ul(
-              style = "margin-top: 15px;",
-              tags$li("Reducir el número de variables reduciendo la redundancia.", style = "margin-bottom: 10px;"),
-              tags$li("Detectar estructuras y dimensiones subyacentes en los datos.", style = "margin-bottom: 10px;"),
-              tags$li("Identificar grupos homogéneos de variables relacionadas.", style = "margin-bottom: 10px;"),
-              tags$li("Facilitar la interpretación teórica de los fenómenos analizados.")
-            )
-          )
-        )
-      ),
-      
-      br(),
-      
-      # =================================================
-      # MÉTODOS EXTRACCIÓN (TFG RESUMIDO)
-      # =================================================
-      bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
-        bslib::card_body(
-          h4(
-            icon("gear"), "Estimación de factores y Ejes Principales",
-            style = "color: #1e40af; margin-bottom: 10px;"
-          ),
-          p("El objetivo es estimar la matriz de cargas factoriales \\(\\mathbf{A}\\) a partir de la matriz de correlaciones reducida \\(\\mathbf{R}^*\\) (López-Roldán & Fachelli, 2016), donde los elementos de la diagonal se sustituyen por comunalidades estimadas: \\(r_{ii} = h_i^2\\). Basado en el teorema de Thurstone, se cumple que:"),
-          p("$$\\mathbf{R}^* = \\mathbf{A}\\mathbf{A}^T$$"),
-          
-          p(tags$b("Algoritmo Iterativo de los Ejes Principales (Cuadras, 2014):")),
-          tags$ul(
-            style = "margin-top: 10px;",
-            tags$li(
-              tags$b("Paso 0 (Inicialización):"), 
-              " Se estiman las comunalidades iniciales (vía MAC o SMC) para formar \\(\\mathbf{R}^*\\) y se obtiene su descomposición espectral: \\(\\mathbf{R}^* = \\mathbf{V}\\mathbf{\\Lambda}\\mathbf{V}^T\\).",
-              style = "margin-bottom: 8px;"
-            ),
-            tags$li(
-              tags$b("Paso 1 (Primera aproximación):"), 
-              " Se calcula la matriz de cargas reducida con los \\(k\\) primeros factores: \\(\\mathbf{A}_1 = \\mathbf{V}_k\\mathbf{\\Lambda}_k^{1/2}\\). Se actualizan las comunalidades en la diagonal de la nueva matriz reducida: \\(\\mathbf{R}_1^* = \\text{diag}(\\mathbf{A}_1\\mathbf{A}_1^T) + \\mathbf{R} - \\mathbf{I}\\).",
-              style = "margin-bottom: 8px;"
-            ),
-            tags$li(
-              tags$b("Paso i (Iteración y convergencia):"), 
-              " El proceso se repite sucesivamente calculando la descomposición espectral de \\(\\mathbf{R}_i^*\\) hasta alcanzar la condición de parada: cuando las comunalidades calculadas convergen y dejen de variar significativamente respecto a la iteración previa (\\(\\mathbf{A}_i \\approx \\mathbf{A}_{i-1}\\))."
-            )
-          )
-        )
-      ),
-      
-      
-      br(),
-      
-      # =================================================
-      # ROTACIÓN
-      # =================================================
-      bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
-        bslib::card_body(
-          h4(
-            icon("rotate"), "Rotación factorial",
-            style = "color: #1e40af; margin-bottom: 10px;"
-          ),
-          p("Dado que la solución inicial no es única, la rotación transforma la matriz original de cargas factoriales para aproximarse a la estructura simple de interpretación:"),
-          p("$$\\mathbf{B} = \\mathbf{AT}$$"),
-          tags$ul(
-            style = "margin-top: 10px;",
-            tags$li(tags$b("Varimax (Ortogonal):"), " Mantiene los factores completamente perpendiculares e independientes entre sí, optimizando la interpretación al aproximar las cargas a valores extremos (cercanos a 0 o 1).")
-          )
-        )
-      ),
-      
-      br(),
-      
-      # =================================================
-      # CRITERIOS
-      # =================================================
-      bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
-        bslib::card_body(
-          h4(
-            icon("arrow-down-short-wide"), "Selección del número de factores",
-            style = "color: #1e40af; margin-bottom: 10px;"
-          ),
-          p("Determinar cuántos ejes se deben retener es una decisión crítica. El investigador debe encontrar el menor número de dimensiones capaz de conservar la máxima información posible mediante criterios generales (Mavrou, 2015):"),
-          
-          tags$ul(
-            style = "margin-top: 15px;",
-            tags$li(
-              tags$b("Criterio de Kaiser (Autovalores > 1):"), 
-              " Se seleccionan únicamente las dimensiones cuyo autovalor es superior a la unidad (\\(\\lambda_j > 1\\)). Así, cada eje explica al menos tanta variabilidad como una variable original estandarizada.",
-              style = "margin-bottom: 10px;"
-            ),
-            tags$li(
-              tags$b("Porcentaje de varianza acumulada:"), 
-              " Se fija a priori un porcentaje de variabilidad total que se desea explicar (habitualmente entre el 70% y el 80%). Se retiene el número mínimo de dimensiones necesarias para alcanzar o superar dicho umbral.",
-              style = "margin-bottom: 10px;"
-            ),
-            tags$li(
-              tags$b("Gráfico de sedimentación (Scree Plot):"), 
-              " Propuesto por Cattell (1966), representa los autovalores en orden descendente. El número de componentes se determina observando el punto de inflexión donde la pendiente se estabiliza formando un 'codo'; las componentes anteriores a este punto se consideran las relevantes."
-            )
-          )
-        )
+        actionButton(ns("add"), "Guardar pregunta en el banco de PCA", class = "btn-success btn-sm mt-2")
       )
     )
   )
 }
-
 
 AF_Teoria_Server <- function(id){
   

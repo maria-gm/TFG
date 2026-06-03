@@ -1,5 +1,5 @@
 # =====================================================================
-#  AGRUPAMIENTO - SELECTOR MAESTRO (NOTACIÓN CORREGIDA K_MEANS Y DBSCAN)
+#  AGRUPAMIENTO - SELECTOR 
 # =====================================================================
 
 Agrupamiento_UI <- function(id){
@@ -11,8 +11,8 @@ Agrupamiento_UI <- function(id){
       "Seleccione algoritmo de agrupamiento:",
       choices = c(
         "Visión General de la Familia" = "GENERAL", 
-        "Clústeres Jerárquicos" = "JERARQUICO", 
-        "K-Means" = "KMEANS", 
+        "Clústeres Jerárquicos" = "Jerarquicos", 
+        "K-Means" = "K_means", 
         "DBSCAN" = "DBSCAN"
       ),
       selected = "GENERAL"
@@ -31,7 +31,34 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     # =====================================================
-    # RENDERIZACIÓN DE MINIGRÁFICOS CONCEPTUALES
+    # 1. INSTANCIACIÓN FIJA DE SERVIDORES (FUERA DE RENDERUI)
+    # =====================================================
+    # Se inicializan una sola vez y quedan a la escucha de forma limpia e independiente
+    
+    # Servidores Jerárquicos
+    Jerarquicos_Teoria_Server("jerarquico_teoria")
+    Jerarquicos_Analisis_Server("jerarquico_analisis", 
+                                datos = reactive({ if (!is.null(datos_ok())) datos_ok() else datos_ejemplo$Jerarquicos }), 
+                                datos_ejemplo = datos_ejemplo)
+    Jerarquicos_Auto_Server("jerarquico_auto")
+    
+    # Servidores K-Means
+    K_means_Teoria_Server("kmeans_teoria")
+    K_means_Analisis_Server("kmeans_analisis", 
+                            datos = reactive({ if (!is.null(datos_ok())) datos_ok() else datos_ejemplo$K_means }), 
+                            datos_ejemplo = datos_ejemplo)
+    K_means_Auto_Server("kmeans_auto")
+    
+    # Servidores DBSCAN
+    DBSCAN_Teoria_Server("dbscan_teoria")
+    DBSCAN_Analisis_Server("dbscan_analisis", 
+                           datos = reactive({ if (!is.null(datos_ok())) datos_ok() else datos_ejemplo$DBSCAN }), 
+                           datos_ejemplo = datos_ejemplo)
+    DBSCAN_Auto_Server("dbscan_auto")
+    
+    
+    # =====================================================
+    # 2. RENDERIZACIÓN DE MINIGRÁFICOS CONCEPTUALES
     # =====================================================
     output$plot_mini_jerarquico <- renderPlot({
       par(mar = c(2, 2, 1.5, 1))
@@ -66,7 +93,7 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     # =====================================================
-    # INTERFAZ DINÁMICA CON NOTACIÓN SINCRONIZADA
+    # 3. INTERFAZ DINÁMICA (SÓLO INTERCAMBIA HTML / VISTAS)
     # =====================================================
     output$interfaz_maestra_dinamica <- renderUI({
       req(input$tecnica)
@@ -102,14 +129,8 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
         )
       }
       
-      # 2. CLÚSTERES JERÁRQUICOS (Notación: Jerarquicos_*)
-      if (input$tecnica == "JERARQUICO") {
-        Jerarquicos_Teoria_Server("jerarquico_teoria")
-        Jerarquicos_Analisis_Server("jerarquico_analisis", 
-                                    datos = reactive({ if (!is.null(datos_ok())) datos_ok() else datos_ejemplo$JERARQUICO }), 
-                                    datos_ejemplo = datos_ejemplo)
-        Jerarquicos_Auto_Server("jerarquico_auto")
-        
+      # 2. CLÚSTERES JERÁRQUICOS
+      if (input$tecnica == "Jerarquicos") {
         return(
           tabsetPanel(
             tabPanel("Teoría", Jerarquicos_Teoria_UI(ns("jerarquico_teoria"))),
@@ -119,14 +140,8 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
         )
       }
       
-      # 3. K-MEANS (Notación: K_Means_*)
-      if (input$tecnica == "KMEANS") {
-        K_means_Teoria_Server("kmeans_teoria")
-        K_means_Analisis_Server("kmeans_analisis", 
-                                datos = reactive({ if (!is.null(datos_ok())) datos_ok() else datos_ejemplo$KMEANS }), 
-                                datos_ejemplo = datos_ejemplo)
-        K_means_Auto_Server("kmeans_auto")
-        
+      # 3. K-MEANS
+      if (input$tecnica == "K_means") {
         return(
           tabsetPanel(
             tabPanel("Teoría", K_means_Teoria_UI(ns("kmeans_teoria"))),
@@ -136,14 +151,8 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
         )
       }
       
-      # 4. DBSCAN (Notación: DBSCAN_*)
+      # 4. DBSCAN
       if (input$tecnica == "DBSCAN") {
-        DBSCAN_Teoria_Server("dbscan_teoria")
-        DBSCAN_Analisis_Server("dbscan_analisis", 
-                               datos = reactive({ if (!is.null(datos_ok())) datos_ok() else datos_ejemplo$DBSCAN }), 
-                               datos_ejemplo = datos_ejemplo)
-        DBSCAN_Auto_Server("dbscan_auto")
-        
         return(
           tabsetPanel(
             tabPanel("Teoría", DBSCAN_Teoria_UI(ns("dbscan_teoria"))),
@@ -159,4 +168,3 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
     }, ignoreInit = TRUE)
   })
 }
-

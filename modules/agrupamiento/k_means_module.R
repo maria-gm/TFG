@@ -436,16 +436,13 @@ K_means_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Encabezado estilizado
     h3("Autoevaluación", 
-       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 25px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
-    # 1. Bloque dinámico donde se imprimen las preguntas del AF (ahora van primero)
     uiOutput(ns("preguntas")),
     
     br(),
     
-    # 2. Barra de acciones y puntuación 
     card(
       class = "shadow-sm mb-4 border-0",
       style = "background-color: #fdfdfd;",
@@ -462,185 +459,258 @@ K_means_Auto_UI <- function(id) {
     
     br(),
     
-    # 3. Formulario colapsable para agregar preguntas (queda al final del todo)
     accordion(
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de Análisis Factorial",
+        title = "➕ Gestión: Añadir pregunta personalizada de PCA",
         icon = icon("gear"),
+        
         fluidRow(
           column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
           column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
                                         choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
         ),
+        
         fluidRow(
           column(width = 3, textInput(ns("op1"), "Opción 1")),
           column(width = 3, textInput(ns("op2"), "Opción 2")),
           column(width = 3, textInput(ns("op3"), "Opción 3")),
           column(width = 3, textInput(ns("op4"), "Opción 4"))
         ),
-        actionButton(ns("add"), "Guardar pregunta", class = "btn-success btn-sm mt-2")
+        
+        actionButton(ns("add"), "Guardar pregunta en el banco de PCA", class = "btn-success btn-sm mt-2")
       )
     )
   )
 }
-
 K_means_Auto_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
-    # BANCO CORREGIDO, COMPLETADO Y EXTENDIDO A 15 PREGUNTAS DE K-MEANS
+    mostrar_respuestas <- reactiveVal(FALSE)
+    mostrar_respuestas <- reactiveVal(FALSE)
+    
+    observeEvent(input$ver, {
+      mostrar_respuestas(!mostrar_respuestas())
+      
+      updateActionButton(
+        session,
+        "ver",
+        label = if (mostrar_respuestas()) "🙈 Ocultar respuestas" else "👁️ Ver respuestas"
+      )
+    })
     preguntas_base <- list(
+      list( texto = "¿Cuál es el objetivo principal del K-means?", opciones = c("Agrupar observaciones minimizando la varianza dentro de cada cluster", "Calcular la matriz de cargas factoriales", "Predecir una variable continua dependiente", "Encontrar las componentes de máxima varianza"), correcta = "Agrupar observaciones minimizando la varianza dentro de cada cluster" ),
       list(
-        texto = "¿Cuál es el objetivo principal del K-means?",
-        opciones = c("a) Agrupar observaciones minimizando la varianza dentro de cada cluster", "b) Calcular la matriz de cargas factoriales", "c) Predecir una variable continua dependiente", "d) Encontrar las componentes de máxima varianza"),
-        correcta = "a) Agrupar observaciones minimizando la varianza dentro de cada cluster"
-      ),
-      list(
-        texto = "¿Qué representa la 'K' en el algoritmo K-means?",
-        opciones = c("a) El número de iteraciones máximas", "b) El número predefinido de clusters que se desean obtener", "c) La distancia máxima permitida entre clusters", "d) El coeficiente de correlación de los datos"),
-        correcta = "b) El número predefinido de clusters que se desean obtener"
+        texto = "¿Qué representa la 'K' en el algoritmo K-means?", opciones = c("El número de iteraciones máximas",  "El número predefinido de clusters que se desean obtener", "La distancia máxima permitida entre clusters", "El coeficiente de correlación de los datos"
+        ),
+        correcta = "El número predefinido de clusters que se desean obtener"
       ),
       list(
         texto = "¿Cómo se visualizan habitualmente los resultados de K-means con muchas variables?",
-        opciones = c("a) Mediante un dendrograma jerárquico", "b) Proyectando los clusters en el plano de las dos primeras componentes principales (PCA)", "c) Utilizando únicamente tablas de contingencia", "d) Mediante una matriz identidad de confusión"),
-        correcta = "b) Proyectando los clusters en el plano de las dos primeras componentes principales (PCA)"
+        opciones = c(
+          "Mediante un dendrograma jerárquico", 
+          "Proyectando los clusters en el plano de las dos primeras componentes principales (PCA)", 
+          "Utilizando únicamente tablas de contingencia", 
+          "Mediante una matriz identidad de confusión"
+        ),
+        correcta = "Proyectando los clusters en el plano de las dos primeras componentes principales (PCA)"
       ),
       list(
         texto = "¿Cómo se suele obtener el número 'K' óptimo de clusters?",
-        opciones = c("a) Usando el método del codo (Elbow method) o la anchura de silueta", "b) Calculando el P-valor de una prueba ANOVA", "c) Extrayendo únicamente los autovalores mayores que 1", "d) Probando todas las combinaciones posibles hasta infinito"),
-        correcta = "a) Usando el método del codo (Elbow method) o la anchura de silueta"
+        opciones = c(
+          "Usando el método del codo (Elbow method) o la anchura de silueta", 
+          "Calculando el P-valor de una prueba ANOVA", 
+          "Extrayendo únicamente los autovalores mayores que 1", 
+          "Probando todas las combinaciones posibles hasta infinito"
+        ),
+        correcta = "Usando el método del codo (Elbow method) o la anchura de silueta"
       ),
       list(
         texto = "¿Qué propiedad cumplen los puntos asignados a un mismo cluster en K-means?",
-        opciones = c("a) Están más cerca del centroide de su propio cluster que de cualquier otro centroide", "b) Presentan una correlación exactamente lineal con el origen", "c) Tienen todos la misma varianza e idénticos valores originales", "d) Son linealmente independientes de los centroides"),
-        correcta = "a) Están más cerca del centroide de su propio cluster que de cualquier otro centroide"
+        opciones = c(
+          "Están más cerca del centroide de su propio cluster que de cualquier otro centroide", 
+          "Presentan una correlación exactamente lineal con el origen", 
+          "Tienen todos la misma varianza e idénticos valores originales", 
+          "Son linealmente independientes de los centroides"
+        ),
+        correcta = "Están más cerca del centroide de su propio cluster que de cualquier otro centroide"
       ),
       list(
         texto = "En un algoritmo de clustering basado en densidad como DBSCAN existe un punto núcleo 'p'. ¿Cómo se diferencian K-means y DBSCAN respecto a la noción de vecindad de un punto?",
-        opciones = c("a) K-means asume clusters de formas arbitrarias basados en densidad y DBSCAN formas esféricas", "b) K-means asigna puntos al centroide más cercano (partición global) y DBSCAN se basa en vecindades locales de radio Épsilon", "c) No hay ninguna diferencia, ambos calculan centroides obligatoriamente", "d) K-means requiere que todos los puntos del cluster se encuentren dentro del radio Épsilon de 'p'"),
-        correcta = "b) K-means asigna puntos al centroide más cercano (partición global) y DBSCAN se basa en vecindades locales de radio Épsilon"
+        opciones = c(
+          "K-means asume clusters de formas arbitrarias basados en densidad y DBSCAN formas esféricas", 
+          "K-means asigna puntos al centroide más cercano (partición global) y DBSCAN se basa en vecindades locales de radio Épsilon", 
+          "No hay ninguna diferencia, ambos calculan centroides obligatoriamente", 
+          "K-means requiere que todos los puntos del cluster se encuentren dentro del radio Épsilon de 'p'"
+        ),
+        correcta = "K-means asigna puntos al centroide más cercano (partición global) y DBSCAN se basa en vecindades locales de radio Épsilon"
       ),
       list(
         texto = "¿A qué tipo de familias de algoritmos pertenece K-means?",
-        opciones = c("a) Algoritmos jerárquicos divisivos", "b) Algoritmos de particionamiento no jerárquico", "c) Algoritmos de aprendizaje supervisado", "d) Modelos probabilísticos factoriales"),
-        correcta = "b) Algoritmos de particionamiento no jerárquico"
+        opciones = c(
+          "Algoritmos jerárquicos divisivos", 
+          "Algoritmos de particionamiento no jerárquico", 
+          "Algoritmos de aprendizaje supervisado", 
+          "Modelos probabilísticos factoriales"
+        ),
+        correcta = "Algoritmos de particionamiento no jerárquico"
       ),
       list(
         texto = "¿Qué es el centroide en el contexto de K-means?",
-        opciones = c("a) El punto más alejado del conjunto de datos", "b) El vector de medias de las variables para las observaciones asignadas a ese cluster", "c) El error estándar residual acumulado", "d) El primer autovector calculado mediante SVD"),
-        correcta = "b) El vector de medias de las variables para las observaciones asignadas a ese cluster"
+        opciones = c(
+          "El punto más alejado del conjunto de datos", 
+          "El vector de medias de las variables para las observaciones asignadas a ese cluster", 
+          "El error estándar residual acumulado", 
+          "El primer autovector calculado mediante SVD"
+        ),
+        correcta = "El vector de medias de las variables para las observaciones asignadas a ese cluster"
       ),
       list(
         texto = "¿Qué problema puede surgir debido a la inicialización aleatoria de los centroides en K-means?",
-        opciones = c("a) Que el algoritmo nunca llegue a converger", "b) Que los resultados dependan de la semilla inicial y se caiga en un mínimo local", "c) Que las variables se estandaricen automáticamente de forma errónea", "d) Que el número K cambie dinámicamente a mitad del proceso"),
-        correcta = "b) Que los resultados dependan de la semilla inicial y se caiga en un mínimo local"
+        opciones = c(
+          "Que el algoritmo nunca llegue a converger", 
+          "Que los resultados dependan de la semilla inicial y se caiga en un mínimo local", 
+          "Que las variables se estandaricen automáticamente de forma errónea", 
+          "Que el número K cambie dinámicamente a mitad del proceso"
+        ),
+        correcta = "Que los resultados dependan de la semilla inicial y se caiga en un mínimo local"
       ),
       list(
         texto = "¿Por qué es fundamental estandarizar las variables antes de aplicar K-means?",
-        opciones = c("a) Para evitar que las variables con magnitudes o escalas más grandes dominen el cálculo de las distancias", "b) Para transformar todas las variables en categóricas", "c) Porque el algoritmo solo funciona con datos distribuidos de forma normal perfecta", "d) Para reducir la dimensionalidad eliminando variables"),
-        correcta = "a) Para evitar que las variables con magnitudes o escalas más grandes dominen el cálculo de las distancias"
+        opciones = c(
+          "Para evitar que las variables con magnitudes o escalas más grandes dominen el cálculo de las distancias", 
+          "Para transformar todas las variables en categóricas", 
+          "Porque el algoritmo solo funciona con datos distribuidos de forma normal perfecta", 
+          "Para reducir la dimensionalidad eliminando variables"
+        ),
+        correcta = "Para evitar que las variables con magnitudes o escalas más grandes dominen el cálculo de las distancias"
       ),
-      # 5 PREGUNTAS MÁS PARA COMPLETAR EL BANCO DE 15
       list(
         texto = "¿Qué métrica de distancia utiliza de forma estándar el algoritmo clásico de K-means?",
-        opciones = c("a) Distancia de Manhattan", "b) Distancia Euclídea", "c) Distancia de Mahalanobis", "d) Distancia de Jaccard"),
-        correcta = "b) Distancia Euclídea"
+        opciones = c(
+          "Distancia de Manhattan", 
+          "Distancia Euclídea", 
+          "Distancia de Mahalanobis", 
+          "Distancia de Jaccard"
+        ),
+        correcta = "Distancia Euclídea"
       ),
       list(
         texto = "¿Cómo se comporta K-means ante la presencia de valores atípicos (outliers)?",
-        opciones = c("a) Es muy sensible, ya que los outliers pueden distorsionar fuertemente la posición de los centroides", "b) Es completamente inmune y los ignora de manera automática", "c) Los agrupa a todos en un cluster especial llamado 'K-medio'", "d) Los transforma en la media general de los datos"),
-        correcta = "a) Es muy sensible, ya que los outliers pueden distorsionar fuertemente la posición de los centroides"
+        opciones = c(
+          "Es muy sensible, ya que los outliers pueden distorsionar fuertemente la posición de los centroides", 
+          "Es completamente inmune y los ignora de manera automática", 
+          "Los agrupa a todos en un cluster especial llamado 'K-medio'", 
+          "Los transforma en la media general de los datos"
+        ),
+        correcta = "Es muy sensible, ya que los outliers pueden distorsionar fuertemente la posición de los centroides"
       ),
       list(
         texto = "¿Cuándo se detiene (converge) el proceso iterativo de K-means?",
-        opciones = c("a) Cuando se alcanza el número de factores solicitado por Kaiser", "b) Cuando las asignaciones de los puntos a los clusters ya no cambian o se llega al límite de iteraciones", "c) Cuando la varianza total explicada llega exactamente al 100%", "d) Cuando la distancia entre todos los centroides es igual a cero"),
-        correcta = "b) When las asignaciones de los puntos a los clusters ya no cambian o se llega al límite de iteraciones"
+        opciones = c(
+          "Cuando se alcanza el número de factores solicitado por Kaiser", 
+          "Cuando las asignaciones de los puntos a los clusters ya no cambian o se llega al límite de iteraciones", 
+          "Cuando la varianza total explicada llega exactamente al 100%", 
+          "Cuando la distancia entre todos los centroides es igual a cero"
+        ),
+        correcta = "Cuando las asignaciones de los puntos a los clusters ya no cambian o se llega al límite de iteraciones"
       ),
       list(
         texto = "¿Para qué tipo de formas de clusters funciona mejor K-means?",
-        opciones = c("a) Clusters con formas alargadas o de luna contorneada", "b) Clusters compactos y de forma aproximadamente esférica", "c) Estructuras de datos puramente jerárquicas anidadas", "d) Agrupaciones basadas estrictamente en densidades locales lineales"),
-        correcta = "b) Clusters compactos y de forma aproximadamente esférica"
+        opciones = c(
+          "Clusters con formas alargadas o de luna contorneada", 
+          "Clusters compactos y de forma aproximadamente esférica", 
+          "Estructuras de datos puramente jerárquicas anidadas", 
+          "Agrupaciones basadas estrictamente en densidades locales lineales"
+        ),
+        correcta = "Clusters compactos y de forma aproximadamente esférica"
       ),
       list(
         texto = "¿Qué mide la 'Inercia' (Within-cluster sum-of-squares) devuelta por K-means?",
-        opciones = c("a) La suma de las distancias al cuadrado de cada punto al centroide de su cluster asignado", "b) La distancia de separación que existe entre los centroides de los clusters", "c) El número total de observaciones mal clasificadas en el dataset", "d) La correlación global promedio entre todas las variables del estudio"),
-        correcta = "a) La suma de las distancias al cuadrado de cada punto al centroide de su cluster asignado"
+        opciones = c(
+          "La suma de las distancias al cuadrado de cada punto al centroide de su cluster asignado", 
+          "La distancia de separación que existe entre los centroides de los clusters", 
+          "El número total de observaciones mal clasificadas en el dataset", 
+          "La correlación global promedio entre todas las variables del estudio"
+        ),
+        correcta = "La suma de las distancias al cuadrado de cada punto al centroide de su cluster asignado"
       )
     )
+    
     
     preguntas_usuario <- reactiveVal(list())
     
     observeEvent(input$add, {
       req(input$nueva_pregunta, input$op1, input$op2, input$op3, input$op4)
+      
       nueva <- list(
         texto = input$nueva_pregunta,
         opciones = c(input$op1, input$op2, input$op3, input$op4),
-        correcta = c(input$op1, input$op2, input$op3, input$op4)[match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))]
+        correcta = c(input$op1, input$op2, input$op3, input$op4)[
+          match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))
+        ]
       )
+      
       preguntas_usuario(c(preguntas_usuario(), list(nueva)))
     })
     
-    todas_preguntas <- reactive({
+    preguntas <- reactive({
       c(preguntas_base, preguntas_usuario())
     })
     
     preguntas_ordenadas <- reactiveVal(NULL)
     
-    # Selección inicial aleatoria de exactamente 10 preguntas (Aislada contra bucles)
     observe({
-      lista_actual <- todas_preguntas()
-      lista_enriquecida <- lapply(seq_along(lista_actual), function(idx) {
-        p <- lista_actual[[idx]]
-        # Prefijo km_q_ específico para la sección de K-means
-        p$id_unico <- paste0("km_q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
         p
       })
       
       if (is.null(isolate(preguntas_ordenadas()))) {
-        n_mostrar <- min(10, length(lista_enriquecida))
-        muestra_inicial <- sample(lista_enriquecida, n_mostrar)
-        preguntas_ordenadas(muestra_inicial)
+        preguntas_ordenadas(sample(lista_enriquecida, min(10, length(lista_enriquecida))))
       }
     })
     
-    # Reordenación controlada de 10 preguntas con mezcla interna de alternativas
     observeEvent(input$shuffle, {
-      lista_actual <- todas_preguntas()
-      lista_enriquecida <- lapply(seq_along(lista_actual), function(idx) {
-        p <- lista_actual[[idx]]
-        p$id_unico <- paste0("km_q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
         p
       })
       
-      n_mostrar <- min(10, length(lista_enriquecida))
-      nuevas <- sample(lista_enriquecida, n_mostrar)
+      nuevas <- sample(lista_enriquecida, min(10, length(lista_enriquecida)))
       
       nuevas <- lapply(nuevas, function(p) {
         p$opciones <- sample(p$opciones)
         p
       })
+      
       preguntas_ordenadas(nuevas)
     })
     
-    # RENDER ÚNICO: Tarjetas y feedback por ID inmutable (Sin alertas de no respondido)
     output$preguntas <- renderUI({
       req(preguntas_ordenadas())
       
       tagList(
         lapply(seq_along(preguntas_ordenadas()), function(i) {
-          pregunta_actual <- preguntas_ordenadas()[[i]]
-          id_input <- pregunta_actual$id_unico
+          pregunta <- preguntas_ordenadas()[[i]]
+          id_input <- pregunta$id_unico
           
           feedback_ui <- NULL
-          if (input$ver) {
+          
+          if (isTRUE(mostrar_respuestas())) {
             user_ans <- input[[id_input]]
-            correct_ans <- pregunta_actual$correcta
+            correct <- pregunta$correcta
             
-            if (!is.null(user_ans) && user_ans == correct_ans) {
+            if (!is.null(user_ans) && user_ans == correct) {
               feedback_ui <- div(class = "text-success mt-2 font-weight-bold", "✔️ ¡Correcto!")
             } else {
-              feedback_ui <- div(class = "text-danger mt-2", paste0("❌ Incorrecto. Respuesta correcta: ", correct_ans))
+              feedback_ui <- div(class = "text-danger mt-2",
+                                 paste0("❌ Incorrecto. Respuesta: ", correct))
             }
           }
           
@@ -650,10 +720,9 @@ K_means_Auto_Server <- function(id) {
             card_body(
               radioButtons(
                 session$ns(id_input),
-                pregunta_actual$texto,
-                choices = pregunta_actual$opciones,
-                selected = input[[id_input]], 
-                width = "100%"
+                pregunta$texto,
+                choices = pregunta$opciones,
+                selected = input[[id_input]]
               ),
               feedback_ui
             )
@@ -662,22 +731,21 @@ K_means_Auto_Server <- function(id) {
       )
     })
     
-    # Caja de puntuación global dinámica basada en las 10 activas
     output$score <- renderUI({
-      req(input$ver)
+      req(mostrar_respuestas())
+      
       total <- length(preguntas_ordenadas())
       
       aciertos <- sum(sapply(preguntas_ordenadas(), function(p) {
         res <- input[[p$id_unico]]
         !is.null(res) && res == p$correcta
-      }), na.rm = TRUE)
+      }))
       
-      porcentaje <- (aciertos / total) * 100
-      clase_color <- if(porcentaje >= 70) "alert-success" else "alert-warning"
+      porcentaje <- aciertos / total * 100
       
       div(
-        class = paste("alert mb-0 py-2 px-4", clase_color),
-        tags$strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
+        class = if (porcentaje >= 70) "alert alert-success" else "alert alert-warning",
+        strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
       )
     })
   })
