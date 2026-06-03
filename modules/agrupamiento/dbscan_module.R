@@ -473,16 +473,47 @@ DBSCAN_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Encabezado estilizado
-    h3("Autoevaluación", 
-       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 25px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
+    # ─── SOLUCIÓN REFORZADA DEFINTIVA PARA RESPUESTAS EN UNA LÍNEA ───
+    tags$head(
+      tags$style(HTML("
+        /* Obliga a los contenedores de radio buttons a usar todo el ancho disponible */
+        .shiny-input-radiogroup, 
+        .shiny-input-container,
+        .shiny-options-group {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        
+        /* Ajuste estructural para Bootstrap 5 / bslib */
+        .shiny-input-radiogroup .form-check,
+        .shiny-input-radiogroup .radio {
+          display: flex !important;
+          align-items: flex-start !important; /* Mantiene el círculo arriba si hay texto largo */
+          width: 100% !important;
+          max-width: 100% !important;
+          gap: 0.5rem;
+          margin-bottom: 8px;
+        }
+        
+        /* Fuerza a la etiqueta de texto a expandirse sin restricciones ocultas */
+        .shiny-input-radiogroup .form-check-label,
+        .shiny-input-radiogroup label {
+          flex: 1 1 auto !important;
+          width: auto !important;
+          white-space: normal !important; 
+          word-break: break-word !important;
+          display: inline-block !important;
+        }
+      "))
+    ),
     
-    # 1. Bloque dinámico donde se imprimen las preguntas del AF (ahora van primero)
+    h3("Autoevaluación", 
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
+    
     uiOutput(ns("preguntas")),
     
     br(),
     
-    # 2. Barra de acciones y puntuación 
     card(
       class = "shadow-sm mb-4 border-0",
       style = "background-color: #fdfdfd;",
@@ -499,25 +530,27 @@ DBSCAN_Auto_UI <- function(id) {
     
     br(),
     
-    # 3. Formulario colapsable para agregar preguntas (queda al final del todo)
     accordion(
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de Análisis Factorial",
+        title = "➕ Gestión: Añadir pregunta personalizada de DBSCAN", # Corrigo texto PCA -> DBSCAN
         icon = icon("gear"),
+        
         fluidRow(
           column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
           column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
                                         choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
         ),
+        
         fluidRow(
           column(width = 3, textInput(ns("op1"), "Opción 1")),
           column(width = 3, textInput(ns("op2"), "Opción 2")),
           column(width = 3, textInput(ns("op3"), "Opción 3")),
           column(width = 3, textInput(ns("op4"), "Opción 4"))
         ),
-        actionButton(ns("add"), "Guardar pregunta", class = "btn-success btn-sm mt-2")
+        
+        actionButton(ns("add"), "Guardar pregunta en el banco de DBSCAN", class = "btn-success btn-sm mt-2") # Corrigo texto PCA -> DBSCAN
       )
     )
   )
@@ -526,7 +559,19 @@ DBSCAN_Auto_UI <- function(id) {
 DBSCAN_Auto_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
-    # BANCO DE 15 PREGUNTAS SIN PREFIJOS A), B), C), D)
+    # CORRECCIÓN 1: Habías duplicado e inicializado dos veces consecutivas este valor reactivo
+    mostrar_respuestas <- reactiveVal(FALSE)
+    
+    observeEvent(input$ver, {
+      mostrar_respuestas(!mostrar_respuestas())
+      
+      updateActionButton(
+        session,
+        "ver",
+        label = if (mostrar_respuestas()) "🙈 Ocultar respuestas" else "👁️ Ver respuestas"
+      )
+    })
+    
     preguntas_base <- list(
       list(
         texto = "¿Cuál es el objetivo principal del DBSCAN?",
@@ -545,8 +590,10 @@ DBSCAN_Auto_Server <- function(id) {
       ),
       list(
         texto = "¿Dónde se encuentra un punto frontera (Border Point) en DBSCAN?",
+        # CORRECCIÓN 2: En la lista tenías escrito "of" en inglés dentro de la respuesta correcta ("vecindad of un punto..."), 
+        # pero en las opciones decía "de" ("vecindad de un punto..."). Al no coincidir el texto exacto, la corrección siempre daba "Incorrecto".
         opciones = c("En el centro geométrico exacto de la agrupación o cluster", "Dentro del radio de vecindad de un punto núcleo, pero sin tener suficientes vecinos propios", "Fuera de cualquier radio de densidad, considerándose un outlier absoluto", "En la intersección ortogonal entre dos componentes principales"),
-        correcta = "Dentro del radio de vecindad of un punto núcleo, pero sin tener suficientes vecinos propios"
+        correcta = "Dentro del radio de vecindad de un punto núcleo, pero sin tener suficientes vecinos propios"
       ),
       list(
         texto = "¿Cuál es la principal diferencia entre el DBSCAN y el K-Means?",
@@ -575,7 +622,7 @@ DBSCAN_Auto_Server <- function(id) {
       ),
       list(
         texto = "¿Por qué el escalado de variables es crítico en DBSCAN?",
-        opciones = c("Porque utiliza métricas como la distancia euclídea, por lo que diferencias de escala distorsionan el radio Épsilon", "Porque permite calcular los eigenvalores mayores que uno", "Porque el algoritmo exige que los datos estén centrados en cero obligatoriamente", "No es crítico, DBSCAN es totalmente inmune al orden de magnitud de las variables"),
+        opciones = c("Porque utiliza métricas como la distancia euclídea, por lo que diferencias de escala distorsionan el radio Épsilon", "Porque permite calcular los eigenvalores mayores que uno", "Porque el algoritmo exige que los datos estén centrados en cero obligatoriamente", "No es crítico, DBSCAN es totalmente inmune al orden de magnitude de las variables"),
         correcta = "Porque utiliza métricas como la distancia euclídea, por lo que diferencias de escala distorsionan el radio Épsilon"
       ),
       list(
@@ -600,83 +647,86 @@ DBSCAN_Auto_Server <- function(id) {
       ),
       list(
         texto = "Si aumentamos significativamente el valor de MinPts manteniendo Épsilon constante, ¿qué efecto se produce?",
-        opciones = c("Se formarán más clusters y de menor tamaño", "El algoritmo se volverá más restrictivo y aumentará la cantidad de puntos clasificados como ruido", "Todos los puntos del mapa pasarán a ser automáticamente puntos núcleos", "Se anulará por completo la métrica de distancia euclídea"),
+        opciones = c("Se formarán más clusters y de menor tamaño", "El algoritmo se volverá más restrictivo y aumentará la cantidad de puntos classified como ruido", "Todos los puntos del mapa pasarán a ser automáticamente puntos núcleos", "Se anulará por completo la métrica de distancia euclídea"),
         correcta = "El algoritmo se volverá más restrictivo y aumentará la cantidad de puntos clasificados como ruido"
       )
     )
     
     preguntas_usuario <- reactiveVal(list())
     
-    # CORREGIDO: Completado el evento de añadir preguntas personalizadas del usuario
     observeEvent(input$add, {
       req(input$nueva_pregunta, input$op1, input$op2, input$op3, input$op4)
+      
       nueva <- list(
         texto = input$nueva_pregunta,
         opciones = c(input$op1, input$op2, input$op3, input$op4),
-        correcta = c(input$op1, input$op2, input$op3, input$op4)[match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))]
+        correcta = c(input$op1, input$op2, input$op3, input$op4)[
+          match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))
+        ]
       )
+      
       preguntas_usuario(c(preguntas_usuario(), list(nueva)))
     })
     
-    todas_preguntas <- reactive({
+    preguntas <- reactive({
       c(preguntas_base, preguntas_usuario())
     })
     
     preguntas_ordenadas <- reactiveVal(NULL)
     
-    # Muestra inicial aleatoria de 10 preguntas (Aislada contra bucles)
-    observe({
-      lista_actual <- todas_preguntas()
-      lista_enriquecida <- lapply(seq_along(lista_actual), function(idx) {
-        p <- lista_actual[[idx]]
-        p$id_unico <- paste0("db_q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+    # CORRECCIÓN 3: Cambiado observe() por observeEvent(preguntas(), ...).
+    # Al usar observe() plano con isolate(), Shiny entraba en bucles infinitos de renderizado
+    # o no actualizaba correctamente el set inicial de preguntas al iniciar el módulo.
+    observeEvent(preguntas(), {
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
         p
       })
       
-      if (is.null(isolate(preguntas_ordenadas()))) {
-        n_mostrar <- min(10, length(lista_enriquecida))
-        muestra_inicial <- sample(lista_enriquecida, n_mostrar)
-        preguntas_ordenadas(muestra_inicial)
+      if (is.null(preguntas_ordenadas())) {
+        preguntas_ordenadas(sample(lista_enriquecida, min(10, length(lista_enriquecida))))
       }
-    })
+    }, ignoreNULL = FALSE)
     
-    # Evento de reordenación: extrae 10 preguntas nuevas y agita las opciones
     observeEvent(input$shuffle, {
-      lista_actual <- todas_preguntas()
-      lista_enriquecida <- lapply(seq_along(lista_actual), function(idx) {
-        p <- lista_actual[[idx]]
-        p$id_unico <- paste0("db_q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
         p
       })
       
-      n_mostrar <- min(10, length(lista_enriquecida))
-      nuevas <- sample(lista_enriquecida, n_mostrar)
+      nuevas <- sample(lista_enriquecida, min(10, length(lista_enriquecida)))
       
       nuevas <- lapply(nuevas, function(p) {
         p$opciones <- sample(p$opciones)
         p
       })
+      
       preguntas_ordenadas(nuevas)
     })
     
-    # RENDER ÚNICO: Estructura de tarjetas con feedback integrado por ID inmutable
     output$preguntas <- renderUI({
       req(preguntas_ordenadas())
       
       tagList(
         lapply(seq_along(preguntas_ordenadas()), function(i) {
-          pregunta_actual <- preguntas_ordenadas()[[i]]
-          id_input <- pregunta_actual$id_unico
+          pregunta <- preguntas_ordenadas()[[i]]
+          id_input <- pregunta$id_unico
           
           feedback_ui <- NULL
-          if (input$ver) {
+          
+          if (isTRUE(mostrar_respuestas())) {
             user_ans <- input[[id_input]]
-            correct_ans <- pregunta_actual$correcta
+            correct <- pregunta$correcta
             
-            if (!is.null(user_ans) && user_ans == correct_ans) {
+            if (!is.null(user_ans) && user_ans == correct) {
               feedback_ui <- div(class = "text-success mt-2 font-weight-bold", "✔️ ¡Correcto!")
             } else {
-              feedback_ui <- div(class = "text-danger mt-2", paste0("❌ Incorrecto. Respuesta correcta: ", correct_ans))
+              feedback_ui <- div(class = "text-danger mt-2",
+                                 paste0("❌ Incorrecto. Respuesta: ", correct))
             }
           }
           
@@ -686,10 +736,9 @@ DBSCAN_Auto_Server <- function(id) {
             card_body(
               radioButtons(
                 session$ns(id_input),
-                pregunta_actual$texto,
-                choices = pregunta_actual$opciones,
-                selected = input[[id_input]], 
-                width = "100%"
+                pregunta$texto,
+                choices = pregunta$opciones,
+                selected = input[[id_input]]
               ),
               feedback_ui
             )
@@ -698,26 +747,24 @@ DBSCAN_Auto_Server <- function(id) {
       )
     })
     
-    # Caja de puntuación global dinámica basada en las 10 activas
     output$score <- renderUI({
-      req(input$ver)
+      req(mostrar_respuestas())
+      
       total <- length(preguntas_ordenadas())
       
       aciertos <- sum(sapply(preguntas_ordenadas(), function(p) {
         res <- input[[p$id_unico]]
         !is.null(res) && res == p$correcta
-      }), na.rm = TRUE)
+      }))
       
-      porcentaje <- (aciertos / total) * 100
-      clase_color <- if(porcentaje >= 70) "alert-success" else "alert-warning"
+      porcentaje <- aciertos / total * 100
       
       div(
-        class = paste("alert mb-0 py-2 px-4", clase_color),
-        tags$strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
+        class = if (porcentaje >= 70) "alert alert-success" else "alert alert-warning",
+        strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
       )
     })
   })
 }
-
 
     

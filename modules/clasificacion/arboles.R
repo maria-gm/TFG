@@ -668,20 +668,50 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
 # -------------------------------
 # AUTOEVALUACION
 # -------------------------------
+
 Arboles_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Encabezado estilizado
-    h3("Autoevaluación", 
-       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 25px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
+    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
+    tags$head(
+      tags$style(HTML("
+        /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
+        .shiny-input-radiogroup, 
+        .shiny-input-radiogroup .shiny-options-group,
+        .shiny-input-radiogroup .form-check,
+        .shiny-input-radiogroup .radio {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: block !important;
+        }
+        
+        /* Asegura que la etiqueta y el texto ocupen todo el espacio del card */
+        .shiny-input-radiogroup label,
+        .shiny-input-radiogroup .form-check-label {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: inline-block !important;
+          white-space: normal !important; /* Permite saltos lógicos, no prematuros */
+          word-break: break-word !important;
+        }
+        
+        /* Ajuste por si el flexbox de Bootstrap 5 está encogiendo el texto */
+        .form-check {
+          display: flex !important;
+          align-items: center !important;
+          gap: 0.5rem;
+        }
+      "))
+    ),
     
-    # 1. Bloque dinámico donde se imprimen las preguntas del AF (ahora van primero)
+    h3("Autoevaluación", 
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
+    
     uiOutput(ns("preguntas")),
     
     br(),
     
-    # 2. Barra de acciones y puntuación 
     card(
       class = "shadow-sm mb-4 border-0",
       style = "background-color: #fdfdfd;",
@@ -698,25 +728,27 @@ Arboles_Auto_UI <- function(id) {
     
     br(),
     
-    # 3. Formulario colapsable para agregar preguntas (queda al final del todo)
     accordion(
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de Análisis Factorial",
+        title = "➕ Gestión: Añadir pregunta personalizada de PCA",
         icon = icon("gear"),
+        
         fluidRow(
           column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
           column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
                                         choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
         ),
+        
         fluidRow(
           column(width = 3, textInput(ns("op1"), "Opción 1")),
           column(width = 3, textInput(ns("op2"), "Opción 2")),
           column(width = 3, textInput(ns("op3"), "Opción 3")),
           column(width = 3, textInput(ns("op4"), "Opción 4"))
         ),
-        actionButton(ns("add"), "Guardar pregunta", class = "btn-success btn-sm mt-2")
+        
+        actionButton(ns("add"), "Guardar pregunta en el banco de PCA", class = "btn-success btn-sm mt-2")
       )
     )
   )
@@ -725,83 +757,182 @@ Arboles_Auto_UI <- function(id) {
 Arboles_Auto_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
+    mostrar_respuestas <- reactiveVal(FALSE)
+    
+    observeEvent(input$ver, {
+      mostrar_respuestas(!mostrar_respuestas())
+      
+      updateActionButton(
+        session,
+        "ver",
+        label = if (mostrar_respuestas()) "🙈 Ocultar respuestas" else "👁️ Ver respuestas"
+      )
+    })
+    
     preguntas_base <- list(
       list(
-        texto = "¿Qué representa la matriz A?",
-        opciones = c("a) Matriz de datos originales", "b) Matriz de cargas factoriales", "c) Matriz de covarianzas", "d) Matriz identidad"),
-        correcta = "b) Matriz de cargas factoriales"
-      ),
-      list(
-        texto = "¿Cuál es el objetivo principal del análisis factorial?",
-        opciones = c("a) Reducir dimensionalidad explicando la covarianza entre variables", "b) Clasificar observaciones", "c) Calcular medias", "d) Eliminar variables"),
-        correcta = "a) Reducir dimensionalidad explicando la covarianza entre variables"
-      ),
-      list(
-        texto = "¿Qué son los factores comunes?",
-        opciones = c("a) Variables observadas", "b) Factores no observados que explican la correlación", "c) Errores aleatorios", "d) Variables dependientes"),
-        correcta = "b) Factores no observados que explican la correlación"
-      ),
-      list(
-        texto = "¿En qué se diferencian los factores comunes de los únicos?",
-        opciones = c("a) Los únicos son observables", "b) Los comunes explican covarianza y los únicos son específicos/errores", "c) No hay diferencia", "d) Los comunes son aleatorios"),
-        correcta = "b) Los comunes explican covarianza y los únicos son específicos/errores"
-      ),
-      list(
-        texto = "¿Por qué se rota la matriz factorial?",
-        opciones = c("a) Para aumentar la interpretabilidad", "b) Para reducir variables", "c) Para calcular medias", "d) Para eliminar factores"),
-        correcta = "a) Para aumentar la interpretabilidad"
-      ),
-      list(
-        texto = "Si los factores están incorrelados, ¿qué tipo de rotación se usa?",
-        opciones = c("a) Oblícua", "b) Varimax (ortogonal)", "c) Promax", "d) Quartimax"),
-        correcta = "b) Varimax (ortogonal)"
-      ),
-      list(
-        texto = "¿Qué significa la comunalidad de una variable?",
-        opciones = c("a) Varianza total de la variable", "b) Proporción de varianza explicada por los factores", "c) Media de la variable", "d) Error de medición"),
-        correcta = "b) Proporción de varianza explicada por los factores"
-      ),
-      list(
-        texto = "¿Qué diferencia hay entre AF exploratorio y confirmatorio?",
-        opciones = c("a) No hay diferencia", "b) El exploratorio busca estructura y el confirmatorio la valida", "c) Uno usa PCA y otro no", "d) Uno es supervisado"),
-        correcta = "b) El exploratorio busca estructura y el confirmatorio la valida"
-      ),
-      list(
-        texto = "¿Qué indica una carga factorial alta?",
-        opciones = c("a) Baja relación con el factor", "b) Alta relación entre variable y factor", "c) Error alto", "d) Independencia"),
-        correcta = "b) Alta relación entre variable y factor"
-      ),
-      list(
-        texto = "¿Qué criterio se usa para decidir el número de factores?",
-        opciones = c("a) Regla de Kaiser (eigenvalores > 1)", "b) Media de variables", "c) Tamaño de la muestra", "d) Varianza mínima"),
-        correcta = "a) Regla de Kaiser (eigenvalores > 1)"
+        texto = "¿Qué son los árboles de decisión?",
+        opciones = c(
+          "Modelos predictivos que generan reglas jerárquicas para clasificar o predecir",
+          "Técnicas de reducción de dimensionalidad",
+          "Métodos para calcular correlaciones",
+          "Modelos basados exclusivamente en regresión lineal"
+        ),
+        correcta = "Modelos predictivos que generan reglas jerárquicas para clasificar o predecir"
       ),
       
-      # 5 PREGUNTAS NUEVAS PARA COMPLETAR LAS 15
       list(
-        texto = "¿Qué mide el índice KMO (Kaiser-Meyer-Olkin)?",
-        opciones = c("a) La adecuación muestral para realizar un análisis factorial", "b) El número exacto de factores a extraer", "c) La distancia euclídea entre los individuos", "d) El sesgo de la rotación oblícua"),
-        correcta = "a) La adecuación muestral para realizar un análisis factorial"
+        texto = "¿Cuándo se utilizan los árboles de decisión?",
+        opciones = c(
+          "Cuando se desea clasificar individuos o realizar predicciones",
+          "Únicamente para calcular medias",
+          "Solo para reducir variables",
+          "Exclusivamente para análisis factorial"
+        ),
+        correcta = "Cuando se desea clasificar individuos o realizar predicciones"
       ),
+      
       list(
-        texto = "¿Qué evalúa la prueba de esfericidad de Bartlett?",
-        opciones = c("a) Si la matriz de correlación es significativamente diferente de una matriz identidad", "b) Si las observaciones siguen una distribución lineal perfecta", "c) La varianza compartida por factores únicos", "d) La normalidad multivariante del dataset"),
-        correcta = "a) Si la matriz de correlación es significativamente diferente de una matriz identidad"
+        texto = "¿Qué utilizan los árboles de decisión para clasificar a los individuos?",
+        opciones = c(
+          "Reglas de decisión basadas en los atributos predictivos",
+          "Únicamente la variable dependiente",
+          "Correlaciones entre observaciones",
+          "Promedios de cada grupo"
+        ),
+        correcta = "Reglas de decisión basadas en los atributos predictivos"
       ),
+      
       list(
-        texto = "Si dos factores se encuentran correlacionados entre sí, ¿qué tipo de rotación es la adecuada?",
-        opciones = c("a) Rotación Ortogonal (como Varimax)", "b) Rotación Oblícua (como Promax u Oblimin)", "c) Ninguna, no se pueden rotar factores correlacionados", "d) Rotación por Componentes Principales"),
-        correcta = "b) Rotación Oblícua (como Promax u Oblimin)"
+        texto = "¿Con qué tipo de variables pueden trabajar los árboles de decisión?",
+        opciones = c(
+          "Variables categóricas y continuas",
+          "Solo variables categóricas",
+          "Solo variables numéricas",
+          "Únicamente variables binarias"
+        ),
+        correcta = "Variables categóricas y continuas"
       ),
+      
       list(
-        texto = "¿Qué compone la varianza total de una variable en el Análisis Factorial?",
-        opciones = c("a) La comunalidad únicamente", "b) La suma de la comunalidad y la varianza única (especificidad + error)", "c) El número total de factores multiplicado por las medias", "d) Los autovalores mayores que uno"),
-        correcta = "b) La suma de la comunalidad y la varianza única (especificidad + error)"
+        texto = "¿Qué puede indicar que las métricas de ajuste del modelo sean extremadamente altas?",
+        opciones = c(
+          "Posible sobreajuste del modelo",
+          "Falta de información en los datos",
+          "Error en la variable objetivo",
+          "Ausencia de variables predictoras"
+        ),
+        correcta = "Posible sobreajuste del modelo"
       ),
+      
       list(
-        texto = "En el Análisis Factorial, ¿qué se asume típicamente sobre los errores o factores únicos?",
-        opciones = c("a) Que están altamente correlacionados entre sí", "b) Que no están correlacionados entre sí ni con los factores comunes", "c) Que son idénticos a las comunalidades", "d) Que explican la estructura compartida de las variables"),
-        correcta = "b) Que no están correlacionados entre sí ni con los factores comunes"
+        texto = "En el dataset Breast Cancer utilizado en la aplicación, ¿qué variable suele aparecer como una de las más representativas para clasificar tumores?",
+        opciones = c(
+          "Radius_mean",
+          "ID",
+          "Diagnóstico",
+          "Número de observación"
+        ),
+        correcta = "Radius_mean"
+      ),
+      
+      list(
+        texto = "¿Qué representa el accuracy de un árbol de decisión?",
+        opciones = c(
+          "La proporción de observaciones clasificadas correctamente",
+          "El número total de variables del modelo",
+          "La profundidad máxima del árbol",
+          "La cantidad de nodos terminales"
+        ),
+        correcta = "La proporción de observaciones clasificadas correctamente"
+      ),
+      
+      list(
+        texto = "¿Qué es el sobreajuste (overfitting)?",
+        opciones = c(
+          "Cuando el modelo aprende el ruido de los datos y pierde capacidad de generalización",
+          "Cuando el árbol tiene pocos nodos",
+          "Cuando se eliminan variables predictoras",
+          "Cuando el accuracy es bajo"
+        ),
+        correcta = "Cuando el modelo aprende el ruido de los datos y pierde capacidad de generalización"
+      ),
+      
+      list(
+        texto = "¿Qué mide la importancia de variables en un árbol de decisión?",
+        opciones = c(
+          "La contribución de cada predictor a la reducción de impureza",
+          "La media de cada variable",
+          "La correlación entre observaciones",
+          "La cantidad de datos faltantes"
+        ),
+        correcta = "La contribución de cada predictor a la reducción de impureza"
+      ),
+      
+      list(
+        texto = "¿Qué representa una hoja en un árbol de decisión?",
+        opciones = c(
+          "La clasificación o predicción final",
+          "La variable más importante",
+          "La raíz del árbol",
+          "Un dato perdido"
+        ),
+        correcta = "La clasificación o predicción final"
+      ),
+      
+      list(
+        texto = "¿Qué criterio utiliza habitualmente el algoritmo CART para seleccionar divisiones?",
+        opciones = c(
+          "Índice de Gini",
+          "Coeficiente de correlación",
+          "Media aritmética",
+          "Distancia euclídea"
+        ),
+        correcta = "Índice de Gini"
+      ),
+      
+      list(
+        texto = "¿Qué mide la entropía en un árbol de decisión?",
+        opciones = c(
+          "El grado de incertidumbre o desorden de un nodo",
+          "La profundidad del árbol",
+          "El número de observaciones",
+          "La precisión global del modelo"
+        ),
+        correcta = "El grado de incertidumbre o desorden de un nodo"
+      ),
+      
+      list(
+        texto = "Según la interpretación mostrada en la aplicación, ¿qué significa que una variable aparezca en primer lugar en el gráfico de importancia?",
+        opciones = c(
+          "Que es la que más contribuye a las divisiones relevantes del árbol",
+          "Que tiene más valores perdidos",
+          "Que fue introducida primero en la base de datos",
+          "Que es la variable objetivo"
+        ),
+        correcta = "Que es la que más contribuye a las divisiones relevantes del árbol"
+      ),
+      
+      list(
+        texto = "¿Qué representan las reglas de decisión mostradas en la pestaña de reglas?",
+        opciones = c(
+          "Condiciones lógicas IF-THEN desde la raíz hasta una hoja",
+          "Correlaciones entre variables",
+          "Promedios de cada grupo",
+          "Valores faltantes detectados"
+        ),
+        correcta = "Condiciones lógicas IF-THEN desde la raíz hasta una hoja"
+      ),
+      
+      list(
+        texto = "¿Cuál es una de las principales ventajas de los árboles de decisión frente a modelos de caja negra?",
+        opciones = c(
+          "Permiten interpretar fácilmente el proceso de decisión",
+          "Siempre tienen mayor precisión",
+          "No requieren datos",
+          "Eliminan automáticamente el ruido"
+        ),
+        correcta = "Permiten interpretar fácilmente el proceso de decisión"
       )
     )
     
@@ -809,11 +940,15 @@ Arboles_Auto_Server <- function(id) {
     
     observeEvent(input$add, {
       req(input$nueva_pregunta, input$op1, input$op2, input$op3, input$op4)
+      
       nueva <- list(
         texto = input$nueva_pregunta,
         opciones = c(input$op1, input$op2, input$op3, input$op4),
-        correcta = c(input$op1, input$op2, input$op3, input$op4)[match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))]
+        correcta = c(input$op1, input$op2, input$op3, input$op4)[
+          match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))
+        ]
       )
+      
       preguntas_usuario(c(preguntas_usuario(), list(nueva)))
     })
     
@@ -823,60 +958,59 @@ Arboles_Auto_Server <- function(id) {
     
     preguntas_ordenadas <- reactiveVal(NULL)
     
-    # CORREGIDO: Añadido isolate() para evitar el bucle infinito reactivo inicial
     observe({
-      lista_actual <- todas_preguntas()
-      lista_enriquecida <- lapply(seq_along(lista_actual), function(idx) {
-        p <- lista_actual[[idx]]
+      lista_enriquecida <- lapply(todas_preguntas(), function(p) {
         p$id_unico <- paste0("af_q_", gsub("[^a-zA-Z0-9]", "", p$texto))
         p
       })
       
-      # Generamos la muestra aleatoria de 10 preguntas de manera aislada al arrancar
       if (is.null(isolate(preguntas_ordenadas()))) {
-        n_mostrar <- min(10, length(lista_enriquecida))
-        muestra_inicial <- sample(lista_enriquecida, n_mostrar)
-        preguntas_ordenadas(muestra_inicial)
+        preguntas_ordenadas(sample(lista_enriquecida, min(10, length(lista_enriquecida))))
       }
     })
     
-    # Reordenación: toma 10 preguntas distintas del banco total de AF y mezcla opciones
     observeEvent(input$shuffle, {
-      lista_actual <- todas_preguntas()
-      lista_enriquecida <- lapply(seq_along(lista_actual), function(idx) {
-        p <- lista_actual[[idx]]
+      lista_enriquecida <- lapply(todas_preguntas(), function(p) {
         p$id_unico <- paste0("af_q_", gsub("[^a-zA-Z0-9]", "", p$texto))
         p
       })
       
-      n_mostrar <- min(10, length(lista_enriquecida))
-      nuevas <- sample(lista_enriquecida, n_mostrar)
+      nuevas <- sample(lista_enriquecida, min(10, length(lista_enriquecida)))
       
       nuevas <- lapply(nuevas, function(p) {
         p$opciones <- sample(p$opciones)
         p
       })
+      
       preguntas_ordenadas(nuevas)
     })
     
-    # RENDER ÚNICO: Estructura de tarjetas con feedback integrado por ID inmutable
     output$preguntas <- renderUI({
       req(preguntas_ordenadas())
       
       tagList(
         lapply(seq_along(preguntas_ordenadas()), function(i) {
-          pregunta_actual <- preguntas_ordenadas()[[i]]
-          id_input <- pregunta_actual$id_unico
+          
+          pregunta <- preguntas_ordenadas()[[i]]
+          id_input <- pregunta$id_unico
           
           feedback_ui <- NULL
-          if (input$ver) {
-            user_ans <- input[[id_input]]
-            correct_ans <- pregunta_actual$correcta
+          
+          if (isTRUE(mostrar_respuestas())) {
             
-            if (!is.null(user_ans) && user_ans == correct_ans) {
-              feedback_ui <- div(class = "text-success mt-2 font-weight-bold", "✔️ ¡Correcto!")
+            user_ans <- input[[id_input]]
+            correct <- pregunta$correcta
+            
+            if (!is.null(user_ans) && user_ans == correct) {
+              feedback_ui <- div(
+                class = "text-success mt-2 font-weight-bold",
+                "✔️ ¡Correcto!"
+              )
             } else {
-              feedback_ui <- div(class = "text-danger mt-2", paste0("❌ Incorrecto. Respuesta correcta: ", correct_ans))
+              feedback_ui <- div(
+                class = "text-danger mt-2",
+                paste0("❌ Incorrecto. Respuesta correcta: ", correct)
+              )
             }
           }
           
@@ -886,10 +1020,9 @@ Arboles_Auto_Server <- function(id) {
             card_body(
               radioButtons(
                 session$ns(id_input),
-                pregunta_actual$texto,
-                choices = pregunta_actual$opciones,
-                selected = input[[id_input]], 
-                width = "100%"
+                pregunta$texto,
+                choices = pregunta$opciones,
+                selected = input[[id_input]]
               ),
               feedback_ui
             )
@@ -898,22 +1031,21 @@ Arboles_Auto_Server <- function(id) {
       )
     })
     
-    # Caja de puntuación global dinámica basada en las 10 activas
     output$score <- renderUI({
-      req(input$ver)
+      req(mostrar_respuestas())
+      
       total <- length(preguntas_ordenadas())
       
       aciertos <- sum(sapply(preguntas_ordenadas(), function(p) {
         res <- input[[p$id_unico]]
         !is.null(res) && res == p$correcta
-      }), na.rm = TRUE)
+      }))
       
-      porcentaje <- (aciertos / total) * 100
-      clase_color <- if(porcentaje >= 70) "alert-success" else "alert-warning"
+      porcentaje <- aciertos / total * 100
       
       div(
-        class = paste("alert mb-0 py-2 px-4", clase_color),
-        tags$strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
+        class = if (porcentaje >= 70) "alert alert-success" else "alert alert-warning",
+        strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
       )
     })
   })
