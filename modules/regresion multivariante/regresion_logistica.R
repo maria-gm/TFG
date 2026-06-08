@@ -7,24 +7,186 @@
 # TEORIA
 # -------------------------------
 
-Regresion_logistica_Teoria_UI <- function(id){
+Regresion_logistica_Teoria_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    h3("regresión múltiple- Teoría"),
-    br(),
+    # Única llamada necesaria para activar MathJax en la página
+    withMathJax(),
     
-    p(""),
-    p("")
+    tags$div(
+      style = "padding: 20px; background-color: #fcfdfe;",
+      
+      # =====================================
+      # CABECERA
+      # =====================================
+      h2(
+        "Regresión Logística",
+        style = "font-weight: 800; color: #1a365d; margin-bottom: 5px;"
+      ),
+      
+      p(
+        "Modelización de variables dependientes categóricas binarias a partir de un conjunto de predictores.",
+        style = "color: #64748b; font-size: 1.1rem; margin-bottom: 30px;"
+      ),
+      
+      # =====================================
+      # TARJETAS PRINCIPALES
+      # =====================================
+      bslib::layout_column_wrap(
+        width = 1/3, # Tres columnas perfectas
+        heights_equal = "row",
+        
+        # ---------------------------------
+        # FUNDAMENTO
+        # ---------------------------------
+        bslib::card(
+          bslib::card_header(
+            tags$b("1. Fundamento matemático"),
+            style = "background: #e0e7ff;"
+          ),
+          bslib::card_body(
+            p("Modela la probabilidad condicionada de que la variable respuesta pertenezca a la categoría de interés \\(Y = 1\\) mediante la función logística:"),
+            p("$$p(x_i; \\boldsymbol{\\beta}) = \\frac{e^{\\beta_0 + \\beta_1X_{1i} + \\dots + \\beta_pX_{pi}}}{1 + e^{\\beta_0 + \\beta_1X_{1i} + \\dots + \\beta_pX_{pi}}}$$"),
+            p("Garantiza así que las estimaciones se mantengan estrictamente dentro del rango de probabilidades \\([0, 1]\\).")
+          )
+        ),
+        
+        # ---------------------------------
+        # OBJETIVOS
+        # ---------------------------------
+        bslib::card(
+          bslib::card_header(
+            tags$b("2. Objetivos"),
+            style = "background: #dcfce7;"
+          ),
+          bslib::card_body(
+            p("Este modelo de regresión multivariante persigue resolver problemas de clasificación y asociación buscando:"),
+            tags$ul(
+              style = "margin-top: 15px;",
+              tags$li("Comprobar hipótesis o relaciones causales entre variables.", style = "margin-bottom: 10px;"),
+              tags$li("Estudiar la probabilidad de ocurrencia de un fenómeno binario.", style = "margin-bottom: 10px;"),
+              tags$li("Encontrar el modelo con el mejor ajuste descriptivo y que sea altamente interpretable.", style = "margin-bottom: 10px;"),
+              tags$li("Clasificar nuevas observaciones estimando su probabilidad de pertenencia a un grupo.")
+            )
+          )
+        ),
+        
+        # ---------------------------------
+        # CUÁNDO USARLO
+        # ---------------------------------
+        bslib::card(
+          bslib::card_header(
+            tags$b("3. ¿Cuándo usarlo?"),
+            style = "background: #fef3c7;"
+          ),
+          bslib::card_body(
+            p("Se recomienda aplicar una regresión logística cuando tu base de datos presente:"),
+            tags$ul(
+              style = "margin-top: 15px;",
+              tags$li("Una variable resultado binaria o dicotómica (0 o 1).", style = "margin-bottom: 10px;"),
+              tags$li("Variables predictoras que pueden ser cuantitativas y/o categóricas.", style = "margin-bottom: 10px;"),
+              tags$li("Necesidad de analizar efectos marginales combinados sobre una probabilidad.", style = "margin-bottom: 10px;"),
+              tags$li("Casos donde no se cumplan los supuestos de continuidad o linealidad directa exigidos por la regresión lineal ordinaria.")
+            )
+          )
+        )
+      ),
+      
+      br(),
+      
+      # =====================================
+      # FORMULACIÓN DEL MODELO Y LOGIT
+      # =====================================
+      bslib::card(
+        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        bslib::card_body(
+          h4(
+            icon("calculator"), "Transformación Logit y Odds Ratio",
+            style = "color: #1e40af; margin-bottom: 10px;"
+          ),
+          p("La transformación logit mapea la probabilidad a una escala lineal continua e infinita. Aplicando el logaritmo de las odds (posibilidades o ventajas), el modelo se linealiza de la siguiente forma:"),
+          p("$$\\log\\left(\\frac{p(x_i)}{1 - p(x_i)}\\right) = \\beta_0 + \\beta_1X_{1i} + \\dots + \\beta_pX_{pi}$$"),
+          tags$ul(
+            style = "margin-top: 10px;",
+            tags$li("La variable respuesta modelada de forma lineal no es directamente la probabilidad, sino el logaritmo de la ventaja.", style = "margin-bottom: 6px;"),
+            tags$li("A diferencia del modelo lineal ordinario, la regresión logística difiere notablemente tanto en su estructura no lineal como en la naturaleza de sus supuestos.")
+          )
+        )
+      ),
+      
+      br(),
+      
+      # =====================================
+      # ESTIMACIÓN DE PARÁMETROS
+      # =====================================
+      bslib::card(
+        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        bslib::card_body(
+          h4(
+            icon("gears"), "Estimación de parámetros: Máxima Verosimilitud",
+            style = "color: #1e40af; margin-bottom: 10px;"
+          ),
+          p("A diferencia del modelo de regresión lineal simple o múltiple, los parámetros \\(\\boldsymbol{\\beta}\\) no se obtienen por el método de mínimos cuadrados ordinarios. En su lugar, se recurre al método de Máxima Verosimilitud (MLE), el cual optimiza y maximiza la función de log-verosimilitud para las \\(N\\) observaciones:"),
+          p("$$\\ell(\\boldsymbol{\\beta}) = \\sum_{i=1}^{N} \\left\\{ y_i \\log[p(x_i; \\boldsymbol{\\beta})] + (1 - y_i) \\log[1 - p(x_i; \\boldsymbol{\\beta})] \\right\\}$$"),
+          tags$ul(
+            style = "margin-top: 10px;",
+            tags$li("\\(y_i\\) : representa la respuesta binaria real observada (0 o 1) para cada individuo.", style = "margin-bottom: 6px;"),
+            tags$li("\\(p(x_i; \\boldsymbol{\\beta})\\) : es la probabilidad de éxito condicionada al valor de los predictores \\(x_i\\) y controlada por el vector de parámetros estocásticos.", style = "margin-bottom: 6px;"),
+            tags$li("El estimador busca los coeficientes numéricos precisos que maximicen la probabilidad matemática de observar la muestra exacta que ha sido recopilada.")
+          )
+        )
+      ), 
+      
+      br(),
+      
+      # =====================================
+      # EVALUACIÓN E INTERPRETACIÓN
+      # =====================================
+      bslib::card(
+        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        bslib::card_body(
+          h4(
+            icon("magnifying-glass"), "Interpretación y Evaluación del Modelo",
+            style = "color: #1e40af; margin-bottom: 15px;"
+          ),
+          p("La interpretación práctica de los coeficientes estimados y la validación predictiva final constituyen fases críticas del análisis multivariante:"),
+          
+          tags$div(
+            style = "display: flex; flex-direction: column; gap: 15px; margin-top: 15px;",
+            
+            # --------------------------------
+            # ODDS RATIOS
+            # --------------------------------
+            tags$div(
+              style = "border-left: 4px solid #3b82f6; padding-left: 12px;",
+              tags$b("Odds Ratios (OR): "),
+              "La interpretación intuitiva de un coeficiente se realiza mediante su exponencial (\\(e^{\\beta_j}\\)). " ,
+              "Representa el cambio multiplicativo en las ventajas por cada incremento unitario en la variable predictora, manteniendo constantes el resto. " ,
+              "Valores superiores a 1 reflejan un aumento de la probabilidad del evento, mientras que valores inferiores a 1 implican una disminución."
+            ),
+            
+            # --------------------------------
+            # EVALUACIÓN PREDICTIVA (AUC)
+            # --------------------------------
+            tags$div(
+              style = "border-left: 4px solid #10b981; padding-left: 12px;",
+              tags$b("Capacidad de Discriminación (Métrica AUC): "),
+              "La calidad general del clasificador se evalúa habitualmente calculando el Área Bajo la Curva (AUC). " ,
+              "El índice resultante oscila entre 0 y 1. Un valor cercano a 0.5 denota una capacidad puramente aleatoria (similar al azar), mientras que los valores próximos a 1 reflejan una excelente capacidad predictiva para separar con éxito ambas clases."
+            )
+          )
+        )
+      )
+    )
   )
 }
 
-Regresion_logistica_Teoria_Server <- function(id){
-  moduleServer(id, function(input, output, session){ })
+Regresion_logistica_Teoria_Server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    # Módulo de servidor lógicamente vacío para visualizaciones estáticas teóricas
+  })
 }
-
-
-
 # -------------------------------
 # ANALISIS
 # -------------------------------
