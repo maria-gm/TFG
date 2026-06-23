@@ -12,7 +12,6 @@ Regresion_UI <- function(id){
       choices = c(
         "Visión General de la Familia" = "GENERAL",
         "Regresión múltiple" = "MULTIPLE",
-        "Regresión logística" = "LOGISTICA",
         "Métodos de regularización y reducción" = "REGULARIZACION" # <-- Nombre cambiado
       ),
       selected = "GENERAL"
@@ -46,18 +45,6 @@ Regresion_Server <- function(id, datos, datos_ejemplo = NULL){
       segments(x, y, x, yhat, col = rgb(239/255, 68/255, 68/255, 0.4))
     })
     
-    output$plot_mini_logistica <- renderPlot({
-      par(mar = c(2, 2, 1.5, 1))
-      set.seed(101)
-      x <- runif(50, -4, 4)
-      p_real <- 1 / (1 + exp(-2 * x))
-      y <- rbinom(50, 1, p_real)
-      plot(x, y, pch = 21, bg = ifelse(y==1, "#a7f3d0", "#fecaca"), col = ifelse(y==1, "#047857", "#b91c1c"), xlab = "", ylab = "", axes = FALSE, main = "Probabilidad Binaria (0 / 1)", col.main = "#047857", cex.main = 0.9)
-      box(col = "#e2e8f0")
-      curve(1 / (1 + exp(-2 * x)), add = TRUE, col = "#10b981", lwd = 3)
-      abline(h = 0.5, lty = 3, col = "#64748b")
-    })
-    
     # Gráfico que incluye la traza o corte característico de PCR (Reducción por componentes)
     output$plot_mini_regularizacion <- renderPlot({
       par(mar = c(2, 2, 2, 1))
@@ -74,7 +61,7 @@ Regresion_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     # =====================================================
-    # INTERFAZ MAESTRA ATÓMICA
+    # INTERFAZ 
     # =====================================================
     output$interfaz_maestra_dinamica <- renderUI({
       req(input$tecnica)
@@ -94,11 +81,7 @@ Regresion_Server <- function(id, datos, datos_ejemplo = NULL){
                 bslib::card_header(tags$b("Regresión Múltiple")),
                 bslib::card_body(p("Modela una variable respuesta continua mediante múltiples predictores cuantitativos minimizando los residuos cuadrados ordinarios."), plotOutput(ns("plot_mini_multiple"), height = "135px"))
               ),
-              bslib::card(
-                style = "border-top: 4px solid #10b981;",
-                bslib::card_header(tags$b("Regresión Logística")),
-                bslib::card_body(p("Predice la probabilidad de ocurrencia de un suceso binario o categórico evaluando el logaritmo de la ventaja."), plotOutput(ns("plot_mini_logistica"), height = "135px"))
-              ),
+
               bslib::card(
                 style = "border-top: 4px solid #f59e0b;",
                 bslib::card_header(tags$b("Métodos de Regularización y Reducción")),
@@ -116,12 +99,6 @@ Regresion_Server <- function(id, datos, datos_ejemplo = NULL){
         return(tabsetPanel(tabPanel("Teoría", Regresion_multiple_Teoria_UI(ns("regresion_multiple_teoria"))), tabPanel("Análisis", Regresion_multiple_Analisis_UI(ns("regresion_multiple_analisis"))), tabPanel("Autoevaluación", Regresion_multiple_Auto_UI(ns("regresion_multiple_auto")))))
       }
       
-      if (input$tecnica == "LOGISTICA") {
-        Regresion_logistica_Teoria_Server("regresion_logistica_teoria")
-        Regresion_logistica_Analisis_Server("regresion_logistica_analisis", datos = reactive({ if(!is.null(datos_ok())) datos_ok() else datos_ejemplo$Regresion_logistica }), datos_ejemplo = datos_ejemplo)
-        Regresion_logistica_Auto_Server("regresion_logistica_auto")
-        return(tabsetPanel(tabPanel("Teoría", Regresion_logistica_Teoria_UI(ns("regresion_logistica_teoria"))), tabPanel("Análisis", Regresion_logistica_Analisis_UI(ns("regresion_logistica_analisis"))), tabPanel("Autoevaluación", Regresion_logistica_Auto_UI(ns("regresion_logistica_auto")))))
-      }
       
       if (input$tecnica == "REGULARIZACION") {
         Regularizacion_Teoria_Server("regularizacion_teoria")

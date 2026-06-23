@@ -13,14 +13,12 @@ source("modules/agrupamiento/dbscan_module.R")
 source("modules/agrupamiento/agrupamiento_selector_module.R")
 source("modules/regresion multivariante/regresion_selector.R")
 source("modules/regresion multivariante/regresion_multiple.R")
-source("modules/regresion multivariante/regresion_logistica.R")
 source("modules/regresion multivariante/regularizacion.R")
 source("modules/clasificacion/clasificacion_selector.R")
+source("modules/clasificacion/regresion_logistica.R")
 source("modules/clasificacion/lda.R")
 source("modules/clasificacion/arboles.R")
 
-library(shinyjs)
-library(bslib)
 
 # =====================================================
 # INTERFAZ DE USUARIO (UI) GENERAL

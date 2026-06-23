@@ -11,6 +11,7 @@ Clasificacion_UI <- function(id){
       "Seleccione técnica de clasificación:",
       choices = c(
         "Visión General de la Familia" = "GENERAL",
+        "Regresión logística"="LOGISTICA",
         "LDA (Análisis Discriminante Lineal)" = "LDA",
         "Árboles de decisión" = "ARBOLES"
       ),
@@ -32,7 +33,18 @@ Clasificacion_Server <- function(id, datos, datos_ejemplo = NULL){
     # =====================================================
     # RENDERIZACIÓN DE MINIGRÁFICOS CONCEPTUALES
     # =====================================================
-    
+    # Regresión logística
+    output$plot_mini_logistica <- renderPlot({
+      par(mar = c(2, 2, 1.5, 1))
+      set.seed(101)
+      x <- runif(50, -4, 4)
+      p_real <- 1 / (1 + exp(-2 * x))
+      y <- rbinom(50, 1, p_real)
+      plot(x, y, pch = 21, bg = ifelse(y==1, "#a7f3d0", "#fecaca"), col = ifelse(y==1, "#047857", "#b91c1c"), xlab = "", ylab = "", axes = FALSE, main = "Probabilidad Binaria (0 / 1)", col.main = "#047857", cex.main = 0.9)
+      box(col = "#e2e8f0")
+      curve(1 / (1 + exp(-2 * x)), add = TRUE, col = "#10b981", lwd = 3)
+      abline(h = 0.5, lty = 3, col = "#64748b")
+    })
     # 1. Gráfico de LDA (Dos campanas de Gauss con la frontera de decisión lineal óptima)
     output$plot_mini_lda <- renderPlot({
       par(mar = c(2, 2, 1.5, 1))
@@ -97,6 +109,13 @@ Clasificacion_Server <- function(id, datos, datos_ejemplo = NULL){
       }
       
       # Sincronización exacta con tus nombres de funciones reales (`LDA_teoria` y `Arboles_teoria`)
+
+      if (input$tecnica == "LOGISTICA") {
+        Regresion_logistica_Teoria_Server("regresion_logistica_teoria")
+        Regresion_logistica_Analisis_Server("regresion_logistica_analisis", datos = reactive({ if(!is.null(datos_ok())) datos_ok() else datos_ejemplo$Regresion_logistica }), datos_ejemplo = datos_ejemplo)
+        Regresion_logistica_Auto_Server("regresion_logistica_auto")
+        return(tabsetPanel(tabPanel("Teoría", Regresion_logistica_Teoria_UI(ns("regresion_logistica_teoria"))), tabPanel("Análisis", Regresion_logistica_Analisis_UI(ns("regresion_logistica_analisis"))), tabPanel("Autoevaluación", Regresion_logistica_Auto_UI(ns("regresion_logistica_auto")))))
+      }
       if (input$tecnica == "LDA") {
         LDA_Teoria_Server("LDA_teoria")
         LDA_Analisis_Server("LDA_analisis", datos = reactive({ if(!is.null(datos_ok())) datos_ok() else datos_ejemplo$LDA }), datos_ejemplo = datos_ejemplo)
