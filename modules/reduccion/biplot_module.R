@@ -1,94 +1,109 @@
 # =====================================================
 #   BIPLOT - MODULO 
 # =====================================================
-
-# -------------------------------
-# TEORIA
-# -------------------------------
-BIPLOT_Auto_UI <- function(id) {
+BIPLOT_Teoria_UI <- function(id) {
   ns <- NS(id)
-  
   tagList(
-    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
-    tags$head(
-      tags$style(HTML("
-        /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
-        .shiny-input-radiogroup, 
-        .shiny-input-radiogroup .shiny-options-group,
-        .shiny-input-radiogroup .form-check,
-        .shiny-input-radiogroup .radio {
-          width: 100% !important;
-          max-width: 100% !important;
-          display: block !important;
-        }
+    # Llamada necesaria para que carguen las fórmulas en toda la página
+    withMathJax(),
+    
+    tags$div(
+      style = "padding: 20px; background-color: #fcfdfe;",
+      
+      # Cabecera con estilo
+      h2("Análisis Biplot", style = "font-weight: 800; color: #1a365d; margin-bottom: 5px;"),
+      p("Visualización simultánea de individuos (filas) y variables (columnas)", 
+        style = "color: #64748b; font-size: 1.1rem; margin-bottom: 30px;"),
+      
+      # Fila de tarjetas principales
+      bslib::layout_column_wrap(
+        width = 1/3, # Tres columnas
+        heights_equal = "row",
         
-        /* Asegura que la etiqueta y el texto ocupen todo el espacio del card */
-        .shiny-input-radiogroup label,
-        .shiny-input-radiogroup .form-check-label {
-          width: 100% !important;
-          max-width: 100% !important;
-          display: inline-block !important;
-          white-space: normal !important; /* Permite saltos lógicos, no prematuros */
-          word-break: break-word !important;
-        }
-        
-        /* Ajuste por si el flexbox de Bootstrap 5 está encogiendo el texto */
-        .form-check {
-          display: flex !important;
-          align-items: center !important;
-          gap: 0.5rem;
-        }
-      "))
-    ),
-    
-    h3("Autoevaluación", 
-       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
-    
-    uiOutput(ns("preguntas")),
-    
-    br(),
-    
-    card(
-      class = "shadow-sm mb-4 border-0",
-      style = "background-color: #fdfdfd;",
-      card_body(
-        class = "d-flex justify-content-between align-items-center flex-wrap gap-3 py-3",
-        div(
-          class = "d-flex gap-2",
-          actionButton(ns("ver"), "👁️ Ver respuestas", class = "btn-primary"),
-          actionButton(ns("shuffle"), "🔀 Reordenar test", class = "btn-outline-primary")
-        ),
-        uiOutput(ns("score"))
-      )
-    ),
-    
-    br(),
-    
-    accordion(
-      open = FALSE,
-      class = "shadow-sm border-0",
-      accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de PCA",
-        icon = icon("gear"),
-        
-        fluidRow(
-          column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
-          column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
-                                        choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
+        # Tarjeta 1: Fundamento
+        bslib::card(
+          bslib::card_header(tags$b("1. Fundamento Matemático"), style = "background: #e0e7ff;"),
+          bslib::card_body(
+            p("A partir de la SVD:"),
+            p("$$Y = U \\Lambda V^T$$"),
+            p("factorizamos en dos matrices:"),
+            p("$$Y \\cong (U \\Lambda^s)(V \\Lambda^{1-s})^T = AB^T$$"),
+            tags$ul(
+              style = "margin-top: 15px;",
+              tags$li("\\(A = U \\Lambda^s\\) (Individuos)", style = "margin-bottom: 8px;"),
+              tags$li("\\(B = V \\Lambda^{1-s}\\) (Variables)")
+            )
+          )
         ),
         
-        fluidRow(
-          column(width = 3, textInput(ns("op1"), "Opción 1")),
-          column(width = 3, textInput(ns("op2"), "Opción 2")),
-          column(width = 3, textInput(ns("op3"), "Opción 3")),
-          column(width = 3, textInput(ns("op4"), "Opción 4"))
+        # Tarjeta 2: Interpretación
+        bslib::card(
+          bslib::card_header(tags$b("2. Geometría"), style = "background: #dcfce7;"),
+          bslib::card_body(
+            tags$div(
+              style = "display: flex; flex-direction: column; gap: 12px;",
+              tags$div(
+                style = "border-left: 4px solid #22c55e; padding-left: 10px;",
+                tags$b("Puntos:"), " Representan a los individuos"
+              ),
+              tags$div(
+                style = "border-left: 4px solid #f59e0b; padding-left: 10px;",
+                tags$b("Vectores:"), " Representan las variables"
+              ),
+              p("El ángulo entre vectores indica la correlación de las variables:"),
+              tags$ul(
+                style = "margin-top: 5px; padding-left: 20px;",
+                tags$li(tags$b("Ángulo agudo (~0°):"), " Alta correlación positiva", style = "margin-bottom: 6px;"),
+                tags$li(tags$b("Ángulo recto (90°):"), " Variables independientes", style = "margin-bottom: 6px;"),
+                tags$li(tags$b("Ángulo llano (~180°):"), " Alta correlación negativa")
+              )
+            )
+          )
         ),
         
-        actionButton(ns("add"), "Guardar pregunta en el banco de PCA", class = "btn-success btn-sm mt-2")
+        # Tarjeta 3: Escalamientos
+        bslib::card(
+          bslib::card_header(tags$b("3. Tipos de Escalamiento"), style = "background: #fef3c7;"),
+          bslib::card_body(
+            p("El valor del parámetro de escala \\(s\\) determina qué propiedades métricas se priorizan en el espacio dual:"),
+            tags$ul(
+              style = "margin-top: 15px;",
+              tags$li(
+                tags$b("JK (\\(s = 1\\)):"), 
+                " Preserva óptimamente las distancias euclídeas entre los individuos.",
+                style = "margin-bottom: 12px;"
+              ),
+              tags$li(
+                tags$b("GH (\\(s = 0\\)):"), 
+                " Preserva las varianzas y las estructuras de correlación entre variables.",
+                style = "margin-bottom: 12px;"
+              ),
+              tags$li(
+                tags$b("SQRT (\\(s = 1/2\\)):"), 
+                " Reparto equilibrado de la inercia entre filas y columnas (Simétrico)."
+              )
+            )
+          )
+        )
+      ), # Fin del layout_column_wrap
+      
+      br(),
+      
+      # Nota especial para el HJ Biplot
+      bslib::card(
+        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        full_screen = FALSE,
+        bslib::card_body(
+          h4(icon("star"), "Extensión: HJ Biplot", style = "color: #1e40af;"),
+          p("Propuesto por Galindo (1986), busca que tanto filas como columnas tengan la máxima calidad de representación en un mismo espacio de baja dimensión.")
+        )
       )
     )
   )
 }
+# -------------------------------
+# TEORIA
+# -------------------------------
 BIPLOT_Teoria_Server <- function(id){
   moduleServer(id, function(input, output, session){ })
 }
@@ -490,16 +505,45 @@ BIPLOT_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-
+    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
+    tags$head(
+      tags$style(HTML("
+        /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
+        .shiny-input-radiogroup, 
+        .shiny-input-radiogroup .shiny-options-group,
+        .shiny-input-radiogroup .form-check,
+        .shiny-input-radiogroup .radio {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: block !important;
+        }
+        
+        /* Asegura que la etiqueta y el texto ocupen todo el espacio del card */
+        .shiny-input-radiogroup label,
+        .shiny-input-radiogroup .form-check-label {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: inline-block !important;
+          white-space: normal !important; /* Permite saltos lógicos, no prematuros */
+          word-break: break-word !important;
+        }
+        
+        /* Ajuste por si el flexbox de Bootstrap 5 está encogiendo el texto */
+        .form-check {
+          display: flex !important;
+          align-items: center !important;
+          gap: 0.5rem;
+        }
+      "))
+    ),
+    
     h3("Autoevaluación", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
-    # Bloque donde se imprimen las tarjetas de preguntas una debajo de otra
     uiOutput(ns("preguntas")),
     
     br(),
     
-    # Barra de herramientas del test al final
     card(
       class = "shadow-sm mb-4 border-0",
       style = "background-color: #fdfdfd;",
@@ -516,29 +560,32 @@ BIPLOT_Auto_UI <- function(id) {
     
     br(),
     
-    # Formulario colapsable para agregar preguntas personalizadas sobre Biplots
     accordion(
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de Biplots",
+        title = "➕ Gestión: Añadir pregunta personalizada del Biplot",
         icon = icon("gear"),
+        
         fluidRow(
           column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
           column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
                                         choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
         ),
+        
         fluidRow(
           column(width = 3, textInput(ns("op1"), "Opción 1")),
           column(width = 3, textInput(ns("op2"), "Opción 2")),
           column(width = 3, textInput(ns("op3"), "Opción 3")),
           column(width = 3, textInput(ns("op4"), "Opción 4"))
         ),
-        actionButton(ns("add"), "Guardar pregunta en el banco de Biplots", class = "btn-success btn-sm mt-2")
+        
+        actionButton(ns("add"), "Guardar pregunta en el banco del Biplot", class = "btn-success btn-sm mt-2")
       )
     )
   )
 }
+
 BIPLOT_Auto_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     mostrar_respuestas <- reactiveVal(FALSE)

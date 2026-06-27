@@ -91,8 +91,13 @@ Clasificacion_Server <- function(id, datos, datos_ejemplo = NULL){
             p("Algoritmos de aprendizaje supervisado diseñados para asignar etiquetas categóricas concretas a los elementos basándose en sus atributos multivariantes:", style = "color: #64748b;"),
             br(),
             bslib::layout_column_wrap(
-              width = 1/2, # Dos columnas balanceadas
+              width = 1/3, 
               heights_equal = "row",
+              bslib::card(
+                style = "border-top: 4px solid #3b82f6;",
+                bslib::card_header(tags$b("Regresión Logística")),
+                bslib::card_body(p("Predice la probabilidad de ocurrencia de un suceso"), plotOutput(ns("plot_mini_logistica"), height = "135px"))
+              ),
               bslib::card(
                 style = "border-top: 4px solid #3b82f6;",
                 bslib::card_header(tags$b("LDA (Análisis Discriminante Lineal)")),

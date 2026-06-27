@@ -195,129 +195,181 @@ Arboles_Teoria_Server <- function(id){
 # -------------------------------
 # ANALISIS
 # -------------------------------
-
-Arboles_Analisis_UI <- function(id) {
+Arboles_Analisis_UI <- function(id){
+  
   ns <- NS(id)
   
   tagList(
-    # Título uniforme con estilos de la suite de análisis
-    h3("Árboles de Decisión - Modelado Predictivo", 
-       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
+    
+    #--------------------------------------------------
+    # TÍTULO (igual estilo que logística)
+    #--------------------------------------------------
+    h3(
+      "Análisis",
+      style = "color: #1a446c;
+               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+               font-weight: 600;
+               margin-top: 40px;
+               margin-bottom: 20px;
+               border-bottom: 2px solid #f4f6f9;
+               padding-bottom: 10px;"
+    ),
     
     fluidRow(
+      
       #--------------------------------------------------
-      # PANEL LATERAL (CONFIGURACIÓN REACTIVA)
+      # PANEL LATERAL (IZQUIERDA)
       #--------------------------------------------------
       column(
-        width = 3,
+        4,
+        
         wellPanel(
-          h4("Configuración"),
-          p("El modelo se recalcula de forma reactiva instantánea al alterar cualquier parámetro."),
+          h4("Configuración Árbol de Decisión"),
+          p("Ajuste los parámetros del modelo CART (Classification and Regression Trees)."),
+          
           hr(),
           
           uiOutput(ns("target_ui")),
-          br(),
           uiOutput(ns("predictors_ui")),
-          br(),
+          
+          hr(),
           
           sliderInput(
             ns("maxdepth"),
-            "Profundidad máxima del árbol:",
+            "Profundidad máxima",
             min = 1,
-            max = 5,
-            value = 3,
-            step = 1
+            max = 30,
+            value = 5
           ),
-          br(),
           
-          selectInput(
-            ns("palette"),
-            "Paleta estática de nodos:",
-            choices = c(
-              "Azules" = "Blues",
-              "Verdes" = "Greens",
-              "Rojo-Amarillo-Verde" = "RdYlGn",
-              "Púrpuras" = "Purples"
-            ),
-            selected = "RdYlGn"
+          sliderInput(
+            ns("cp"),
+            "Parámetro de complejidad (cp)",
+            min = 0.0001,
+            max = 0.1,
+            value = 0.01,
+            step = 0.001
           ),
           
           hr(),
-          helpText(
-            "Los árboles estructuran reglas jerárquicas maximizando la ganancia de información (entropía/Gini) o reduciendo la varianza."
-          ),
-          uiOutput(ns("ui_dl_tree")) 
+          
+          uiOutput(ns("ui_dl_tree")),
+          
+          helpText("El árbol se recalcula automáticamente al modificar los parámetros.")
         )
       ),
       
       #--------------------------------------------------
-      # PANEL PRINCIPAL
+      # PANEL PRINCIPAL (DERECHA)
       #--------------------------------------------------
       column(
-        width = 9,
+        8,
+        
         tabsetPanel(
           id = ns("tabs_tree"),
           
-          #================================================
-          # 1. DATOS (BARRAS INDEPENDIENTES NATURALES)
-          #================================================
+          #-------------------------
+          # 1. DATOS
+          #-------------------------
           tabPanel(
-            "Datos",
-            value = "datos",
+            "1. Datos",
+            
             br(),
-            p("Información: El algoritmo particiona los datos de forma iterativa y maneja de forma nativa tanto regresiones como clasificaciones.", 
-              style = "color: #7f8c8d; font-style: italic; margin-bottom: 25px;"),
+            
+            p(
+              "Se muestran los datos originales y la versión estandarizada utilizada en el modelo.",
+              style = "color: #7f8c8d; font-style: italic; margin-bottom: 20px;"
+            ),
             
             h4("Dataset original", style = "color: #2c3e50; font-weight: 500;"),
             DT::DTOutput(ns("dataset")),
             
             br(), hr(), br(),
             
-            h4("Dataset preparado / estandarizado", style = "color: #2c3e50; font-weight: 500;"),
+            h4("Dataset estandarizado", style = "color: #2c3e50; font-weight: 500;"),
             DT::DTOutput(ns("dataset_std"))
           ),
           
-          #================================================
-          # 2. ESTRUCTURA GRÁFICA DEL ÁRBOL
-          #================================================
+          #-------------------------
+          # 2. ÁRBOL
+          #-------------------------
           tabPanel(
-            "Árbol",
-            value = "arbol",
+            "2. Árbol",
+            
             br(),
-            wellPanel(p("Estructura de ramificación del modelo según las divisiones óptimas calculadas.")),
+            
+            h4("Estructura del árbol", style = "color: #2c3e50; font-weight: 500;"),
             plotOutput(ns("tree_plot"), height = "650px"),
+            
             br(),
-            h4("Interpretación del Grafo Jerárquico"),
+            
+            h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"),
             verbatimTextOutput(ns("interp_arbol"))
           ),
           
-          #================================================
-          # 3. IMPORTANCIA DE VARIABLES
-          #================================================
+          #-------------------------
+          # 3. MÉTRICAS
+          #-------------------------
           tabPanel(
-            "Importancia de Variables",
-            value = "importancia",
+            "3. Métricas",
+            
             br(),
-            wellPanel(p("Porcentaje o magnitud relativa de contribución de cada predictor para disminuir la impureza global del árbol.")),
-            plotOutput(ns("importance_plot"), height = "500px"),
+            
+            h4("Rendimiento del modelo", style = "color: #2c3e50; font-weight: 500;"),
+            DT::DTOutput(ns("tabla_metricas")),
+            
             br(),
-            h4("Análisis de Influencia"),
+            
+            h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"),
+            verbatimTextOutput(ns("interp_metricas"))
+          ),
+          
+          #-------------------------
+          # 4. IMPORTANCIA
+          #-------------------------
+          tabPanel(
+            "4. Importancia",
+            
+            br(),
+            
+            h4("Importancia de variables", style = "color: #2c3e50; font-weight: 500;"),
+            plotOutput(ns("importance_plot"), height = "450px"),
+            
+            br(),
+            
             verbatimTextOutput(ns("interp_importancia"))
           ),
           
-          #================================================
-          # 4. REGLAS TEXTUALES
-          #================================================
+          #-------------------------
+          # 5. REGLAS
+          #-------------------------
           tabPanel(
-            "Reglas de Decisión",
-            value = "reglas",
+            "5. Reglas",
+            
             br(),
-            wellPanel(p("Traducción algorítmica de las ramas en formato lógico condicional (IF-THEN).")),
-            h4("Reglas de Extracción Lógica"),
+            
+            h4("Reglas del árbol", style = "color: #2c3e50; font-weight: 500;"),
             verbatimTextOutput(ns("tree_rules")),
+            
             br(),
-            h4("Conclusiones Operativas"),
+            
             verbatimTextOutput(ns("interp_reglas"))
+          ),
+          
+          #-------------------------
+          # 6. CP
+          #-------------------------
+          tabPanel(
+            "6. Selección de cp",
+            
+            br(),
+            
+            h4("Complejidad del modelo", style = "color: #2c3e50; font-weight: 500;"),
+            plotOutput(ns("cp_selector"), height = "450px"),
+            
+            br(),
+            
+            verbatimTextOutput(ns("interp_cp"))
           )
         )
       )
@@ -325,17 +377,15 @@ Arboles_Analisis_UI <- function(id) {
   )
 }
 
-# =============================================================================
-# MODULO: ÁRBOLES DE DECISIÓN (RPART) - SERVER
-# =============================================================================
 Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   moduleServer(id, function(input, output, session) {
     
     ns <- session$ns
-    filas_omitidas <- reactiveVal(0)
+    
+    backtick <- function(x) paste0("`", x, "`")
     
     #--------------------------------------------------
-    # 1. TRATAMIENTO DE DATOS REACTIVOS
+    # 1. DATOS
     #--------------------------------------------------
     datos_base <- reactive({
       df <- if (!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
@@ -344,327 +394,217 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       df[] <- lapply(df, function(x) {
         if (is.factor(x) || is.character(x)) {
           as_n <- suppressWarnings(as.numeric(as.character(x)))
-          if (sum(!is.na(as_n)) > (length(x) * 0.8)) as_n else x
-        } else {
-          x
-        }
+          if (sum(!is.na(as_n)) > 0.8 * length(x)) as_n else x
+        } else x
       })
       
-      filas_antes <- nrow(df)
-      df_limpio <- na.omit(df)
-      filas_despues <- nrow(df_limpio)
-      filas_omitidas(filas_antes - filas_despues)
-      
-      df_limpio
+      na.omit(df)
     })
     
     #--------------------------------------------------
-    # 2. SELECTORES INTERACTIVOS DIRECTOS
+    # 2. UI SELECTORES
     #--------------------------------------------------
     output$target_ui <- renderUI({
       req(datos_base())
-      selectInput(
-        ns("target_var"),
-        "Variable Objetivo (Y):",
-        choices = names(datos_base()),
-        selected = names(datos_base())[ncol(datos_base())]
-      )
+      selectInput(ns("target_var"),
+                  "Variable objetivo (Y):",
+                  choices = names(datos_base()))
     })
     
     output$predictors_ui <- renderUI({
       req(input$target_var)
-      opciones_x <- setdiff(names(datos_base()), input$target_var)
+      opts <- setdiff(names(datos_base()), input$target_var)
       
-      selectizeInput(
-        ns("predictor_vars"),
-        "Variables Independientes (X):",
-        choices = opciones_x,
-        multiple = TRUE,
-        selected = opciones_x[1:min(4, length(opciones_x))],
-        options = list(plugins = list("remove_button"), persist = FALSE)
-      )
+      selectizeInput(ns("predictor_vars"),
+                     "Variables predictoras:",
+                     choices = opts,
+                     multiple = TRUE,
+                     selected = opts[1:min(4, length(opts))])
     })
     
     #--------------------------------------------------
-    # 3. GENERACIÓN DE DATASETS (REACTIVIDAD AUTOMÁTICA)
+    # 3. DATASET
     #--------------------------------------------------
     datos_std <- reactive({
       req(input$target_var)
       df <- datos_base()
-      num_cols <- sapply(df, is.numeric)
-      num_cols[input$target_var] <- FALSE
       
-      if (sum(num_cols) > 0) {
-        df[, num_cols] <- scale(df[, num_cols, drop = FALSE])
-      }
+      num <- sapply(df, is.numeric)
+      num[input$target_var] <- FALSE
+      
+      if (any(num)) df[, num] <- scale(df[, num, drop = FALSE])
       df
     })
     
-    # Renders de DT con scroll único y nativo (Hacia abajo y lateral)
-    output$dataset <- DT::renderDT({
-      req(datos_base())
-      DT::datatable(
-        datos_base(), 
-        options = list(
-          pageLength = 25, 
-          scrollX = TRUE, 
-          scrollY = "300px", 
-          scrollCollapse = TRUE, 
-          autoWidth = TRUE,
-          dom = 'rtip'
-        ),
-        rownames = FALSE,
-        style = "bootstrap"
-      )
-    })
+    output$dataset <- DT::renderDT(datos_base())
+    output$dataset_std <- DT::renderDT(datos_std())
     
-    output$dataset_std <- DT::renderDT({
-      req(datos_std())
-      DT::datatable(
-        datos_std(), 
-        options = list(
-          pageLength = 25, 
-          scrollX = TRUE, 
-          scrollY = "300px", 
-          scrollCollapse = TRUE, 
-          autoWidth = TRUE,
-          dom = 'rtip'
-        ),
-        rownames = FALSE,
-        style = "bootstrap"
-      )
-    })
     #--------------------------------------------------
-    # 4. MOTOR DEL MODELO REACTIVO
+    # 4. MODELO (con COMPLEJIDAD cp)
     #--------------------------------------------------
     modelo_tree <- reactive({
       
-      req(input$target_var)
-      
-      validate(
-        need(length(input$predictor_vars) > 0,
-             "Seleccione al menos una variable predictora.")
-      )
+      req(input$target_var, input$predictor_vars)
       
       df <- datos_std()
       
-      # Clasificación o regresión
-      if (!is.numeric(df[[input$target_var]])) {
-        df[[input$target_var]] <- as.factor(df[[input$target_var]])
-      }
+      df[[input$target_var]] <- if (is.numeric(df[[input$target_var]]))
+        df[[input$target_var]]
+      else
+        as.factor(df[[input$target_var]])
       
-      formula_tree <- as.formula(
+      formula <- as.formula(
         paste(
-          input$target_var,
+          backtick(input$target_var),
           "~",
-          paste(input$predictor_vars, collapse = " + ")
+          paste(sapply(input$predictor_vars, backtick), collapse = " + ")
         )
       )
       
-      metodo <- if (
-        is.factor(df[[input$target_var]])
-      ) "class" else "anova"
+      method <- if (is.factor(df[[input$target_var]])) "class" else "anova"
       
       rpart::rpart(
-        formula = formula_tree,
+        formula,
         data = df,
-        method = metodo,
+        method = method,
         control = rpart::rpart.control(
           maxdepth = input$maxdepth,
-          cp = 0.01
+          cp = input$cp,
+          minsplit = 2,
+          minbucket = 1
         )
       )
     })
     
     #--------------------------------------------------
-    # 5. GRAFICO DEL ÁRBOL
+    # 6. ÁRBOL
     #--------------------------------------------------
     output$tree_plot <- renderPlot({
       
       req(modelo_tree())
       
-      mod <- modelo_tree()
-      
-      validate(
-        need(
-          nrow(mod$frame) > 1,
-          "El árbol generado contiene únicamente el nodo raíz."
-        )
-      )
-      
-      extra_dinamico <- ifelse(mod$method == "class", 104, 1)
-      
       rpart.plot::rpart.plot(
-        mod,
-        type = 4,
-        extra = extra_dinamico,
-        under = TRUE,
-        box.palette = input$palette,
-        shadow.col = "#E0E0E0",
-        nn = TRUE,
-        fallen.leaves = TRUE,
-        branch.lty = 3,
-        main = paste(
-          "Estructura de Decisiones para:",
-          input$target_var
-        )
+        modelo_tree(),
+        type = 2,
+        extra = 101,
+        box.palette = "RdYlGn",
+        shadow.col = "gray"
+      )
+    })
+    
+    output$interp_arbol <- renderText({
+      paste(
+        "El árbol divide el espacio de variables en regiones homogéneas.",
+        "La complejidad del modelo está controlada por cp y la profundidad máxima."
       )
     })
     
     #--------------------------------------------------
-    # 6. INTERPRETACIÓN DEL ÁRBOL
+    # 7. MÉTRICAS (como tu modelo logístico)
     #--------------------------------------------------
-    output$interp_arbol <- renderText({
+    output$tabla_metricas <- DT::renderDT({
       
       req(modelo_tree())
       
-      mod <- modelo_tree()
+      preds <- predict(modelo_tree(), type = "class")
       
-      n_nodos <- nrow(mod$frame)
-      profundidad <- input$maxdepth
+      reales <- as.factor(datos_base()[[input$target_var]])
       
-      paste0(
-        "INTERPRETACIÓN DEL ÁRBOL:\n\n",
-        "El modelo ha generado una estructura jerárquica con ",
-        n_nodos,
-        " nodos.\n\n",
-        "Cada bifurcación representa una regla de decisión que maximiza la separación entre grupos mediante reducción de impureza.\n\n",
-        "La profundidad máxima permitida fue de ",
-        profundidad,
-        ", lo que controla la complejidad y evita sobreajuste excesivo."
+      matriz <- table(Real = reales, Predicho = preds)
+      
+      TP <- matriz[2,2]
+      TN <- matriz[1,1]
+      FP <- matriz[1,2]
+      FN <- matriz[2,1]
+      
+      accuracy <- (TP + TN) / sum(matriz)
+      precision <- ifelse((TP + FP) == 0, NA, TP/(TP+FP))
+      recall <- ifelse((TP + FN) == 0, NA, TP/(TP+FN))
+      f1 <- ifelse(is.na(precision) | is.na(recall),
+                   NA,
+                   2 * precision * recall / (precision + recall))
+      
+      df_m <- data.frame(
+        Métrica = c("Accuracy", "Precision", "Recall", "F1-score"),
+        Valor = round(c(accuracy, precision, recall, f1), 4)
+      )
+      
+      DT::datatable(df_m, options = list(paging = FALSE), rownames = FALSE)
+    })
+    
+    output$interp_metricas <- renderText({
+      paste(
+        "Accuracy mide el rendimiento global.",
+        "Recall es crítico en cáncer de mama (evitar falsos negativos).",
+        "Precision mide fiabilidad de predicción de malignidad.",
+        "F1 balancea ambos."
       )
     })
     
     #--------------------------------------------------
-    # 7. IMPORTANCIA DE VARIABLES
+    # 8. SELECCIÓN DE COMPLEJIDAD (cp)
+    #--------------------------------------------------
+    output$cp_selector <- renderPlot({
+      
+      req(modelo_tree())
+      plotcp(modelo_tree(),
+             main = "Selección del parámetro de complejidad (cp)")
+    })
+    
+    output$interp_cp <- renderText({
+      paste0(
+        "SELECCIÓN DE COMPLEJIDAD (cp):\n\n",
+        "Este gráfico muestra cómo cambia el error con la complejidad del árbol.\n",
+        "El objetivo es elegir el punto donde el error deja de disminuir significativamente.\n",
+        "Valores bajos de cp generan árboles más complejos y mayor riesgo de sobreajuste."
+      )
+    })
+    
+    #--------------------------------------------------
+    # 9. IMPORTANCIA
     #--------------------------------------------------
     output$importance_plot <- renderPlot({
       
-      req(modelo_tree())
-      
       imp <- modelo_tree()$variable.importance
       
-      validate(
-        need(
-          !is.null(imp),
-          "No fue posible calcular la importancia de variables."
-        )
-      )
-      
-      imp <- sort(imp, decreasing = TRUE)
-      
-      barplot(
-        imp,
-        horiz = TRUE,
-        las = 1,
-        col = "steelblue",
-        border = NA,
-        xlab = "Importancia",
-        main = "Importancia de Variables"
-      )
-    })
-    
-    #--------------------------------------------------
-    # 8. INTERPRETACIÓN IMPORTANCIA
-    #--------------------------------------------------
-    output$interp_importancia <- renderText({
-      
-      req(modelo_tree())
-      
-      imp <- modelo_tree()$variable.importance
-      
-      if (is.null(imp) || length(imp) == 0) {
-        return(
-          "No fue posible calcular la importancia de variables."
-        )
-      }
-      
-      imp <- sort(imp, decreasing = TRUE)
-      
-      top_var <- names(imp)[1]
-      
-      paste0(
-        "ANÁLISIS DE INFLUENCIA:\n\n",
-        "La variable con mayor contribución al modelo es '",
-        top_var,
-        "'.\n\n",
-        "Su importancia relativa indica que participa en las divisiones más relevantes del árbol y explica una parte sustancial de la reducción de impureza.\n\n",
-        "Las variables aparecen ordenadas según su capacidad predictiva dentro del conjunto seleccionado."
-      )
-    })
-    
-    #--------------------------------------------------
-    # 9. REGLAS DEL ÁRBOL
-    #--------------------------------------------------
-    output$tree_rules <- renderText({
-      
-      req(modelo_tree())
-      
-      paste(
-        capture.output(
-          rpart.plot::rpart.rules(
-            modelo_tree(),
-            cover = TRUE,
-            roundint = FALSE
-          )
-        ),
-        collapse = "\n"
-      )
-    })
-    
-    #--------------------------------------------------
-    # 10. INTERPRETACIÓN DE REGLAS
-    #--------------------------------------------------
-    output$interp_reglas <- renderText({
-      
-      req(modelo_tree())
-      
-      paste0(
-        "ANÁLISIS DE REGLAS DE DECISIÓN:\n\n",
-        "Cada regla representa una ruta completa desde el nodo raíz hasta un nodo terminal.\n\n",
-        "Estas reglas pueden interpretarse como condiciones IF-THEN fácilmente auditables, permitiendo comprender exactamente por qué una observación es asignada a una categoría o valor predicho.\n\n",
-        "A diferencia de modelos tipo caja negra, los árboles ofrecen trazabilidad completa del proceso de decisión."
-      )
-    })
-
-    #--------------------------------------------------
-    # MENSAJE DE FILAS OMITIDAS
-    #--------------------------------------------------
-    output$ui_dl_tree <- renderUI({
-      
-      req(datos_base())
-      
-      omitidas <- filas_omitidas()
-      
-      if (omitidas > 0) {
-        
-        p(
-          icon("triangle-exclamation"),
-          paste0(
-            " Información: Se han omitido ",
-            omitidas,
-            " filas debido a valores faltantes (NA)."
-          ),
-          style = paste(
-            "color:#d35400;",
-            "font-weight:500;",
-            "font-size:12px;",
-            "margin-top:15px;",
-            "background-color:#fdf2e9;",
-            "padding:8px;",
-            "border-left:3px solid #e67e22;",
-            "border-radius:4px;"
-          )
-        )
-        
+      if (is.null(imp)) {
+        plot.new()
+        text(0.5, 0.5, "Sin importancia disponible")
       } else {
-        
-        NULL
-        
+        barplot(sort(imp),
+                horiz = TRUE,
+                col = "steelblue")
       }
     })
-})}
     
+    output$interp_importancia <- renderText({
+      "Las variables se ordenan según su contribución a la reducción de impureza."
+    })
+    
+    #--------------------------------------------------
+    # 10. REGLAS
+    #--------------------------------------------------
+    output$tree_rules <- renderPrint({
+      
+      mod <- modelo_tree()
+      
+      hojas <- as.numeric(rownames(mod$frame[mod$frame$var == "<leaf>", , drop = FALSE]))
+      
+      reglas <- rpart::path.rpart(mod, nodes = hojas, print.it = FALSE)
+      
+      for (i in seq_along(reglas)) {
+        cat("Regla", i, ":\n")
+        cat(paste(reglas[[i]][-1], collapse = " AND "), "\n\n")
+      }
+    })
+    
+    output$interp_reglas <- renderText({
+      "Las reglas IF-THEN permiten interpretar el modelo de forma transparente."
+    })
+    
+  })
+}
+
 # -------------------------------
 # AUTOEVALUACION
 # -------------------------------
@@ -732,7 +672,7 @@ Arboles_Auto_UI <- function(id) {
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de PCA",
+        title = "➕ Gestión: Añadir pregunta personalizada de los árboles de decisión",
         icon = icon("gear"),
         
         fluidRow(
@@ -748,7 +688,7 @@ Arboles_Auto_UI <- function(id) {
           column(width = 3, textInput(ns("op4"), "Opción 4"))
         ),
         
-        actionButton(ns("add"), "Guardar pregunta en el banco de PCA", class = "btn-success btn-sm mt-2")
+        actionButton(ns("add"), "Guardar pregunta en el banco de los árboles de decisión", class = "btn-success btn-sm mt-2")
       )
     )
   )

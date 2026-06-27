@@ -375,17 +375,64 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
     })
     
     output$tabla_metricas <- DT::renderDT({
+      
       req(modelo_log())
-      m <- modelo_log()
+      
+      probs <- predict(modelo_log(), type="response")
+      
+      clases <- ifelse(probs>0.5,1,0)
+      
+      reales <- as.numeric(as.character(datos_log()[[input$var_dep]]))
+      
+      matriz <- table(Real=reales,
+                      Predicho=clases)
+      
+      TP <- matriz[2,2]
+      TN <- matriz[1,1]
+      FP <- matriz[1,2]
+      FN <- matriz[2,1]
+      
+      accuracy <- (TP+TN)/sum(matriz)
+      
+      precision <- ifelse((TP+FP)==0,
+                          NA,
+                          TP/(TP+FP))
+      
+      recall <- ifelse((TP+FN)==0,
+                       NA,
+                       TP/(TP+FN))
+      
+      f1 <- ifelse(is.na(precision) |
+                     is.na(recall) |
+                     (precision+recall)==0,
+                   NA,
+                   2*precision*recall/(precision+recall))
+      
       df_m <- data.frame(
-        Métrica = c("Criterio AIC (Menor denota mejor ajuste)", "Null Deviance (Varianza sin predictores)", "Residual Deviance (Varianza del modelo)"),
-        Valor = c(m$aic, m$null.deviance, m$deviance)
+        Métrica=c(
+          "Accuracy",
+          "Precision",
+          "Recall",
+          "F1-score"
+        ),
+        Valor=round(c(
+          accuracy,
+          precision,
+          recall,
+          f1
+        ),4)
       )
       
-      DT::datatable(df_m, options = list(paging = FALSE, scrollX = TRUE), class = 'cell-border compact') %>%
-        DT::formatRound(columns = "Valor", digits = 4)
+      DT::datatable(
+        df_m,
+        options=list(
+          paging=FALSE,
+          scrollX=TRUE
+        ),
+        rownames=FALSE
+      )
+      
     })
-    
     output$interp_resultados_log <- renderText({
       req(input$var_dep)
       paste0(
@@ -468,126 +515,382 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
 # -------------------------------
 # AUTOEVALUACION
 # -------------------------------
-
-Regresion_logistica_Auto_UI <- function(id){
+Regresion_logistica_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
+    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
+    tags$head(
+      tags$style(HTML("
+        /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
+        .shiny-input-radiogroup, 
+        .shiny-input-radiogroup .shiny-options-group,
+        .shiny-input-radiogroup .form-check,
+        .shiny-input-radiogroup .radio {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: block !important;
+        }
+        
+        /* Asegura que la etiqueta y el texto ocupen todo el espacio del card */
+        .shiny-input-radiogroup label,
+        .shiny-input-radiogroup .form-check-label {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: inline-block !important;
+          white-space: normal !important; /* Permite saltos lógicos, no prematuros */
+          word-break: break-word !important;
+        }
+        
+        /* Ajuste por si el flexbox de Bootstrap 5 está encogiendo el texto */
+        .form-check {
+          display: flex !important;
+          align-items: center !important;
+          gap: 0.5rem;
+        }
+      "))
+    ),
     
-    h3("Autoevaluación"),
+    h3("Autoevaluación", 
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     uiOutput(ns("preguntas")),
     
     br(),
     
-    actionButton(ns("ver"), "Ver respuestas"),
+    card(
+      class = "shadow-sm mb-4 border-0",
+      style = "background-color: #fdfdfd;",
+      card_body(
+        class = "d-flex justify-content-between align-items-center flex-wrap gap-3 py-3",
+        div(
+          class = "d-flex gap-2",
+          actionButton(ns("ver"), "👁️ Ver respuestas", class = "btn-primary"),
+          actionButton(ns("shuffle"), "🔀 Reordenar test", class = "btn-outline-primary")
+        ),
+        uiOutput(ns("score"))
+      )
+    ),
     
-    br(), br(),
+    br(),
     
-    uiOutput(ns("respuestas"))
-  )
-}
-Regresion_logistica_Auto_Server <- function(id){
-  
-  moduleServer(id, function(input, output, session){
-    
-    preguntas <- list(
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "c)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "a)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "b)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = ""
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "d)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "c)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "d)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d"),
-        correcta = "a)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d"),
-        correcta = "c)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d"),
-        correcta = "b)"
+    accordion(
+      open = FALSE,
+      class = "shadow-sm border-0",
+      accordion_panel(
+        title = "➕ Gestión: Añadir pregunta personalizada de la regresión logística",
+        icon = icon("gear"),
+        
+        fluidRow(
+          column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
+          column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
+                                        choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
+        ),
+        
+        fluidRow(
+          column(width = 3, textInput(ns("op1"), "Opción 1")),
+          column(width = 3, textInput(ns("op2"), "Opción 2")),
+          column(width = 3, textInput(ns("op3"), "Opción 3")),
+          column(width = 3, textInput(ns("op4"), "Opción 4"))
+        ),
+        
+        actionButton(ns("add"), "Guardar pregunta en el banco de la regresión logística", class = "btn-success btn-sm mt-2")
       )
     )
+  )
+}
+Regresion_logistica_Auto_Server <- function(id) {
+  moduleServer(id, function(input, output, session) {
     
-    # =========================================
-    # UI DINÁMICA
-    # =========================================
+    mostrar_respuestas <- reactiveVal(FALSE)
+    mostrar_respuestas <- reactiveVal(FALSE)
+    
+    observeEvent(input$ver, {
+      mostrar_respuestas(!mostrar_respuestas())
+      
+      updateActionButton(
+        session,
+        "ver",
+        label = if (mostrar_respuestas()) "🙈 Ocultar respuestas" else "👁️ Ver respuestas"
+      )
+    })
+    preguntas_base <- list(
+      
+      list(
+        texto = "¿Cuál es el objetivo principal de la regresión logística?",
+        opciones = c(
+          "Reducir la dimensionalidad",
+          "Clasificar observaciones en categorías",
+          "Agrupar individuos similares",
+          "Estimar componentes principales"
+        ),
+        correcta = "Clasificar observaciones en categorías"
+      ),
+      
+      list(
+        texto = "¿Qué tipo de variable respuesta utiliza la regresión logística binaria?",
+        opciones = c(
+          "Una variable continua",
+          "Una variable ordinal",
+          "Una variable dicotómica",
+          "Una variable de conteo"
+        ),
+        correcta = "Una variable dicotómica"
+      ),
+      
+      list(
+        texto = "¿Qué función de enlace emplea la regresión logística?",
+        opciones = c(
+          "Logit",
+          "Identidad",
+          "Raíz cuadrada",
+          "Logaritmo natural"
+        ),
+        correcta = "Logit"
+      ),
+      
+      list(
+        texto = "¿Qué representa una probabilidad estimada de 0.85 para un individuo?",
+        opciones = c(
+          "Que pertenece a la clase positiva con un 85% de probabilidad",
+          "Que el modelo acierta el 85% de las veces",
+          "Que el error del modelo es del 15%",
+          "Que el individuo tiene un 85% de las variables correctas"
+        ),
+        correcta = "Que pertenece a la clase positiva con un 85% de probabilidad"
+      ),
+      
+      list(
+        texto = "Si un coeficiente β es positivo, ¿qué ocurre al aumentar esa variable?",
+        opciones = c(
+          "Disminuye la probabilidad del evento",
+          "Aumenta la probabilidad del evento",
+          "No cambia la probabilidad",
+          "El modelo deja de ser válido"
+        ),
+        correcta = "Aumenta la probabilidad del evento"
+      ),
+      
+      list(
+        texto = "¿Qué indica un Odds Ratio igual a 1?",
+        opciones = c(
+          "No existe efecto de la variable",
+          "La variable duplica el riesgo",
+          "La variable reduce el riesgo a la mitad",
+          "Existe multicolinealidad"
+        ),
+        correcta = "No existe efecto de la variable"
+      ),
+      
+      list(
+        texto = "¿Qué medida se utiliza habitualmente para evaluar la capacidad discriminante del modelo?",
+        opciones = c(
+          "Coeficiente de variación",
+          "Área bajo la curva ROC (AUC)",
+          "Coeficiente de correlación",
+          "Media de los residuos"
+        ),
+        correcta = "Área bajo la curva ROC (AUC)"
+      ),
+      
+      list(
+        texto = "En una matriz de confusión, ¿qué representa un falso positivo?",
+        opciones = c(
+          "Un caso positivo clasificado como negativo",
+          "Un caso negativo clasificado como positivo",
+          "Un positivo correctamente clasificado",
+          "Un negativo correctamente clasificado"
+        ),
+        correcta = "Un caso negativo clasificado como positivo"
+      ),
+      
+      list(
+        texto = "¿Qué ocurre si se disminuye mucho el umbral de clasificación (por ejemplo de 0.5 a 0.2)?",
+        opciones = c(
+          "Se clasifican más observaciones como positivas",
+          "Se clasifican menos observaciones como positivas",
+          "No cambia ninguna predicción",
+          "Desaparecen los falsos negativos"
+        ),
+        correcta = "Se clasifican más observaciones como positivas"
+      ),
+      
+      list(
+        texto = "Supón que un modelo presenta una sensibilidad muy alta pero una especificidad baja. ¿Qué significa?",
+        opciones = c(
+          "Detecta bien los positivos pero confunde muchos negativos",
+          "Detecta mal los positivos",
+          "Clasifica perfectamente todas las observaciones",
+          "Existe sobreajuste garantizado"
+        ),
+        correcta = "Detecta bien los positivos pero confunde muchos negativos"
+      ),
+      
+      list(
+        texto = "¿Qué problema puede provocar que varias variables explicativas estén muy correlacionadas?",
+        opciones = c(
+          "Multicolinealidad",
+          "Sobreajuste del umbral",
+          "Heterocedasticidad",
+          "Autocorrelación temporal"
+        ),
+        correcta = "Multicolinealidad"
+      ),
+      
+      list(
+        texto = "Si el AUC obtenido es 0.50, ¿cómo se interpreta?",
+        opciones = c(
+          "El modelo clasifica casi perfectamente",
+          "El modelo no discrimina mejor que el azar",
+          "Existe sobreajuste",
+          "Los datos contienen errores"
+        ),
+        correcta = "El modelo no discrimina mejor que el azar"
+      ),
+      
+      list(
+        texto = "Al aumentar el número de verdaderos positivos sin modificar el resto de resultados, ¿qué medida mejora directamente?",
+        opciones = c(
+          "Precisión (Accuracy)",
+          "Sensibilidad",
+          "Error cuadrático medio",
+          "Coeficiente de determinación"
+        ),
+        correcta = "Sensibilidad"
+      ),
+      
+      list(
+        texto = "Un paciente obtiene una probabilidad estimada de enfermedad del 0.74 y el umbral de clasificación es 0.5. ¿Cómo será clasificado?",
+        opciones = c(
+          "Como caso negativo",
+          "No puede clasificarse",
+          "Como caso positivo",
+          "Depende del tamaño muestral"
+        ),
+        correcta = "Como caso positivo"
+      ),
+      
+      list(
+        texto = "¿Cuál de las siguientes afirmaciones es correcta?",
+        opciones = c(
+          "La regresión logística predice directamente valores continuos.",
+          "Solo puede utilizar una variable explicativa.",
+          "Puede utilizar variables continuas y categóricas como predictores.",
+          "Solo funciona cuando todas las variables siguen una distribución normal."
+        ),
+        correcta = "Puede utilizar variables continuas y categóricas como predictores"
+      )
+      
+    )
+    
+    preguntas_usuario <- reactiveVal(list())
+    
+    observeEvent(input$add, {
+      req(input$nueva_pregunta, input$op1, input$op2, input$op3, input$op4)
+      
+      nueva <- list(
+        texto = input$nueva_pregunta,
+        opciones = c(input$op1, input$op2, input$op3, input$op4),
+        correcta = c(input$op1, input$op2, input$op3, input$op4)[
+          match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))
+        ]
+      )
+      
+      preguntas_usuario(c(preguntas_usuario(), list(nueva)))
+    })
+    
+    preguntas <- reactive({
+      c(preguntas_base, preguntas_usuario())
+    })
+    
+    preguntas_ordenadas <- reactiveVal(NULL)
+    
+    observe({
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+        p
+      })
+      
+      if (is.null(isolate(preguntas_ordenadas()))) {
+        preguntas_ordenadas(sample(lista_enriquecida, min(10, length(lista_enriquecida))))
+      }
+    })
+    
+    observeEvent(input$shuffle, {
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+        p
+      })
+      
+      nuevas <- sample(lista_enriquecida, min(10, length(lista_enriquecida)))
+      
+      nuevas <- lapply(nuevas, function(p) {
+        p$opciones <- sample(p$opciones)
+        p
+      })
+      
+      preguntas_ordenadas(nuevas)
+    })
     
     output$preguntas <- renderUI({
+      req(preguntas_ordenadas())
       
       tagList(
-        lapply(seq_along(preguntas), function(i){
+        lapply(seq_along(preguntas_ordenadas()), function(i) {
+          pregunta <- preguntas_ordenadas()[[i]]
+          id_input <- pregunta$id_unico
           
-          radioButtons(
-            inputId = session$ns(paste0("q", i)),
-            label = paste0(i, ". ", preguntas[[i]]$texto),
-            choices = preguntas[[i]]$opciones
+          feedback_ui <- NULL
+          
+          if (isTRUE(mostrar_respuestas())) {
+            user_ans <- input[[id_input]]
+            correct <- pregunta$correcta
+            
+            if (!is.null(user_ans) && user_ans == correct) {
+              feedback_ui <- div(class = "text-success mt-2 font-weight-bold", "✔️ ¡Correcto!")
+            } else {
+              feedback_ui <- div(class = "text-danger mt-2",
+                                 paste0("❌ Incorrecto. Respuesta: ", correct))
+            }
+          }
+          
+          card(
+            class = "mb-3 shadow-sm",
+            card_header(tags$strong(paste0("Pregunta ", i))),
+            card_body(
+              radioButtons(
+                session$ns(id_input),
+                pregunta$texto,
+                choices = pregunta$opciones,
+                selected = input[[id_input]]
+              ),
+              feedback_ui
+            )
           )
         })
       )
     })
     
-    # =========================================
-    # RESPUESTAS
-    # =========================================
-    
-    output$respuestas <- renderUI({
+    output$score <- renderUI({
+      req(mostrar_respuestas())
       
-      req(input$ver)
+      total <- length(preguntas_ordenadas())
       
-      tagList(
-        lapply(seq_along(preguntas), function(i){
-          
-          respuesta_usuario <- input[[paste0("q", i)]]
-          correcta <- preguntas[[i]]$correcta
-          
-          if(is.null(respuesta_usuario)){
-            return(NULL)
-          }
-          
-          if(respuesta_usuario == correcta){
-            p(strong(paste0("✔ Pregunta ", i, ": Correcto")))
-          } else {
-            p(strong(paste0("✘ Pregunta ", i, ": Incorrecto. Respuesta correcta: ", correcta)))
-          }
-        })
+      aciertos <- sum(sapply(preguntas_ordenadas(), function(p) {
+        res <- input[[p$id_unico]]
+        !is.null(res) && res == p$correcta
+      }))
+      
+      porcentaje <- aciertos / total * 100
+      
+      div(
+        class = if (porcentaje >= 70) "alert alert-success" else "alert alert-warning",
+        strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
       )
     })
-    
   })
 }

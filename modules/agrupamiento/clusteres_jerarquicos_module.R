@@ -183,90 +183,84 @@ Jerarquicos_Teoria_Server <- function(id){
 # -------------------------------
 # Análisis
 # -------------------------------
-Jerarquicos_Auto_UI <- function(id) {
+Jerarquicos_Analisis_UI <- function(id){
   ns <- NS(id)
-  
   tagList(
-    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
-    tags$head(
-      tags$style(HTML("
-        /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
-        .shiny-input-radiogroup, 
-        .shiny-input-radiogroup .shiny-options-group,
-        .shiny-input-radiogroup .form-check,
-        .shiny-input-radiogroup .radio {
-          width: 100% !important;
-          max-width: 100% !important;
-          display: block !important;
-        }
-        
-        /* Asegura que la etiqueta y el texto ocupen todo el espacio del card */
-        .shiny-input-radiogroup label,
-        .shiny-input-radiogroup .form-check-label {
-          width: 100% !important;
-          max-width: 100% !important;
-          display: inline-block !important;
-          white-space: normal !important; /* Permite saltos lógicos, no prematuros */
-          word-break: break-word !important;
-        }
-        
-        /* Ajuste por si el flexbox de Bootstrap 5 está encogiendo el texto */
-        .form-check {
-          display: flex !important;
-          align-items: center !important;
-          gap: 0.5rem;
-        }
-      "))
-    ),
-    
+    # Título personalizado idéntico a los módulos anteriores
     h3("Autoevaluación", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
-    uiOutput(ns("preguntas")),
-    
-    br(),
-    
-    card(
-      class = "shadow-sm mb-4 border-0",
-      style = "background-color: #fdfdfd;",
-      card_body(
-        class = "d-flex justify-content-between align-items-center flex-wrap gap-3 py-3",
-        div(
-          class = "d-flex gap-2",
-          actionButton(ns("ver"), "👁️ Ver respuestas", class = "btn-primary"),
-          actionButton(ns("shuffle"), "🔀 Reordenar test", class = "btn-outline-primary")
-        ),
-        uiOutput(ns("score"))
-      )
-    ),
-    
-    br(),
-    
-    accordion(
-      open = FALSE,
-      class = "shadow-sm border-0",
-      accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de PCA",
-        icon = icon("gear"),
-        
-        fluidRow(
-          column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
-          column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
-                                        choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
-        ),
-        
-        fluidRow(
-          column(width = 3, textInput(ns("op1"), "Opción 1")),
-          column(width = 3, textInput(ns("op2"), "Opción 2")),
-          column(width = 3, textInput(ns("op3"), "Opción 3")),
-          column(width = 3, textInput(ns("op4"), "Opción 4"))
-        ),
-        
-        actionButton(ns("add"), "Guardar pregunta en el banco de PCA", class = "btn-success btn-sm mt-2")
+    fluidRow(
+      column(4,
+             wellPanel(
+               h4("Configuración"),
+               p("Seleccione los parámetros para estructurar el árbol jerárquico y definir los clústeres."),
+               hr(),
+               
+               # --- ESTO SE VE SIEMPRE ---
+               selectInput(ns("metodo"), "Método de enlace (Lance-Williams)",
+                           choices = c("Ward.D2" = "ward.D2", "Completo" = "complete", "Promedio" = "average", "Single" = "single"),
+                           selected = "ward.D2"),
+               numericInput(ns("k"), "Número de clústeres", value = 3, min = 2, max = 10),
+               
+               # --- ESTO SOLO SE VE EN PCA Y DENDROGRAMA ---
+               conditionalPanel(
+                 condition = sprintf("input['%s'] == '2. Proyección PCA' || input['%s'] == '3. Árbol (Dendrograma)'", ns("tabs"), ns("tabs")),
+                 uiOutput(ns("ui_var_cat")),
+                 checkboxInput(ns("mostrar_labels"), "Mostrar etiquetas (N < 50)", FALSE)
+               ),
+               
+               hr(),
+               downloadButton(ns("dl_data"), "Descargar Clústeres (CSV)", class = "btn-success", style = "width: 100%;")
+             )
+      ),
+      column(8,
+             tabsetPanel(id = ns("tabs"),
+                         tabPanel("1. Datos", 
+                                  br(),
+                                  p("Información: El algoritmo calcula las distancias euclídeas a partir de las columnas numéricas normalizadas.", 
+                                    style = "color: #7f8c8d; font-style: italic; margin-bottom: 25px;"),
+                                  h4("Dataset original preparado", style = "color: #2c3e50; font-weight: 500;"),
+                                  DT::DTOutput(ns("tabla_resumen")),
+                                  br(), hr(), br(),
+                                  h4("Dataset estandarizado (Z-scores)", style = "color: #2c3e50; font-weight: 500;"),
+                                  DT::DTOutput(ns("tabla_scale"))),
+                         
+                         tabPanel("2. Proyección PCA", 
+                                  br(),
+                                  plotOutput(ns("pca_plot")),
+                                  br(),
+                                  h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"),
+                                  verbatimTextOutput(ns("interp_pca_cl"))),
+                         
+                         tabPanel("3. Árbol (Dendrograma)", 
+                                  br(),
+                                  plotOutput(ns("dendrograma")),
+                                  br(),
+                                  h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"),
+                                  verbatimTextOutput(ns("interp_dendro"))),
+                         
+                         tabPanel("4. Perfil de Variables", 
+                                  br(),
+                                  plotOutput(ns("boxplot_perfil")),
+                                  br(),
+                                  h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"),
+                                  verbatimTextOutput(ns("interp_perfil"))),
+                         
+                         tabPanel("5. Validación (Silueta)", 
+                                  br(),
+                                  plotOutput(ns("silhouette_map")),
+                                  br(),
+                                  plotOutput(ns("silhouette_dist")),
+                                  br(),
+                                  h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"),
+                                  verbatimTextOutput(ns("interp_silueta")))
+             )
       )
     )
   )
 }
+
 Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   
   moduleServer(id, function(input, output, session) {
@@ -546,6 +540,38 @@ Jerarquicos_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
+    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
+    tags$head(
+      tags$style(HTML("
+        /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
+        .shiny-input-radiogroup, 
+        .shiny-input-radiogroup .shiny-options-group,
+        .shiny-input-radiogroup .form-check,
+        .shiny-input-radiogroup .radio {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: block !important;
+        }
+        
+        /* Asegura que la etiqueta y el texto ocupen todo el espacio del card */
+        .shiny-input-radiogroup label,
+        .shiny-input-radiogroup .form-check-label {
+          width: 100% !important;
+          max-width: 100% !important;
+          display: inline-block !important;
+          white-space: normal !important; /* Permite saltos lógicos, no prematuros */
+          word-break: break-word !important;
+        }
+        
+        /* Ajuste por si el flexbox de Bootstrap 5 está encogiendo el texto */
+        .form-check {
+          display: flex !important;
+          align-items: center !important;
+          gap: 0.5rem;
+        }
+      "))
+    ),
+    
     h3("Autoevaluación", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
@@ -594,6 +620,7 @@ Jerarquicos_Auto_UI <- function(id) {
     )
   )
 }
+
 Jerarquicos_Auto_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     

@@ -167,7 +167,3 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
     }, ignoreInit = TRUE)
   })
 }
-
-
-
-

@@ -11,9 +11,9 @@ source("modules/agrupamiento/clusteres_jerarquicos_module.R")
 source("modules/agrupamiento/k_means_module.R")
 source("modules/agrupamiento/dbscan_module.R")
 source("modules/agrupamiento/agrupamiento_selector_module.R")
-source("modules/regresion multivariante/regresion_selector.R")
-source("modules/regresion multivariante/regresion_multiple.R")
-source("modules/regresion multivariante/regularizacion.R")
+source("modules/regresion/regresion_selector.R")
+source("modules/regresion/regresion_multiple.R")
+source("modules/regresion/regularizacion.R")
 source("modules/clasificacion/clasificacion_selector.R")
 source("modules/clasificacion/regresion_logistica.R")
 source("modules/clasificacion/lda.R")
@@ -34,8 +34,20 @@ ui <- page_sidebar(
       .sidebar .nav-link.active { background-color: #31314d !important; color: #ffffff !important; font-weight: bold; }
       .sidebar .nav-link:hover { background-color: #2d2d3f !important; color: #ffffff !important; }
       .sidebar-title { color: #ffffff !important; font-size: 1.2rem; font-weight: bold; padding-bottom: 10px; border-bottom: 1px solid #31314d; margin-bottom: 15px; }
+      
+      /* OBLIGA A LA 'X' / FLECHA DE CIERRE A SER BLANCA Y QUEDAR POR ENCIMA */
+      .collapse-toggle { 
+        color: #ffffff !important; 
+        opacity: 0.8;
+        z-index: 1050 !important;
+      }
+      .collapse-toggle:hover { 
+        opacity: 1; 
+        background-color: #31314d !important; 
+      }
     "))
   ),
+  
   
   # CONFIGURACIÓN DEL MENÚ LATERAL (SOLO BOTONES)
   sidebar = sidebar(
@@ -43,6 +55,7 @@ ui <- page_sidebar(
     title = div(class = "sidebar-title", "Índice"),
     width = 300,
     open = "open",
+    collapsible=TRUE,
     
     # Enlaces limpios sin meter las UI de los módulos aquí dentro
     actionLink("go_menu", "Inicio", class = "nav-link active"),
@@ -145,16 +158,33 @@ server <- function(input, output, session) {
   })
   
   # Objeto reactivo para la carga de archivos compartida
-  datos_usuario <- reactive({ NULL })
+  # El menú devuelve el dataset reactivo compartido
+  datos_usuario <- Menu_Server("menu_inicio_mod")
   
-  # Inicialización de servidores modulares (se quedan exactamente igual)
-  Menu_Server("menu_inicio_mod")
-  Reduccion_Server("reduccion_mod", datos = datos_usuario, datos_ejemplo = datos_ejemplo)
-  Agrupamiento_Server("agrupamiento_mod", datos = datos_usuario, datos_ejemplo = datos_ejemplo)
-  Regresion_Server("regresion_mod", datos = datos_usuario, datos_ejemplo = datos_ejemplo)
-  Clasificacion_Server("clasificacion_mod", datos = datos_usuario, datos_ejemplo = datos_ejemplo)
+  Reduccion_Server(
+    "reduccion_mod",
+    datos = datos_usuario,
+    datos_ejemplo = datos_ejemplo
+  )
+  
+  Agrupamiento_Server(
+    "agrupamiento_mod",
+    datos = datos_usuario,
+    datos_ejemplo = datos_ejemplo
+  )
+  
+  Regresion_Server(
+    "regresion_mod",
+    datos = datos_usuario,
+    datos_ejemplo = datos_ejemplo
+  )
+  
+  Clasificacion_Server(
+    "clasificacion_mod",
+    datos = datos_usuario,
+    datos_ejemplo = datos_ejemplo
+  )
 }
-
 shinyApp(ui = ui, server = server)
 
   

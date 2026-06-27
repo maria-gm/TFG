@@ -171,7 +171,7 @@ Regularizacion_Teoria_Server <- function(id) {
 Regularizacion_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
-    h3("Autoevaluación", 
+    h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
@@ -533,119 +533,390 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
 # =========================================================
 # REGULARIZACIÓN - AUTOEVALUACIÓN
 # =========================================================
-
-Regularizacion_Auto_UI <- function(id){
-  
+Regularizacion_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
+    # ─── SOLUCIÓN REFORZADA DEFINTIVA PARA RESPUESTAS EN UNA LÍNEA ───
+    tags$head(
+      tags$style(HTML("
+        /* Obliga a los contenedores de radio buttons a usar todo el ancho disponible */
+        .shiny-input-radiogroup, 
+        .shiny-input-container,
+        .shiny-options-group {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        
+        /* Ajuste estructural para Bootstrap 5 / bslib */
+        .shiny-input-radiogroup .form-check,
+        .shiny-input-radiogroup .radio {
+          display: flex !important;
+          align-items: flex-start !important; /* Mantiene el círculo arriba si hay texto largo */
+          width: 100% !important;
+          max-width: 100% !important;
+          gap: 0.5rem;
+          margin-bottom: 8px;
+        }
+        
+        /* Fuerza a la etiqueta de texto a expandirse sin restricciones ocultas */
+        .shiny-input-radiogroup .form-check-label,
+        .shiny-input-radiogroup label {
+          flex: 1 1 auto !important;
+          width: auto !important;
+          white-space: normal !important; 
+          word-break: break-word !important;
+          display: inline-block !important;
+        }
+      "))
+    ),
     
-    h3("Autoevaluación"),
+    h3("Autoevaluación", 
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     uiOutput(ns("preguntas")),
     
     br(),
     
-    actionButton(ns("ver"), "Ver respuestas"),
+    card(
+      class = "shadow-sm mb-4 border-0",
+      style = "background-color: #fdfdfd;",
+      card_body(
+        class = "d-flex justify-content-between align-items-center flex-wrap gap-3 py-3",
+        div(
+          class = "d-flex gap-2",
+          actionButton(ns("ver"), "👁️ Ver respuestas", class = "btn-primary"),
+          actionButton(ns("shuffle"), "🔀 Reordenar test", class = "btn-outline-primary")
+        ),
+        uiOutput(ns("score"))
+      )
+    ),
     
-    br(), br(),
+    br(),
     
-    uiOutput(ns("respuestas"))
+    accordion(
+      open = FALSE,
+      class = "shadow-sm border-0",
+      accordion_panel(
+        title = "➕ Gestión: Añadir pregunta personalizada de  los métodos de regularización y reducción", # Corrigo texto PCA -> DBSCAN
+        icon = icon("gear"),
+        
+        fluidRow(
+          column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
+          column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
+                                        choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
+        ),
+        
+        fluidRow(
+          column(width = 3, textInput(ns("op1"), "Opción 1")),
+          column(width = 3, textInput(ns("op2"), "Opción 2")),
+          column(width = 3, textInput(ns("op3"), "Opción 3")),
+          column(width = 3, textInput(ns("op4"), "Opción 4"))
+        ),
+        
+        actionButton(ns("add"), "Guardar pregunta en el banco de los métodos de regularización y reducción", class = "btn-success btn-sm mt-2") # Corrigo texto PCA -> DBSCAN
+      )
+    )
   )
 }
 
-
-Regularizacion_Auto_Server <- function(id){
-  
-  moduleServer(id, function(input, output, session){
+Regularizacion_Auto_Server <- function(id) {
+  moduleServer(id, function(input, output, session) {
     
-    preguntas <- list(
+    # CORRECCIÓN 1: Habías duplicado e inicializado dos veces consecutivas este valor reactivo
+    mostrar_respuestas <- reactiveVal(FALSE)
+    
+    observeEvent(input$ver, {
+      mostrar_respuestas(!mostrar_respuestas())
       
-      list(
-        texto = "¿Cuál es el objetivo principal de la regularización?",
-        opciones = c(
-          "a) Incrementar el número de variables",
-          "b) Reducir el sobreajuste",
-          "c) Eliminar observaciones",
-          "d) Crear nuevas variables"
-        ),
-        correcta = "b) Reducir el sobreajuste"
-      ),
-      
-      list(
-        texto = "¿Qué penalización utiliza Ridge?",
-        opciones = c(
-          "a) L1",
-          "b) L2",
-          "c) Logarítmica",
-          "d) Exponencial"
-        ),
-        correcta = "b) L2"
-      ),
-      
-      list(
-        texto = "¿Qué característica distingue a Lasso?",
-        opciones = c(
-          "a) No penaliza coeficientes",
-          "b) Elimina variables automáticamente",
-          "c) Incrementa el error",
-          "d) Usa componentes principales"
-        ),
-        correcta = "b) Elimina variables automáticamente"
+      updateActionButton(
+        session,
+        "ver",
+        label = if (mostrar_respuestas()) "🙈 Ocultar respuestas" else "👁️ Ver respuestas"
       )
+    })
+    
+    preguntas_base <- list(
+      
+      list(
+        texto = "¿Cuál es el objetivo principal de los métodos de regularización?",
+        opciones = c(
+          "Reducir el sobreajuste y mejorar la capacidad predictiva",
+          "Clasificar observaciones",
+          "Reducir el número de individuos",
+          "Calcular componentes principales"
+        ),
+        correcta = "Reducir el sobreajuste y mejorar la capacidad predictiva"
+      ),
+      
+      list(
+        texto = "¿En qué situación suelen ser especialmente útiles Ridge, LASSO y PCR?",
+        opciones = c(
+          "Cuando existe multicolinealidad o un gran número de variables",
+          "Cuando solo existe una variable explicativa",
+          "Cuando la respuesta es cualitativa",
+          "Cuando los residuos siguen una distribución uniforme"
+        ),
+        correcta = "Cuando existe multicolinealidad o un gran número de variables"
+      ),
+      
+      list(
+        texto = "¿Qué característica distingue al método Ridge?",
+        opciones = c(
+          "Elimina automáticamente variables",
+          "Penaliza los coeficientes acercándolos a cero, pero normalmente no los elimina",
+          "Solo puede utilizar dos variables explicativas",
+          "Reduce el número de observaciones"
+        ),
+        correcta = "Penaliza los coeficientes acercándolos a cero, pero normalmente no los elimina"
+      ),
+      
+      list(
+        texto = "¿Qué método puede realizar selección automática de variables?",
+        opciones = c(
+          "PCR",
+          "Regresión múltiple clásica",
+          "LASSO",
+          "Ridge"
+        ),
+        correcta = "LASSO"
+      ),
+      
+      list(
+        texto = "¿Qué ocurre con algunos coeficientes en LASSO cuando aumenta la penalización?",
+        opciones = c(
+          "Se hacen exactamente cero",
+          "Todos aumentan",
+          "No cambian",
+          "Se convierten en probabilidades"
+        ),
+        correcta = "Se hacen exactamente cero"
+      ),
+      
+      list(
+        texto = "¿Sobre qué trabaja inicialmente PCR?",
+        opciones = c(
+          "Sobre componentes principales obtenidas a partir de las variables originales",
+          "Sobre los residuos del modelo",
+          "Sobre la variable respuesta",
+          "Sobre una matriz de confusión"
+        ),
+        correcta = "Sobre componentes principales obtenidas a partir de las variables originales"
+      ),
+      
+      list(
+        texto = "¿Qué ventaja presenta PCR frente a la regresión múltiple cuando existen muchas variables correlacionadas?",
+        opciones = c(
+          "Reduce la dimensionalidad antes de ajustar el modelo",
+          "Calcula automáticamente los p-valores",
+          "Elimina siempre todas las variables irrelevantes",
+          "No necesita estandarizar los datos"
+        ),
+        correcta = "Reduce la dimensionalidad antes de ajustar el modelo"
+      ),
+      
+      list(
+        texto = "Supón que deseas conservar todas las variables, aunque algunas tengan poca importancia. ¿Qué método sería el más adecuado?",
+        opciones = c(
+          "LASSO",
+          "PCR",
+          "Ridge",
+          "Regresión logística"
+        ),
+        correcta = "Ridge"
+      ),
+      
+      list(
+        texto = "Un investigador quiere obtener un modelo sencillo utilizando únicamente las variables realmente importantes. ¿Qué método resulta más apropiado?",
+        opciones = c(
+          "Regresión múltiple",
+          "PCR",
+          "LASSO",
+          "Análisis factorial"
+        ),
+        correcta = "LASSO"
+      ),
+      
+      list(
+        texto = "¿Qué parámetro controla la intensidad de la penalización en Ridge y LASSO?",
+        opciones = c(
+          "λ (lambda)",
+          "R²",
+          "β₀",
+          "VIF"
+        ),
+        correcta = "λ (lambda)"
+      ),
+      
+      list(
+        texto = "¿Qué suele ocurrir si el valor de λ aumenta mucho?",
+        opciones = c(
+          "La penalización sobre los coeficientes aumenta",
+          "Los coeficientes crecen",
+          "El número de observaciones aumenta",
+          "El R² siempre mejora"
+        ),
+        correcta = "La penalización sobre los coeficientes aumenta"
+      ),
+      
+      list(
+        texto = "Tras aplicar LASSO observas que cinco coeficientes son exactamente cero. ¿Cómo se interpreta este resultado?",
+        opciones = c(
+          "Esas variables han sido descartadas por el modelo",
+          "Existe heterocedasticidad",
+          "Los datos contienen errores",
+          "El modelo no puede utilizarse"
+        ),
+        correcta = "Esas variables han sido descartadas por el modelo"
+      ),
+      
+      list(
+        texto = "En PCR se seleccionan únicamente las componentes principales que...",
+        opciones = c(
+          "Explican una parte importante de la variabilidad de los datos",
+          "Presentan el menor autovalor",
+          "Contienen menos observaciones",
+          "Corresponden a una única variable"
+        ),
+        correcta = "Explican una parte importante de la variabilidad de los datos"
+      ),
+      
+      list(
+        texto = "Dispones de 80 variables altamente correlacionadas entre sí y quieres construir un modelo predictivo estable. ¿Qué método sería especialmente adecuado?",
+        opciones = c(
+          "PCR",
+          "ANOVA",
+          "Regresión logística",
+          "Árboles de decisión"
+        ),
+        correcta = "PCR"
+      ),
+      
+      list(
+        texto = "¿Cuál de las siguientes afirmaciones es correcta?",
+        opciones = c(
+          "Ridge reduce los coeficientes pero normalmente no elimina variables, mientras que LASSO puede hacer ambas cosas.",
+          "LASSO siempre obtiene mejores predicciones que Ridge.",
+          "PCR únicamente puede utilizar dos componentes principales.",
+          "Los métodos de regularización sustituyen completamente a la regresión lineal."
+        ),
+        correcta = "Ridge reduce los coeficientes pero normalmente no elimina variables, mientras que LASSO puede hacer ambas cosas."
+      )
+      
     )
     
+    preguntas_usuario <- reactiveVal(list())
+    
+    observeEvent(input$add, {
+      req(input$nueva_pregunta, input$op1, input$op2, input$op3, input$op4)
+      
+      nueva <- list(
+        texto = input$nueva_pregunta,
+        opciones = c(input$op1, input$op2, input$op3, input$op4),
+        correcta = c(input$op1, input$op2, input$op3, input$op4)[
+          match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))
+        ]
+      )
+      
+      preguntas_usuario(c(preguntas_usuario(), list(nueva)))
+    })
+    
+    preguntas <- reactive({
+      c(preguntas_base, preguntas_usuario())
+    })
+    
+    preguntas_ordenadas <- reactiveVal(NULL)
+    
+    # CORRECCIÓN 3: Cambiado observe() por observeEvent(preguntas(), ...).
+    # Al usar observe() plano con isolate(), Shiny entraba en bucles infinitos de renderizado
+    # o no actualizaba correctamente el set inicial de preguntas al iniciar el módulo.
+    observeEvent(preguntas(), {
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+        p
+      })
+      
+      if (is.null(preguntas_ordenadas())) {
+        preguntas_ordenadas(sample(lista_enriquecida, min(10, length(lista_enriquecida))))
+      }
+    }, ignoreNULL = FALSE)
+    
+    observeEvent(input$shuffle, {
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+        p
+      })
+      
+      nuevas <- sample(lista_enriquecida, min(10, length(lista_enriquecida)))
+      
+      nuevas <- lapply(nuevas, function(p) {
+        p$opciones <- sample(p$opciones)
+        p
+      })
+      
+      preguntas_ordenadas(nuevas)
+    })
     
     output$preguntas <- renderUI({
+      req(preguntas_ordenadas())
       
       tagList(
-        lapply(seq_along(preguntas), function(i){
+        lapply(seq_along(preguntas_ordenadas()), function(i) {
+          pregunta <- preguntas_ordenadas()[[i]]
+          id_input <- pregunta$id_unico
           
-          radioButtons(
-            inputId = session$ns(paste0("q", i)),
-            label = paste0(i, ". ", preguntas[[i]]$texto),
-            choices = preguntas[[i]]$opciones
+          feedback_ui <- NULL
+          
+          if (isTRUE(mostrar_respuestas())) {
+            user_ans <- input[[id_input]]
+            correct <- pregunta$correcta
+            
+            if (!is.null(user_ans) && user_ans == correct) {
+              feedback_ui <- div(class = "text-success mt-2 font-weight-bold", "✔️ ¡Correcto!")
+            } else {
+              feedback_ui <- div(class = "text-danger mt-2",
+                                 paste0("❌ Incorrecto. Respuesta: ", correct))
+            }
+          }
+          
+          card(
+            class = "mb-3 shadow-sm",
+            card_header(tags$strong(paste0("Pregunta ", i))),
+            card_body(
+              radioButtons(
+                session$ns(id_input),
+                pregunta$texto,
+                choices = pregunta$opciones,
+                selected = input[[id_input]]
+              ),
+              feedback_ui
+            )
           )
         })
       )
     })
     
-    
-    output$respuestas <- renderUI({
+    output$score <- renderUI({
+      req(mostrar_respuestas())
       
-      req(input$ver)
+      total <- length(preguntas_ordenadas())
       
-      tagList(
-        lapply(seq_along(preguntas), function(i){
-          
-          respuesta_usuario <- input[[paste0("q", i)]]
-          
-          correcta <- preguntas[[i]]$correcta
-          
-          if(is.null(respuesta_usuario)){
-            return(NULL)
-          }
-          
-          if(respuesta_usuario == correcta){
-            
-            p(strong(
-              paste0("✔ Pregunta ", i, ": Correcto")
-            ))
-            
-          } else {
-            
-            p(strong(
-              paste0(
-                "✘ Pregunta ",
-                i,
-                ": Incorrecto. Respuesta correcta: ",
-                correcta
-              )
-            ))
-          }
-        })
+      aciertos <- sum(sapply(preguntas_ordenadas(), function(p) {
+        res <- input[[p$id_unico]]
+        !is.null(res) && res == p$correcta
+      }))
+      
+      porcentaje <- aciertos / total * 100
+      
+      div(
+        class = if (porcentaje >= 70) "alert alert-success" else "alert alert-warning",
+        strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
       )
     })
-    
   })
 }
+

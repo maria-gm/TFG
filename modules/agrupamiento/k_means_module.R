@@ -495,7 +495,7 @@ K_means_Auto_UI <- function(id) {
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de PCA",
+        title = "➕ Gestión: Añadir pregunta personalizada de K-Means",
         icon = icon("gear"),
         
         fluidRow(
@@ -511,7 +511,7 @@ K_means_Auto_UI <- function(id) {
           column(width = 3, textInput(ns("op4"), "Opción 4"))
         ),
         
-        actionButton(ns("add"), "Guardar pregunta en el banco de PCA", class = "btn-success btn-sm mt-2")
+        actionButton(ns("add"), "Guardar pregunta en el banco del K-Means", class = "btn-success btn-sm mt-2")
       )
     )
   )

@@ -176,7 +176,7 @@ LDA_Analisis_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    h3("Análisis Discriminante Lineal (LDA)", 
+    h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
@@ -473,24 +473,77 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       req(modelo_lda())
       DT::datatable(round(as.data.frame(modelo_lda()$scaling), 4), options = list(pageLength = 10, dom = 't', scrollX = TRUE))
     })
-    
     output$metricas_table <- DT::renderDT({
+      
       req(predicciones())
+      
       df <- predicciones()
+      
       matriz <- table(df$Real, df$Predicho)
-      acc <- sum(diag(matriz)) / sum(matriz)
       
-      prec_clase <- diag(matriz) / rowSums(matriz)
-      prec_clase[is.na(prec_clase)] <- 0
-      bal_acc <- mean(prec_clase)
+      # Accuracy
+      accuracy <- sum(diag(matriz)) / sum(matriz)
       
-      res_df <- data.frame(
-        Metrica = c("Exactitud Global (Accuracy)", "Exactitud Balanceada", "Tamaño Muestral (N)"),
-        Valor = c(round(acc, 4), round(bal_acc, 4), sum(matriz))
+      # Solo clasificación binaria
+      if (nrow(matriz) == 2) {
+        
+        TP <- matriz[2,2]
+        TN <- matriz[1,1]
+        FP <- matriz[1,2]
+        FN <- matriz[2,1]
+        
+        precision <- ifelse((TP + FP) == 0, NA, TP/(TP+FP))
+        recall    <- ifelse((TP + FN) == 0, NA, TP/(TP+FN))
+        f1         <- ifelse(is.na(precision) | is.na(recall) |
+                               (precision+recall)==0,
+                             NA,
+                             2*precision*recall/(precision+recall))
+        
+        res_df <- data.frame(
+          Métrica=c("Accuracy",
+                    "Precision",
+                    "Recall",
+                    "F1-score"),
+          Valor=round(c(accuracy,
+                        precision,
+                        recall,
+                        f1),4)
+        )
+        
+      } else {
+        
+        precision <- diag(matriz)/colSums(matriz)
+        recall    <- diag(matriz)/rowSums(matriz)
+        
+        precision[is.na(precision)] <- 0
+        recall[is.na(recall)] <- 0
+        
+        f1 <- 2*precision*recall/(precision+recall)
+        f1[is.na(f1)] <- 0
+        
+        res_df <- data.frame(
+          Métrica=c("Accuracy",
+                    "Precision (macro)",
+                    "Recall (macro)",
+                    "F1-score (macro)"),
+          Valor=round(c(
+            accuracy,
+            mean(precision),
+            mean(recall),
+            mean(f1)
+          ),4)
+        )
+        
+      }
+      
+      DT::datatable(
+        res_df,
+        options=list(dom="t"),
+        rownames=FALSE
       )
-      DT::datatable(res_df, options = list(dom = 't'), rownames = FALSE)
+      
     })
-    
+
     #--------------------------------------------------
     # 7. TEXTOS DE INTERPRETACIÓN
     #--------------------------------------------------
@@ -628,7 +681,7 @@ LDA_Auto_UI <- function(id) {
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de PCA",
+        title = "➕ Gestión: Añadir pregunta personalizada del LDA ",
         icon = icon("gear"),
         
         fluidRow(
@@ -644,7 +697,7 @@ LDA_Auto_UI <- function(id) {
           column(width = 3, textInput(ns("op4"), "Opción 4"))
         ),
         
-        actionButton(ns("add"), "Guardar pregunta en el banco de PCA", class = "btn-success btn-sm mt-2")
+        actionButton(ns("add"), "Guardar pregunta en el banco del LDA", class = "btn-success btn-sm mt-2")
       )
     )
   )

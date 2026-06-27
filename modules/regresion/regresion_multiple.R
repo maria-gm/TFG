@@ -480,130 +480,389 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
 # -------------------------------
 # AUTOEVALUACION
 # -------------------------------
-
-Regresion_multiple_Auto_UI <- function(id){
+Regresion_multiple_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
+    # ─── SOLUCIÓN REFORZADA DEFINTIVA PARA RESPUESTAS EN UNA LÍNEA ───
+    tags$head(
+      tags$style(HTML("
+        /* Obliga a los contenedores de radio buttons a usar todo el ancho disponible */
+        .shiny-input-radiogroup, 
+        .shiny-input-container,
+        .shiny-options-group {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        
+        /* Ajuste estructural para Bootstrap 5 / bslib */
+        .shiny-input-radiogroup .form-check,
+        .shiny-input-radiogroup .radio {
+          display: flex !important;
+          align-items: flex-start !important; /* Mantiene el círculo arriba si hay texto largo */
+          width: 100% !important;
+          max-width: 100% !important;
+          gap: 0.5rem;
+          margin-bottom: 8px;
+        }
+        
+        /* Fuerza a la etiqueta de texto a expandirse sin restricciones ocultas */
+        .shiny-input-radiogroup .form-check-label,
+        .shiny-input-radiogroup label {
+          flex: 1 1 auto !important;
+          width: auto !important;
+          white-space: normal !important; 
+          word-break: break-word !important;
+          display: inline-block !important;
+        }
+      "))
+    ),
     
-    h3("Autoevaluación"),
+    h3("Autoevaluación", 
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     uiOutput(ns("preguntas")),
     
     br(),
     
-    actionButton(ns("ver"), "Ver respuestas"),
+    card(
+      class = "shadow-sm mb-4 border-0",
+      style = "background-color: #fdfdfd;",
+      card_body(
+        class = "d-flex justify-content-between align-items-center flex-wrap gap-3 py-3",
+        div(
+          class = "d-flex gap-2",
+          actionButton(ns("ver"), "👁️ Ver respuestas", class = "btn-primary"),
+          actionButton(ns("shuffle"), "🔀 Reordenar test", class = "btn-outline-primary")
+        ),
+        uiOutput(ns("score"))
+      )
+    ),
     
-    br(), br(),
+    br(),
     
-    uiOutput(ns("respuestas"))
-  )
-}
-Regresion_multiple_Auto_Server <- function(id){
-  
-  moduleServer(id, function(input, output, session){
-    
-    # =========================================
-    # 📚 PREGUNTAS (EDITA AQUÍ)
-    # =========================================
-    
-    preguntas <- list(
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "c)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "a)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "b)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = ""
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "d)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "c)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d)"),
-        correcta = "d)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d"),
-        correcta = "a)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d"),
-        correcta = "c)"
-      ),
-      list(
-        texto = "¿?",
-        opciones = c("a)","b)","c)", "d"),
-        correcta = "b)"
+    accordion(
+      open = FALSE,
+      class = "shadow-sm border-0",
+      accordion_panel(
+        title = "➕ Gestión: Añadir pregunta personalizada de  la regresión múltiple", # Corrigo texto PCA -> DBSCAN
+        icon = icon("gear"),
+        
+        fluidRow(
+          column(width = 9, textInput(ns("nueva_pregunta"), "Enunciado de la pregunta")),
+          column(width = 3, selectInput(ns("correcta"), "Asignar correcta", 
+                                        choices = c("Opción 1", "Opción 2", "Opción 3", "Opción 4")))
+        ),
+        
+        fluidRow(
+          column(width = 3, textInput(ns("op1"), "Opción 1")),
+          column(width = 3, textInput(ns("op2"), "Opción 2")),
+          column(width = 3, textInput(ns("op3"), "Opción 3")),
+          column(width = 3, textInput(ns("op4"), "Opción 4"))
+        ),
+        
+        actionButton(ns("add"), "Guardar pregunta en el banco de la regresión múltiple", class = "btn-success btn-sm mt-2") # Corrigo texto PCA -> DBSCAN
       )
     )
+  )
+}
+
+Regresion_multiple_Auto_Server <- function(id) {
+  moduleServer(id, function(input, output, session) {
     
-    # =========================================
-    # UI DINÁMICA
-    # =========================================
+    # CORRECCIÓN 1: Habías duplicado e inicializado dos veces consecutivas este valor reactivo
+    mostrar_respuestas <- reactiveVal(FALSE)
+    
+    observeEvent(input$ver, {
+      mostrar_respuestas(!mostrar_respuestas())
+      
+      updateActionButton(
+        session,
+        "ver",
+        label = if (mostrar_respuestas()) "🙈 Ocultar respuestas" else "👁️ Ver respuestas"
+      )
+    })
+    
+    preguntas_base <- list(
+      
+      list(
+        texto = "¿Cuál es el objetivo principal de la regresión lineal múltiple?",
+        opciones = c(
+          "Clasificar observaciones",
+          "Predecir una variable respuesta continua a partir de varias variables explicativas",
+          "Reducir la dimensionalidad",
+          "Agrupar individuos similares"
+        ),
+        correcta = "Predecir una variable respuesta continua a partir de varias variables explicativas"
+      ),
+      
+      list(
+        texto = "¿Qué representa un coeficiente de regresión positivo?",
+        opciones = c(
+          "Al aumentar esa variable, disminuye la respuesta",
+          "No existe relación entre ambas variables",
+          "Al aumentar esa variable, aumenta la respuesta esperada",
+          "El modelo deja de ser válido"
+        ),
+        correcta = "Al aumentar esa variable, aumenta la respuesta esperada"
+      ),
+      
+      list(
+        texto = "¿Qué mide el coeficiente de determinación (R²)?",
+        opciones = c(
+          "La proporción de variabilidad explicada por el modelo",
+          "El error máximo cometido",
+          "El número de variables significativas",
+          "La correlación entre los residuos"
+        ),
+        correcta = "La proporción de variabilidad explicada por el modelo"
+      ),
+      
+      list(
+        texto = "¿Qué indica un p-valor pequeño asociado a un coeficiente?",
+        opciones = c(
+          "Que la variable aporta información al modelo",
+          "Que existe multicolinealidad",
+          "Que el modelo es incorrecto",
+          "Que el coeficiente vale exactamente cero"
+        ),
+        correcta = "Que la variable aporta información al modelo"
+      ),
+      
+      list(
+        texto = "¿Qué supuesto establece que los residuos deben tener varianza constante?",
+        opciones = c(
+          "Linealidad",
+          "Independencia",
+          "Homocedasticidad",
+          "Normalidad"
+        ),
+        correcta = "Homocedasticidad"
+      ),
+      
+      list(
+        texto = "Si dos variables explicativas están muy correlacionadas entre sí, aparece:",
+        opciones = c(
+          "Heterocedasticidad",
+          "Multicolinealidad",
+          "Autocorrelación",
+          "No ocurre ningún problema"
+        ),
+        correcta = "Multicolinealidad"
+      ),
+      
+      list(
+        texto = "¿Qué suele utilizarse para detectar multicolinealidad?",
+        opciones = c(
+          "Coeficiente VIF",
+          "Coeficiente de Gini",
+          "Curva ROC",
+          "Índice de Silhouette"
+        ),
+        correcta = "Coeficiente VIF"
+      ),
+      
+      list(
+        texto = "Un modelo presenta un R² = 0.82. ¿Cómo se interpreta?",
+        opciones = c(
+          "El modelo acierta el 82% de las observaciones",
+          "El 82% de la variabilidad de la respuesta queda explicada por el modelo",
+          "Existe un 18% de error de clasificación",
+          "Los coeficientes son todos significativos"
+        ),
+        correcta = "El 82% de la variabilidad de la respuesta queda explicada por el modelo"
+      ),
+      
+      list(
+        texto = "Al representar los residuos frente a los valores ajustados aparece un patrón en forma de embudo. ¿Qué problema sugiere?",
+        opciones = c(
+          "Normalidad",
+          "Homocedasticidad",
+          "Heterocedasticidad",
+          "Sobreajuste"
+        ),
+        correcta = "Heterocedasticidad"
+      ),
+      
+      list(
+        texto = "Un investigador incorpora una nueva variable y el R² aumenta ligeramente, pero el R² ajustado disminuye. ¿Qué indica esto?",
+        opciones = c(
+          "La nueva variable probablemente no aporta información útil",
+          "El modelo ha mejorado claramente",
+          "Los residuos son normales",
+          "El modelo ya no puede utilizarse"
+        ),
+        correcta = "La nueva variable probablemente no aporta información útil"
+      ),
+      
+      list(
+        texto = "¿Qué representa el intercepto del modelo?",
+        opciones = c(
+          "El valor esperado de la respuesta cuando todas las variables explicativas valen cero",
+          "El valor máximo de la respuesta",
+          "La pendiente de mayor magnitud",
+          "El error medio del modelo"
+        ),
+        correcta = "El valor esperado de la respuesta cuando todas las variables explicativas valen cero"
+      ),
+      
+      list(
+        texto = "¿Cuál es el objetivo de analizar los residuos del modelo?",
+        opciones = c(
+          "Comprobar si se cumplen los supuestos del modelo",
+          "Calcular el R²",
+          "Obtener nuevas variables",
+          "Seleccionar automáticamente predictores"
+        ),
+        correcta = "Comprobar si se cumplen los supuestos del modelo"
+      ),
+      
+      list(
+        texto = "Si una variable tiene un coeficiente negativo, significa que:",
+        opciones = c(
+          "Al aumentar esa variable, disminuye la respuesta esperada",
+          "Siempre debe eliminarse",
+          "No influye sobre la respuesta",
+          "Existe heterocedasticidad"
+        ),
+        correcta = "Al aumentar esa variable, disminuye la respuesta esperada"
+      ),
+      
+      list(
+        texto = "Tras ajustar un modelo, observas que todos los residuos se distribuyen aleatoriamente alrededor de cero sin patrones visibles. ¿Qué conclusión es la más razonable?",
+        opciones = c(
+          "El supuesto de linealidad parece cumplirse",
+          "Existe multicolinealidad",
+          "El modelo presenta sobreajuste",
+          "Debe utilizarse regresión logística"
+        ),
+        correcta = "El supuesto de linealidad parece cumplirse"
+      ),
+      
+      list(
+        texto = "¿Cuál de las siguientes acciones suele ayudar cuando existe una fuerte multicolinealidad?",
+        opciones = c(
+          "Aumentar artificialmente el número de observaciones",
+          "Eliminar o combinar variables muy correlacionadas, o aplicar técnicas de regularización",
+          "Eliminar todos los residuos negativos",
+          "Incrementar el nivel de significación"
+        ),
+        correcta = "Eliminar o combinar variables muy correlacionadas, o aplicar técnicas de regularización"
+      )
+      
+    )
+    
+    preguntas_usuario <- reactiveVal(list())
+    
+    observeEvent(input$add, {
+      req(input$nueva_pregunta, input$op1, input$op2, input$op3, input$op4)
+      
+      nueva <- list(
+        texto = input$nueva_pregunta,
+        opciones = c(input$op1, input$op2, input$op3, input$op4),
+        correcta = c(input$op1, input$op2, input$op3, input$op4)[
+          match(input$correcta, c("Opción 1", "Opción 2", "Opción 3", "Opción 4"))
+        ]
+      )
+      
+      preguntas_usuario(c(preguntas_usuario(), list(nueva)))
+    })
+    
+    preguntas <- reactive({
+      c(preguntas_base, preguntas_usuario())
+    })
+    
+    preguntas_ordenadas <- reactiveVal(NULL)
+    
+    # CORRECCIÓN 3: Cambiado observe() por observeEvent(preguntas(), ...).
+    # Al usar observe() plano con isolate(), Shiny entraba en bucles infinitos de renderizado
+    # o no actualizaba correctamente el set inicial de preguntas al iniciar el módulo.
+    observeEvent(preguntas(), {
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+        p
+      })
+      
+      if (is.null(preguntas_ordenadas())) {
+        preguntas_ordenadas(sample(lista_enriquecida, min(10, length(lista_enriquecida))))
+      }
+    }, ignoreNULL = FALSE)
+    
+    observeEvent(input$shuffle, {
+      lista_actual <- preguntas()
+      
+      lista_enriquecida <- lapply(lista_actual, function(p) {
+        p$id_unico <- paste0("q_", gsub("[^a-zA-Z0-9]", "", p$texto))
+        p
+      })
+      
+      nuevas <- sample(lista_enriquecida, min(10, length(lista_enriquecida)))
+      
+      nuevas <- lapply(nuevas, function(p) {
+        p$opciones <- sample(p$opciones)
+        p
+      })
+      
+      preguntas_ordenadas(nuevas)
+    })
     
     output$preguntas <- renderUI({
+      req(preguntas_ordenadas())
       
       tagList(
-        lapply(seq_along(preguntas), function(i){
+        lapply(seq_along(preguntas_ordenadas()), function(i) {
+          pregunta <- preguntas_ordenadas()[[i]]
+          id_input <- pregunta$id_unico
           
-          radioButtons(
-            inputId = session$ns(paste0("q", i)),
-            label = paste0(i, ". ", preguntas[[i]]$texto),
-            choices = preguntas[[i]]$opciones
+          feedback_ui <- NULL
+          
+          if (isTRUE(mostrar_respuestas())) {
+            user_ans <- input[[id_input]]
+            correct <- pregunta$correcta
+            
+            if (!is.null(user_ans) && user_ans == correct) {
+              feedback_ui <- div(class = "text-success mt-2 font-weight-bold", "✔️ ¡Correcto!")
+            } else {
+              feedback_ui <- div(class = "text-danger mt-2",
+                                 paste0("❌ Incorrecto. Respuesta: ", correct))
+            }
+          }
+          
+          card(
+            class = "mb-3 shadow-sm",
+            card_header(tags$strong(paste0("Pregunta ", i))),
+            card_body(
+              radioButtons(
+                session$ns(id_input),
+                pregunta$texto,
+                choices = pregunta$opciones,
+                selected = input[[id_input]]
+              ),
+              feedback_ui
+            )
           )
         })
       )
     })
     
-    # =========================================
-    # RESPUESTAS
-    # =========================================
-    
-    output$respuestas <- renderUI({
+    output$score <- renderUI({
+      req(mostrar_respuestas())
       
-      req(input$ver)
+      total <- length(preguntas_ordenadas())
       
-      tagList(
-        lapply(seq_along(preguntas), function(i){
-          
-          respuesta_usuario <- input[[paste0("q", i)]]
-          correcta <- preguntas[[i]]$correcta
-          
-          if(is.null(respuesta_usuario)){
-            return(NULL)
-          }
-          
-          if(respuesta_usuario == correcta){
-            p(strong(paste0("✔ Pregunta ", i, ": Correcto")))
-          } else {
-            p(strong(paste0("✘ Pregunta ", i, ": Incorrecto. Respuesta correcta: ", correcta)))
-          }
-        })
+      aciertos <- sum(sapply(preguntas_ordenadas(), function(p) {
+        res <- input[[p$id_unico]]
+        !is.null(res) && res == p$correcta
+      }))
+      
+      porcentaje <- aciertos / total * 100
+      
+      div(
+        class = if (porcentaje >= 70) "alert alert-success" else "alert alert-warning",
+        strong(paste0("Puntuación: ", aciertos, " / ", total, " (", round(porcentaje), "%)"))
       )
     })
-    
   })
 }

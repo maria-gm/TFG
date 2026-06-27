@@ -792,7 +792,6 @@ PCA_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
     tags$head(
       tags$style(HTML("
         /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
@@ -851,7 +850,7 @@ PCA_Auto_UI <- function(id) {
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de PCA",
+        title = "➕ Gestión: Añadir pregunta personalizada de PCA" ,
         icon = icon("gear"),
         
         fluidRow(
