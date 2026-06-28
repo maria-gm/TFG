@@ -218,14 +218,14 @@ AF_Analisis_UI <- function(id){
   
   tagList(
     
-    # Título personalizado idéntico al de ACP
+    # Título 
     h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
       
       #--------------------------------------------------
-      # PANEL LATERAL (A LA IZQUIERDA)
+      # PANEL LATERAL
       #--------------------------------------------------
       
       column(
@@ -244,7 +244,7 @@ AF_Analisis_UI <- function(id){
           hr(),
           
           helpText(
-            "Nota: El método de extracción se realiza exclusivamente mediante Ejes Principales (pa)."
+            "Nota: La extracción se realiza mediante el métodos de los Ejes Principales (pa)."
           ),
           
           helpText(
@@ -359,18 +359,35 @@ AF_Analisis_UI <- function(id){
               p("Interpretación de cargas factoriales. Las celdas resaltadas superan la magnitud mínima de contribución.")
             ),
             
-            h4("Tabla de cargas", style = "color: #2c3e50; font-weight: 500;"),
+            h4(
+              "Tabla de cargas",
+              style = "color: #2c3e50; font-weight: 500;"
+            ),
             DT::DTOutput(ns("loadings_table_af")),
             
             br(),
             
-            h4("Comunalidades (H2) y Unicidad (U2)", style = "color: #2c3e50; font-weight: 500;"),
+            h4(
+              "Interpretación",
+              style = "color: #2c3e50; font-weight: 500;"
+            ),
+            verbatimTextOutput(ns("interp_loadings_af")),
+            
+            br(),
+            
+            h4(
+              "Comunalidades (H²) y Unicidades (U²)",
+              style = "color: #2c3e50; font-weight: 500;"
+            ),
             DT::DTOutput(ns("comunalidades_table")),
             
             br(),
             
-            h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"),
-            verbatimTextOutput(ns("interp_loadings_af"))
+            h4(
+              "Interpretación de las comunalidades",
+              style = "color: #2c3e50; font-weight: 500;"
+            ),
+            verbatimTextOutput(ns("interp_comunalidades_af"))
           ),
           
           #================================================
@@ -486,6 +503,15 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
         elementos <- c(elementos, list(
           hr(),
           h5("Filtrado de Cargas (Loadings)"),
+          selectInput(
+            ns("tipo_cargas"),
+            "Mostrar matriz:",
+            choices = c(
+              "Cargas rotadas" = "rotadas",
+              "Cargas sin rotar" = "sin_rotar"
+            ),
+            selected = "rotadas"
+          ),
           sliderInput(
             ns("af_magnitud_carga"),
             "Magnitud mínima de contribución:",
@@ -625,48 +651,54 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     # CARGAS FACTORIALES CON COLOR BICOLOR
     #--------------------------------------------------
     output$loadings_table_af <- DT::renderDT({
-      req(af_res(), input$n_factores)
-      af <- af_res()
-      f <- round(input$n_factores)
-      umbral <- if(!is.null(input$af_magnitud_carga)) input$af_magnitud_carga else 0.3
       
-      cargas <- as.data.frame(unclass(af$loadings))
+      req(af_res())
+      
+      umbral <- if(!is.null(input$af_magnitud_carga))
+        input$af_magnitud_carga
+      else
+        0.3
+      
+      if(input$tipo_cargas=="rotadas"){
+        
+        cargas <- as.data.frame(unclass(af_res()$loadings))
+        
+      }else{
+        
+        af_sin_rotar <- psych::fa(
+          r = datos_num(),
+          nfactors = round(input$n_factores),
+          fm = "pa",
+          rotate = "none"
+        )
+        
+        cargas <- as.data.frame(unclass(af_sin_rotar$loadings))
+        
+      }
       
       DT::datatable(
-        round(cargas, 3),
-        options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
-        class = 'cell-border stripe hover compact'
-      ) %>% 
+        round(cargas,3),
+        options=list(
+          paging=FALSE,
+          scrollY="400px",
+          scrollX=TRUE,
+          autoWidth=TRUE
+        ),
+        class='cell-border stripe hover compact'
+      ) %>%
         DT::formatStyle(
-          columns = 1:ncol(cargas),
-          backgroundColor = DT::styleInterval(
-            cuts = c(-umbral, umbral), 
-            values = c('#fcd7d7', 'transparent', '#d4edda')
+          columns=1:ncol(cargas),
+          backgroundColor=DT::styleInterval(
+            cuts=c(-umbral,umbral),
+            values=c("#fcd7d7","transparent","#d4edda")
           ),
-          fontWeight = DT::styleInterval(
-            cuts = c(-umbral, umbral), 
-            values = c('bold', 'normal', 'bold')
+          fontWeight=DT::styleInterval(
+            cuts=c(-umbral,umbral),
+            values=c("bold","normal","bold")
           )
         )
-    })
-    
-    output$comunalidades_table <- DT::renderDT({
-      req(af_res())
-      af <- af_res()
       
-      df_comun <- data.frame(
-        Variable = names(af$communality),
-        Comunalidad_H2 = round(af$communality, 3),
-        Unicidad_U2 = round(af$uniquenesses, 3)
-      )
-      
-      DT::datatable(
-        df_comun,
-        options = list(paging = FALSE, scrollY = "300px", scrollX = TRUE, autoWidth = TRUE),
-        class = 'cell-border stripe hover compact'
-      )
     })
-    
     output$interp_loadings_af <- renderText({
       req(input$n_factores)
       umbral <- if(!is.null(input$af_magnitud_carga)) input$af_magnitud_carga else 0.3
@@ -680,6 +712,60 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       )
     })
     
+    output$comunalidades_table <- DT::renderDT({
+      
+      req(af_res())
+      af <- af_res()
+      
+      df_comun <- data.frame(
+        Variable = names(af$communality),
+        "Comunalidades (H²)" = round(af$communality, 3),
+        "Unicidades (U²)" = round(af$uniquenesses, 3),
+        check.names = FALSE
+      )
+      
+      DT::datatable(
+        df_comun,
+        rownames = FALSE,  
+        options = list(
+          paging = FALSE,
+          scrollY = "300px",
+          scrollX = TRUE,
+          autoWidth = TRUE
+        ),
+        class = "cell-border stripe hover compact"
+      )
+      
+    })
+    output$interp_comunalidades_af <- renderText({
+      
+      req(af_res())
+      
+      h2 <- af_res()$communality
+      
+      buenas <- sum(h2 >= 0.50)
+      
+      medias <- sum(h2 >= 0.30 & h2 < 0.50)
+      
+      bajas <- sum(h2 < 0.30)
+      
+      paste0(
+        
+        "Las comunalidades (H²) indican la proporción de la variabilidad de cada variable explicada por los factores retenidos, mientras que la unicidad (U²) representa la parte no explicada.\n\n",
+        
+        "En este análisis se obtienen:\n",
+        
+        "- Variables bien representadas (H² ≥ 0.50): ", buenas, ".\n",
+        
+        "- Variables con representación moderada (0.30 ≤ H² < 0.50): ", medias, ".\n",
+        
+        "- Variables poco representadas (H² < 0.30): ", bajas, ".\n\n",
+        
+        "En general, las variables con comunalidades altas pueden interpretarse con mayor confianza dentro del modelo factorial, mientras que las de comunalidad baja aportan poca información común y conviene interpretarlas con cautela."
+        
+      )
+      
+    })
     #--------------------------------------------------
     # PUNTUACIONES FACTORIALES (SCORES)
     #--------------------------------------------------
