@@ -252,11 +252,12 @@ PCA_Teoria_Server <- function(id){
 # =========================================
 # PCA - ANÁLISIS
 # =========================================
+
 PCA_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
     # Título corporativo unificado
-    h3("Análisis", 
+    h3("Análisis de Componentes Principales (PCA)", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
@@ -275,7 +276,7 @@ PCA_Analisis_UI <- function(id){
                br(),
                uiOutput(ns("ui_dl_pca")),
                br(),
-               helpText("Nota: Se eliminan filas con valores faltantes automáticamente."),
+               helpText("Nota: Se eliminan filas con valores faltantes automáticamente.")
              )
       ),
       
@@ -366,6 +367,7 @@ PCA_Analisis_UI <- function(id){
     )
   )
 }
+
 PCA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
   moduleServer(id, function(input, output, session){
     
@@ -395,19 +397,17 @@ PCA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       # Filtrar únicamente columnas numéricas
       df_num <- df[, sapply(df, is.numeric), drop = FALSE]
       
-      # Omitir registros incompletos (Filas con NAs)
+      # CORRECCIÓN DE ERROR CRÍTICO: Omitir registros incompletos y asignar a variable correcta
       df_clean <- na.omit(df_num)
       
-      if (ncol(df_final) < 2) {
-        return(list(valido = FALSE, ui_error = crear_banner_error("Se necesitan al menos 2 columnas numéricas justificar una reducción dimensional.")))
+      if (ncol(df_clean) < 2) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Se necesitan al menos 2 columnas numéricas para justificar una reducción dimensional.")))
       }
       if (nrow(df_clean) < 15) {
         return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 15 observaciones completas para validar la estructura dimensional.")))
       }
       
-      
-      
-      return(list(valido = TRUE, base_limpia = df_final))
+      return(list(valido = TRUE, base_limpia = df_clean))
     })
     
     # Renderizado único del banner superior de error
@@ -423,547 +423,270 @@ PCA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     datos_std <- reactive({ req(datos_num()); scale(datos_num()) })
     
     pca_res <- reactive({ req(datos_num()); prcomp(datos_num(), scale. = TRUE) })
-    #--------------------------------------------------
-    # SELECTORES LATERALES DINÁMICOS POR PESTAÑA
-    #--------------------------------------------------
     
+    #--------------------------------------------------
+    # 2. SELECTORES LATERALES DINÁMICOS POR PESTAÑA
+    #--------------------------------------------------
     output$panel_lateral <- renderUI({
-      
       req(pca_res())
-      
       max_comp <- ncol(pca_res()$x)
       
-      
-      
       elementos <- list(
-        
         numericInput(
-          
           ns("k_componentes"),
-          
           "Número de componentes a retener:",
-          
           value = min(2, max_comp),
-          
           min = 1,
-          
           max = max_comp,
-          
           step = 1
-          
         )
-        
       )
-      
-      
       
       if (!is.null(input$tabs_pca) && input$tabs_pca == "individuos") {
-        
         elementos <- c(elementos, list(
-          
           hr(),
-          
           h5("Gráfico de Individuos"),
-          
           selectInput(
-            
             ns("eje_x"),
-            
             "Componente Eje X:",
-            
             choices = 1:max_comp,
-            
             selected = 1
-            
           ),
-          
           selectInput(
-            
             ns("eje_y"),
-            
             "Componente Eje Y:",
-            
             choices = 1:max_comp,
-            
             selected = min(2, max_comp)
-            
           )
-          
         ))
-        
       }
-      
-      
       
       if (!is.null(input$tabs_pca) && input$tabs_pca == "variables") {
-        
         elementos <- c(elementos, list(
-          
           hr(),
-          
           h5("Filtrado de Cargas (Loadings)"),
-          
           sliderInput(
-            
             ns("magnitud_carga"),
-            
             "Magnitud mínima de contribución:",
-            
             min = 0,
-            
             max = 1,
-            
             value = 0.3,
-            
             step = 0.05
-            
           )
-          
         ))
-        
       }
-      
-      
       
       tagList(elementos)
-      
     })
     
-    
-    
     #--------------------------------------------------
-    
-    # BOTÓN DE DESCARGA DINÁMICO
-    
+    # 3. BOTÓN DE DESCARGA DINÁMICO
     #--------------------------------------------------
-    
     output$ui_dl_pca <- renderUI({
-      
       req(input$k_componentes)
-      
       k <- round(input$k_componentes)
-      
-      
       
       downloadButton(
-        
         ns("dl_pca"),
-        
-        paste0("Descargar las ", k, " componentes seleccionadas"),
-        
+        paste0("Descargar las ", k, " componentes"),
         class = "btn-success",
-        
         style = "width: 100%;"
-        
       )
-      
     })
     
-    
-    
     #--------------------------------------------------
-    
-    # RENDERIZADO DE TABLAS Y GRÁFICOS
-    
+    # 4. RENDERIZADO DE TABLAS Y GRÁFICOS
     #--------------------------------------------------
-    
     output$dataset <- DT::renderDT({
-      
-      df_base <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
-      
-      req(df_base, datos_preprocesados()$valido)
-      
-      
+      req(datos_num())
       
       DT::datatable(
-        
-        df_base[complete.cases(df_base[, sapply(df_base, is.numeric)]), ], 
-        
+        datos_num(), 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
-        
         class = 'cell-border stripe hover compact'
-        
       ) %>% 
-        
         DT::formatRound(columns = names(datos_num()), digits = 3)
-      
     })
-    
-    
     
     output$dataset_std <- DT::renderDT({
-      
       req(datos_std())
       
       DT::datatable(
-        
         round(as.data.frame(datos_std()), 3), 
-        
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
-        
         class = 'cell-border stripe hover compact'
-        
       )
-      
     })
-    
-    
     
     output$bartlett_test <- renderPrint({
-      
       req(datos_std())
-      
       psych::cortest.bartlett(cor(datos_std()))
-      
     })
-    
-    
     
     output$corrplot <- renderPlot({
-      
       req(datos_std())
-      
       corrplot::corrplot(
-        
         cor(datos_std()),
-        
         method = "color",
-        
         type = "upper",
-        
         tl.col = "black"
-        
       )
-      
     })
-    
-    
     
     output$scree <- renderPlot({
-      
       req(pca_res(), input$k_componentes)
-      
       k_sel <- round(input$k_componentes)
       
-      
-      
       factoextra::fviz_eig(
-        
         pca_res(),
-        
         addlabels = TRUE,
-        
         barfill = "#34495e",
-        
         barcolor = "#34495e"
-        
       ) +
-        
         ggplot2::labs(
-          
           title = "Scree Plot",
-          
           subtitle = paste0("Corte seleccionado en las ", k_sel, " primeras componentes")
-          
         ) +
-        
         theme_minimal()
-      
     })
-    
-    
     
     output$var_table <- DT::renderDT({
-      
       req(pca_res(), input$k_componentes)
-      
       k <- round(input$k_componentes)
       
-      
-      
       eig <- pca_res()$sdev^2
-      
       tabla <- data.frame(
-        
         Componente = paste0("PC", 1:length(eig)),
-        
         Eigenvalue = round(eig, 3),
-        
         Varianza_Pct = round(eig/sum(eig)*100, 2),
-        
         Acumulada_Pct = round(cumsum(eig/sum(eig)*100), 2)
-        
       )
-      
       tabla_filtrada <- tabla[1:k, , drop = FALSE]
       
-      
-      
       DT::datatable(
-        
         tabla_filtrada,
-        
         options = list(paging = FALSE, scrollY = "300px", scrollX = TRUE, autoWidth = TRUE),
-        
         class = 'cell-border stripe hover compact'
-        
       )
-      
     })
-    
-    
-    
-    #--------------------------------------------------
-    
-    # INTERPRETACIÓN 
-    
-    #--------------------------------------------------
     
     output$interp_varianza <- renderText({
-      
       req(pca_res(), input$k_componentes)
-      
       k <- round(input$k_componentes)
-      
-      
       
       eig <- pca_res()$sdev^2
-      
       var_acum <- round(sum(eig[1:k]) / sum(eig) * 100, 2)
       
-      
-      
       paste0(
-        
         "Las primeras ", k, " componentes explican conjuntamente el ", var_acum, "% de la variabilidad total de los datos.\n\n",
-        
         "Ejemplo práctico (Dataset 'wines'): En ese conjunto de datos, las 3 primeras componentes suelen ser ",
-        
-        "suficientes para capturar más del % 66 de la varianza total. Esto demuestra cómo el PCA permite resumir ",
-        
-        "las 13 propiedades químicas originales en solo tres dimensiones sin perder demasiada información analítica."
-        
+        "suficientes para capturar más del 66% de la varianza total. Esto demuestra cómo el PCA permite resumir ",
+        "las propiedades originales en pocas dimensiones sin perder demasiada información analítica."
       )
-      
     })
-    
-    
     
     output$scores <- renderPlot({
-      
       req(pca_res())
-      
       comp_x <- if(!is.null(input$eje_x)) as.numeric(input$eje_x) else 1
-      
       comp_y <- if(!is.null(input$eje_y)) as.numeric(input$eje_y) else min(2, ncol(pca_res()$x))
       
-      
-      
       factoextra::fviz_pca_ind(
-        
         pca_res(),
-        
         axes = c(comp_x, comp_y),
-        
         col.ind = "#2c3e50",
-        
         repel = TRUE
-        
       ) +
-        
         theme_minimal()
-      
     })
-    
-    
     
     output$interp_scores <- renderText({
-      
       req(input$k_componentes)
-      
       k <- round(input$k_componentes)
-      
       comp_x <- if(!is.null(input$eje_x)) input$eje_x else 1
-      
       comp_y <- if(!is.null(input$eje_y)) input$eje_y else 2
       
-      
-      
       paste0(
-        
         "El gráfico muestra el mapa de las observaciones cruzando la componente ", comp_x, " con la componente ", comp_y, ".\n",
-        
         "Se están reteniendo un total de ", k, " componentes según los criterios de selección estructurados.\n\n",
-        
-        "Ejemplo práctico (Dataset 'wines'): Al graficar la PC1 frente a la PC2, se puede observar cómo las muestras ",
-        
-        "de vino se agrupan y separan de forma natural en 3 clusters distintos en el espacio, los cuales corresponden ",
-        
-        "exactamente a los 3 tipos de cultivos o variedades de uva italiana analizadas."
-        
+        "Ejemplo práctico: Permite observar cómo las muestras se agrupan y separan de forma natural en clusters distintos dentro del espacio factorial mapeado."
       )
-      
     })
-    
-    
     
     output$scores_table <- DT::renderDT({
-      
       req(pca_res(), input$k_componentes)
-      
       k <- round(input$k_componentes)
-      
       df_scores <- as.data.frame(pca_res()$x[, 1:k, drop = FALSE])
       
-      
-      
       DT::datatable(
-        
         round(df_scores, 3),
-        
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
-        
         class = 'cell-border stripe hover compact'
-        
       )
-      
     })
-    
-    
     
     output$loadings_table <- DT::renderDT({
-      
       req(pca_res(), input$k_componentes)
-      
       k <- round(input$k_componentes)
-      
       umbral <- if(!is.null(input$magnitud_carga)) input$magnitud_carga else 0.3
-      
       df_loadings <- as.data.frame(pca_res()$rotation[, 1:k, drop = FALSE])
       
-      
-      
       DT::datatable(
-        
         round(df_loadings, 3),
-        
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
-        
         class = 'cell-border stripe hover compact'
-        
       ) %>% 
-        
         DT::formatStyle(
-          
           columns = 1:k,
-          
           backgroundColor = DT::styleInterval(
-            
             cuts = c(-umbral, umbral), 
-            
             values = c('#fcd7d7', 'transparent', '#d4edda')
-            
           ),
-          
           fontWeight = DT::styleInterval(
-            
             cuts = c(-umbral, umbral), 
-            
             values = c('bold', 'normal', 'bold')
-            
           )
-          
         )
-      
     })
-    
-    
     
     output$loadings_importantes <- DT::renderDT({
-      
       req(pca_res(), input$k_componentes)
-      
       k <- round(input$k_componentes)
-      
       df_contrib <- as.data.frame(factoextra::get_pca_var(pca_res())$contrib[, 1:k, drop = FALSE])
       
-      
-      
       DT::datatable(
-        
         round(df_contrib, 2),
-        
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
-        
         class = 'cell-border stripe hover compact'
-        
       )
-      
     })
-    
-    
     
     output$interp_loadings <- renderText({
-      
       req(input$k_componentes)
-      
       k <- round(input$k_componentes)
-      
       umbral <- if(!is.null(input$magnitud_carga)) input$magnitud_carga else 0.3
       
-      
-      
       paste0(
-        
         "Se evalúan las cargas (loadings) asociadas a las ", k, " componentes seleccionadas.\n",
-        
         "Se han resaltado en VERDE las cargas positivas significativas y en ROJO las negativas significativas (magnitud absoluta > ", umbral, ").\n\n",
-        
-        "Ejemplo práctico (Dataset 'wines'): En la columna PC1, variables de calidad polifenólica como 'Flavanoids' ",
-        
-        "y 'Phenols' destacan con valores altos superiores al umbral. Dependiendo de la orientación del eje de R, ",
-        
-        "aparecerán fuertemente en verde o rojo, indicando qué variables guían la separación horizontal del mapa. ",
-        
-        "En la PC2, suele destacar la fuerte influencia de la variable 'Alcohol'."
-        
+        "Las variables con cargas más extremas son las que definen geométricamente el significado conceptual de cada componente."
       )
-      
     })
     
-    
-    
-    #--------------------------------------------------
-    
-    #  DESCARGAS DE MATRICES DE COMPONENTES 
-    
-    #--------------------------------------------------
-    
+    # Descarga de resultados estructurados
     output$dl_pca <- downloadHandler(
-      
       filename = function() {
-        
         paste("PCA_Resultados_", round(input$k_componentes), "_componentes.csv", sep = "")
-        
       },
-      
       content = function(file) {
-        
         req(pca_res(), input$k_componentes)
-        
         k <- round(input$k_componentes)
-        
         componentes_exportar <- as.data.frame(pca_res()$x[, 1:k, drop = FALSE])
-        
         write.csv(componentes_exportar, file, row.names = TRUE)
-        
       }
-      
     )
-    
   })
-  
 }
+
 
   
 # =========================================

@@ -354,20 +354,31 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     #--------------------------------------------------
     output$target_ui <- renderUI({
       req(datos_base())
+      df <- datos_base()
+      choices_vars <- names(df)
+      
+      # Forzar la variable predeterminada a "Class" si existe en el dataset
+      seleccionada <- if("Class" %in% choices_vars) "Class" else choices_vars[1]
+      
       selectInput(ns("target_var"),
                   "Variable objetivo (Y):",
-                  choices = names(datos_base()))
+                  choices = choices_vars,
+                  selected = seleccionada)
     })
     
     output$predictors_ui <- renderUI({
       req(input$target_var)
-      opts <- setdiff(names(datos_base()), input$target_var)
+      opts <- setdiff(names(datos_base()), c(input$target_var, "Id"))
+      
+      # Selección por defecto: Las dos primeras variables predictoras disponibles
+      seleccion_defecto <- opts[1:min(2, length(opts))]
       
       selectizeInput(ns("predictor_vars"),
                      "Variables predictoras:",
                      choices = opts,
                      multiple = TRUE,
-                     selected = opts[1:min(4, length(opts))])
+                     selected = seleccion_defecto,
+                     options = list(plugins = list('remove_button'), persist = FALSE))
     })
     #--------------------------------------------------
     # 3. DATASET
@@ -482,7 +493,7 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     output$interp_metricas <- renderText({
       paste(
         "Accuracy mide el rendimiento global.",
-        "Recall es crítico en cáncer de mama (evitar falsos negativos).",
+        "Recall es crítico en cáncer de mama (para evitar falsos negativos).",
         "Precision mide fiabilidad de predicción de malignidad.",
         "F1 balancea ambos."
       )
@@ -525,7 +536,7 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     output$interp_importancia <- renderText({
-      "Las variables se ordenan según su contribución a la reducción de impureza."
+      "Las variables se ordenan según su importancia para predecir la clase de la variable dependiente."
     })
     
     #--------------------------------------------------

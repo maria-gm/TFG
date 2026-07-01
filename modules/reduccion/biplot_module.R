@@ -150,7 +150,9 @@ BIPLOT_Analisis_UI <- function(id){
           uiOutput(ns("dinamico_panel_lateral")),
           
           hr(),
-          helpText("Los vectores representan las variables y los puntos corresponden a las observaciones.")
+          helpText("Los vectores representan las variables y los puntos corresponden a las observaciones."),
+          br(),
+          helpText("Nota: Se eliminan filas con valores faltantes automáticamente."),
         )
       ),
       
@@ -322,12 +324,12 @@ BIPLOT_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     # 5. Renderizado de Tablas
     output$dataset_table <- DT::renderDT({
       req(evaluacion_biplot()$valido)
-      df_base <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
-      req(df_base, input$vars_seleccionadas)
-      DT::datatable(df_base[complete.cases(df_base[, input$vars_seleccionadas]), ], 
+      # Usamos el dataframe numérico y limpio global para que coincida 100% con el gráfico
+      df_mostrado <- evaluacion_biplot()$datos 
+      
+      DT::datatable(df_mostrado, 
                     options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE))
     })
-    
     output$dataset_std_table <- DT::renderDT({
       req(evaluacion_biplot()$valido)
       req(datos_std())

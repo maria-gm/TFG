@@ -172,6 +172,7 @@ LDA_Teoria_Server <- function(id){
 # =============================================================================
 # MODULO: ANALISIS DISCRIMINANTE LINEAL (LDA) - UI
 # =============================================================================
+
 LDA_Analisis_UI <- function(id) {
   ns <- NS(id)
   
@@ -209,6 +210,10 @@ LDA_Analisis_UI <- function(id) {
       #--------------------------------------------------
       column(
         width = 9,
+        # Banner de Alerta Único para el módulo expuesto al inicio de la interfaz
+        uiOutput(ns("alerta_lda")),
+        br(),
+        
         tabsetPanel(
           id = ns("tabs_lda"),
           
@@ -283,19 +288,76 @@ LDA_Analisis_UI <- function(id) {
   )
 }
 
-
-
 LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   moduleServer(id, function(input, output, session) {
     
     ns <- session$ns
     filas_omitidas <- reactiveVal(0)
     
+    # ==========================================================================
+    # FUNCIONES LOCALES DE VALIDACIÓN (Encapsuladas en el Server)
+    # ==========================================================================
+    validar_datos_lda <- function(df) {
+      if (is.null(df) || nrow(df) == 0) return("No se han cargado datos.")
+      
+      # Buscar variables categóricas o factores con al menos 2 niveles únicos
+      vars_target <- names(df)[sapply(df, function(x) {
+        val_unicos <- length(unique(x[!is.na(x)]))
+        val_unicos >= 2 && val_unicos <= 10 # Limite de grupos razonable para LDA
+      })]
+      
+      if (length(vars_target) == 0) {
+        return("El dataset no contiene una variable objetivo categórica adecuada (con un mínimo de 2 categorías válidas).")
+      }
+      
+      # Comprobar si hay variables numéricas suficientes para actuar como predictores
+      vars_num <- names(df)[sapply(df, is.numeric)]
+      if (length(vars_num) == 0) {
+        return("El análisis requiere variables cuantitativas continuas intercorrelacionadas para actuar como predictores (X).")
+      }
+      
+      if (nrow(df[complete.cases(df), ]) < 10) {
+        return("No hay suficientes observaciones completas (mínimo sugerido: 10 filas sin valores faltantes) para modelar el análisis discriminante.")
+      }
+      
+      return(NULL)
+    }
+    
+    mensaje_error_lda <- function(mensaje) {
+      div(
+        style = "background-color: #fdf2f2; color: #9b1c1c; border: 1px solid #fde8e8; padding: 20px; margin-bottom: 25px; border-radius: 6px;",
+        tags$span(style = "font-weight: bold; font-size: 16px;", tags$i(class = "fa fa-exclamation-triangle"), " No es posible realizar el análisis."),
+        br(),
+        tags$span(style = "font-style: italic; color: #4b5563; font-size: 14px;", "Información: El Análisis Discriminante Lineal (LDA) requiere grupos definidos y predictores métricos continuos."),
+        br(), br(),
+        tags$span(style = "font-weight: 500;", mensaje)
+      )
+    }
+    
+    # ==========================================================================
+    # LOGICA REACTIVA DE VALIDACIÓN COMPARTIDA
+    # ==========================================================================
+    evaluacion_lda <- reactive({
+      df <- if (!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
+      if (is.list(df) && !is.data.frame(df)) df <- df$LDA_analisis
+      
+      error_msg <- validar_datos_lda(df)
+      if (!is.null(error_msg)) return(list(valido = FALSE, mensaje = error_msg))
+      return(list(valido = TRUE, datos = df))
+    })
+    
+    # Renderizado del Banner en UI
+    output$alerta_lda <- renderUI({
+      eval <- evaluacion_lda()
+      if (!eval$valido) mensaje_error_lda(eval$mensaje) else NULL
+    })
+    
     #--------------------------------------------------
     # 1. TRATAMIENTO DE DATOS REACTIVOS
     #--------------------------------------------------
     datos_base <- reactive({
-      df <- if (!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
+      req(evaluacion_lda()$valido)
+      df <- evaluacion_lda()$datos
       req(df)
       
       df[] <- lapply(df, function(x) {
@@ -319,6 +381,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     # 2. SELECTORES INTERACTIVOS DIRECTOS
     #--------------------------------------------------
     output$target_ui <- renderUI({
+      req(evaluacion_lda()$valido)
       req(datos_base())
       selectInput(
         ns("target_var"),
@@ -329,6 +392,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     output$predictors_ui <- renderUI({
+      req(evaluacion_lda()$valido)
       req(input$target_var)
       nums <- names(datos_base())[sapply(datos_base(), is.numeric)]
       opciones_x <- setdiff(nums, input$target_var)
@@ -347,6 +411,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     # 3. GENERACIÓN DE DATASETS (ESTANDARIZACIÓN AUTOMÁTICA)
     #--------------------------------------------------
     datos_std <- reactive({
+      req(evaluacion_lda()$valido)
       req(input$target_var, input$predictor_vars)
       df <- datos_base()[, c(input$target_var, input$predictor_vars), drop = FALSE]
       df[[input$target_var]] <- as.factor(df[[input$target_var]])
@@ -361,16 +426,17 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     # CONFIGURACIÓN CORRECTA DE BARRAS (NATURALES DE DT)
     #--------------------------------------------------
     output$dataset <- DT::renderDT({
+      req(evaluacion_lda()$valido)
       req(datos_base())
       DT::datatable(
         datos_base(), 
         options = list(
-          pageLength = 25,          # Permite más filas visibles dentro del scroll vertical
-          scrollX = TRUE,           # Barra de desplazamiento horizontal única
-          scrollY = "300px",        # Barra de desplazamiento vertical hacia abajo nativa
-          scrollCollapse = TRUE,    # Colapsa el contenedor si hay pocas filas
+          pageLength = 25,          
+          scrollX = TRUE,           
+          scrollY = "300px",        
+          scrollCollapse = TRUE,    
           autoWidth = TRUE,
-          dom = 'rtip'              # Remueve controles superiores duplicados
+          dom = 'rtip'              
         ),
         rownames = FALSE,
         style = "bootstrap"
@@ -378,6 +444,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     output$dataset_std <- DT::renderDT({
+      req(evaluacion_lda()$valido)
       req(datos_std())
       DT::datatable(
         datos_std(), 
@@ -398,6 +465,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     # 4. EJECUCIÓN DEL MODELO AUTOMÁTICO
     #--------------------------------------------------
     modelo_lda <- reactive({
+      req(evaluacion_lda()$valido)
       req(input$target_var, input$predictor_vars)
       df <- datos_std()
       
@@ -413,6 +481,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     predicciones <- reactive({
+      req(evaluacion_lda()$valido)
       req(modelo_lda())
       pred <- predict(modelo_lda())
       df_res <- data.frame(
@@ -429,6 +498,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     # 5. RENDERIZADO DE GRÁFICOS (1D Y 2D)
     #--------------------------------------------------
     output$lda_plot <- renderPlot({
+      req(evaluacion_lda()$valido)
       req(predicciones())
       df_plot <- predicciones()
       
@@ -464,6 +534,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     # 6. TABLAS DE RESULTADOS CON DT
     #--------------------------------------------------
     output$conf_matrix <- DT::renderDT({
+      req(evaluacion_lda()$valido)
       req(predicciones())
       df <- predicciones()
       matriz <- table(Real = df$Real, Predicho = df$Predicho)
@@ -471,15 +542,16 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     output$coef_table <- DT::renderDT({
+      req(evaluacion_lda()$valido)
       req(modelo_lda())
       DT::datatable(round(as.data.frame(modelo_lda()$scaling), 4), options = list(pageLength = 10, dom = 't', scrollX = TRUE))
     })
+    
     output$metricas_table <- DT::renderDT({
-      
+      req(evaluacion_lda()$valido)
       req(predicciones())
       
       df <- predicciones()
-      
       matriz <- table(df$Real, df$Predicho)
       
       # Accuracy
@@ -487,7 +559,6 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       
       # Solo clasificación binaria
       if (nrow(matriz) == 2) {
-        
         TP <- matriz[2,2]
         TN <- matriz[1,1]
         FP <- matriz[1,2]
@@ -501,18 +572,11 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
                              2*precision*recall/(precision+recall))
         
         res_df <- data.frame(
-          Métrica=c("Accuracy",
-                    "Precision",
-                    "Recall",
-                    "F1-score"),
-          Valor=round(c(accuracy,
-                        precision,
-                        recall,
-                        f1),4)
+          Métrica=c("Accuracy", "Precision", "Recall", "F1-score"),
+          Valor=round(c(accuracy, precision, recall, f1),4)
         )
         
       } else {
-        
         precision <- diag(matriz)/colSums(matriz)
         recall    <- diag(matriz)/rowSums(matriz)
         
@@ -523,18 +587,9 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         f1[is.na(f1)] <- 0
         
         res_df <- data.frame(
-          Métrica=c("Accuracy",
-                    "Precision (macro)",
-                    "Recall (macro)",
-                    "F1-score (macro)"),
-          Valor=round(c(
-            accuracy,
-            mean(precision),
-            mean(recall),
-            mean(f1)
-          ),4)
+          Métrica=c("Accuracy", "Precision (macro)", "Recall (macro)", "F1-score (macro)"),
+          Valor=round(c(accuracy, mean(precision), mean(recall), mean(f1)),4)
         )
-        
       }
       
       DT::datatable(
@@ -542,13 +597,13 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         options=list(dom="t"),
         rownames=FALSE
       )
-      
     })
-
+    
     #--------------------------------------------------
     # 7. TEXTOS DE INTERPRETACIÓN
     #--------------------------------------------------
     output$interp_grafico <- renderText({
+      req(evaluacion_lda()$valido)
       req(predicciones())
       df_p <- predicciones()
       
@@ -568,6 +623,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     output$interp_clasificacion <- renderText({
+      req(evaluacion_lda()$valido)
       req(predicciones())
       df <- predicciones()
       matriz <- table(df$Real, df$Predicho)
@@ -583,6 +639,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     output$interp_coeficientes <- renderText({
+      req(evaluacion_lda()$valido)
       req(modelo_lda())
       co <- modelo_lda()$scaling
       max_var <- rownames(co)[which.max(abs(co[, 1]))]
@@ -597,6 +654,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     
     # Lógica de notificación dinámica para valores NA omitidos
     output$ui_dl_lda <- renderUI({
+      req(evaluacion_lda()$valido)
       req(datos_base())
       omitidas <- filas_omitidas()
       

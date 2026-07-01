@@ -202,6 +202,7 @@ Regresion_multiple_Teoria_Server <- function(id){
 # -------------------------------
 # ANALISIS
 # -------------------------------
+
 Regresion_multiple_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
@@ -216,7 +217,7 @@ Regresion_multiple_Analisis_UI <- function(id){
       column(4,
              wellPanel(
                h4("Configuración del Modelo"),
-               p("Seleccione las variables métricas para configurar el ajuste por Mínimos Cuadrados Ordinarios (MCO)."),
+               p("Seleccione las variables métricas para configure el ajuste por Mínimos Cuadrados Ordinarios (MCO)."),
                hr(),
                uiOutput(ns("ui_var_dep")),
                uiOutput(ns("ui_var_indep")),
@@ -291,6 +292,7 @@ Regresion_multiple_Analisis_UI <- function(id){
     )
   )
 }
+
 Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   moduleServer(id, function(input, output, session) {
     
@@ -358,7 +360,11 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
     output$ui_var_dep <- renderUI({
       req(datos_preprocesados()$valido)
       nums <- names(datos_base())[sapply(datos_base(), is.numeric)]
-      selectInput(session$ns("var_dep"), "Variable Dependiente (Y):", choices = nums)
+      
+      # Si 'medv' existe en los datos, se selecciona por defecto como variable Y
+      seleccion_inicial <- if("medv" %in% nums) "medv" else nums[1]
+      
+      selectInput(session$ns("var_dep"), "Variable Dependiente (Y):", choices = nums, selected = seleccion_inicial)
     })
     
     output$ui_var_indep <- renderUI({
@@ -497,22 +503,23 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
       req(input$var_indep)
       paste0(
         "Los coeficientes describen el peso marginal parcial estimado para cada regresor del modelo estadístico de Mínimos Cuadrados Ordinarios.\n\n",
-        "Ejemplo práctico (Dataset 'penguins'): Al modelar la masa corporal, descubrirás que variables como el largo ",
-        "de la aleta exhiben un p-valor de contraste t extremadamente bajo (<0.05), lo que rechaza la hipótesis nula e indica que por ",
-        "cada milímetro adicional de aleta, el peso condicional esperado del pingüino se incrementa de forma lineal y significativa."
+        "Ejemplo práctico (Dataset 'Boston Housing'): Al modelar el valor mediano de la vivienda (medv), descubrirás que variables como el número medio de habitaciones ",
+        "(rm) exhiben un p-valor de contraste t extremadamente bajo (<0.05), lo que rechaza la hipótesis nula e indica que por ",
+        "cada habitación adicional en la vivienda, el valor condicional esperado del inmueble se incrementa de forma lineal y significativa, manteniendo constantes el resto de factores (como la tasa de criminalidad 'crim')."
       )
     })
     
     output$interp_pred_reg <- renderText({
       paste0(
         "El gráfico de dispersión contrasta el valor empírico frente a la estimación. La línea discontinua roja representa la predicción perfecta (1:1).\n\n",
-        "Ejemplo práctico (Dataset 'penguins'): Cuanto más estrecha y concentrada sea la nube de puntos en torno a la diagonal de referencia, ",
-        "mayor será el R-cuadrado del modelo, demostrando la fidelidad explicativa de las características físicas de los pingüinos analizados."
+        "Ejemplo práctico (Dataset 'Boston Housing'): Cuanto más estrecha y concentrada sea la nube de puntos en torno a la diagonal de referencia, ",
+        "mayor será el R-cuadrado del modelo, demostrando la fidelidad explicativa de las características estructurales y demográficas de los distritos de Boston evaluados sobre el valor final de la vivienda (medv)."
       )
     })
     
   }) 
 }
+
 # -------------------------------
 # AUTOEVALUACION
 # -------------------------------

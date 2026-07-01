@@ -218,6 +218,10 @@ Regresion_logistica_Analisis_UI <- function(id){
       # PANEL PRINCIPAL (A LA DERECHA)
       #--------------------------------------------------
       column(8,
+             # Banner de Alerta Único para todo el módulo expuesto al inicio del panel
+             uiOutput(ns("alerta_logistica")),
+             br(),
+             
              tabsetPanel(
                id = ns("tabs_log"),
                
@@ -245,7 +249,7 @@ Regresion_logistica_Analisis_UI <- function(id){
                         h4("Métricas de Información y Error", style = "color: #2c3e50; font-weight: 500;"), 
                         DT::DTOutput(ns("tabla_metricas")),
                         br(),
-                        h4("Interpretación de Resultados", style = "color: #2c3e50; font-weight: 500;"),
+                        h4("Interpretación de Resultados", style = "color: #2c3e50; font-weight: 500;"), 
                         verbatimTextOutput(ns("interp_resultados_log"))
                ),
                
@@ -261,17 +265,17 @@ Regresion_logistica_Analisis_UI <- function(id){
                                  plotOutput(ns("plot_roc")))
                         ),
                         br(),
-                        h4("Interpretación del Rendimiento", style = "color: #2c3e50; font-weight: 500;"),
+                        h4("Interpretación del Rendimiento", style = "color: #2c3e50; font-weight: 500;"), 
                         verbatimTextOutput(ns("interp_rendimiento_log"))
                ),
                
-               # PESTAÑA 4: PREDICCIÓN (AÑADIDO EN TAB DISTINTO)
+               # PESTAÑA 4: PREDICCIÓN
                tabPanel("4. Predicción",
                         br(),
-                        h4("Análisis de las Probabilidades Predichas", style = "color: #2c3e50; font-weight: 500;"),
+                        h4("Análisis de las Probabilidades Predichas", style = "color: #2c3e50; font-weight: 500;"), 
                         plotOutput(ns("plot_pred_log"), height = "450px"),
                         br(),
-                        h4("Interpretación de la Capacidad Predictiva", style = "color: #2c3e50; font-weight: 500;"),
+                        h4("Interpretación de la Capacidad Predictiva", style = "color: #2c3e50; font-weight: 500;"), 
                         verbatimTextOutput(ns("interp_pred_log"))
                )
              )
@@ -283,51 +287,128 @@ Regresion_logistica_Analisis_UI <- function(id){
 Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
   moduleServer(id, function(input, output, session){
     
-    # --- 1. DATOS BASE ---
-    datos_base <- reactive({
+    # ==========================================================================
+    # FUNCIONES LOCALES DE VALIDACIÓN (Encapsuladas en el Server)
+    # ==========================================================================
+    validar_datos_logistica <- function(df) {
+      if (is.null(df) || nrow(df) == 0) return("No se han cargado datos.")
+      
+      # Buscar si hay alguna variable con exactamente 2 niveles únicos
+      vars_binarias <- names(df)[sapply(df, function(x) length(unique(x[!is.na(x)])) == 2)]
+      
+      if (length(vars_binarias) == 0 && !("Class" %in% names(df))) {
+        return("El dataset no contiene ninguna variable dicotómica (con exactamente 2 categorías) apta como variable dependiente (Y).")
+      }
+      
+      if (nrow(df[complete.cases(df), ]) < 10) {
+        return("No hay suficientes observaciones completas (mínimo sugerido: 10 filas sin valores faltantes) para ajustar el modelo.")
+      }
+      
+      return(NULL) 
+    }
+    
+    mensaje_error_analisis <- function(mensaje) {
+      div(
+        style = "background-color: #fdf2f2; color: #9b1c1c; border: 1px solid #fde8e8; padding: 20px; margin-bottom: 25px; border-radius: 6px;",
+        tags$span(style = "font-weight: bold; font-size: 16px;", tags$i(class = "fa fa-exclamation-triangle"), " No es posible realizar el análisis."),
+        br(),
+        tags$span(style = "font-style: italic; color: #4b5563; font-size: 14px;", "Información: El modelo Binomial requiere una variable de respuesta binaria/dicotómica (0/1 o dos factores)."),
+        br(), br(),
+        tags$span(style = "font-weight: 500;", mensaje)
+      )
+    }
+    
+    # ==========================================================================
+    # LOGICA REACTIVA DE VALIDACIÓN COMPARTIDA
+    # ==========================================================================
+    evaluacion_logistica <- reactive({
       df <- if(!is.null(datos()) && is.data.frame(datos())) datos() else datos_ejemplo
       if(is.list(df) && !is.data.frame(df)) df <- df$Regresion_multiple 
-      req(df)
+      
+      error_msg <- validar_datos_logistica(df)
+      if (!is.null(error_msg)) return(list(valido = FALSE, mensaje = error_msg))
+      return(list(valido = TRUE, datos = df))
+    })
+    
+    # Renderizado del Banner en UI
+    output$alerta_logistica <- renderUI({
+      eval <- evaluacion_logistica()
+      if (!eval$valido) mensaje_error_analisis(eval$mensaje) else NULL
+    })
+    
+    # --- 1. DATOS BASE ---
+    datos_base <- reactive({
+      req(evaluacion_logistica()$valido)
+      df <- evaluacion_logistica()$datos
       as.data.frame(df)[complete.cases(df), , drop = FALSE]
     })
     
     # --- 2. SELECTORES ---
     output$ui_var_dep <- renderUI({
-      req(datos_base())
+      req(evaluacion_logistica()$valido)
       df <- datos_base()
       vars <- names(df)[sapply(df, function(x) length(unique(x)) == 2)]
+      
+      # Si "Class" está en el dataset, forzar a que sea la seleccionada por defecto
+      seleccionada <- if("Class" %in% names(df)) "Class" else if(length(vars) > 0) vars[1] else NULL
       if(length(vars) == 0 && "Class" %in% names(df)) vars <- "Class"
-      selectInput(session$ns("var_dep"), "Variable a Predecir (Y):", choices = vars)
+      
+      selectInput(session$ns("var_dep"), "Variable a Predecir (Y):", choices = vars, selected = seleccionada)
     })
     
     output$ui_var_indep <- renderUI({
+      req(evaluacion_logistica()$valido)
       req(input$var_dep)
       df <- datos_base()
       cols <- setdiff(names(df), c(input$var_dep, "Id"))
+      
+      # Filtrar las columnas que sean numéricas para evitar polinomios o factores
+      cols_numericas <- cols[sapply(df[, cols, drop = FALSE], is.numeric)]
+      
+      # Si por alguna razón no detecta numéricas, permitir las normales para no romper la app
+      if(length(cols_numericas) == 0) cols_numericas <- cols
+      
+      # Selección por defecto: Las dos primeras variables numéricas
+      seleccion_defecto <- cols_numericas[1:min(2, length(cols_numericas))]
+      
       selectizeInput(session$ns("var_indep"), "Variables Predictoras (X):", 
                      choices = cols, multiple = TRUE, 
-                     selected = cols[1:min(5, length(cols))][sapply(df[, cols], is.numeric)],
-                     options = list(plugins = list('remove_button')))
+                     selected = seleccion_defecto,
+                     options = list(plugins = list('remove_button'), persist = FALSE))
     })
     
     # --- 3. PREPARACIÓN LOGÍSTICA ---
     datos_log <- reactive({
+      req(evaluacion_logistica()$valido)
       req(input$var_dep, input$var_indep)
       df <- datos_base()
+      
+      # Forzar variable dependiente a Factor binario 0/1
       df[[input$var_dep]] <- as.factor(df[[input$var_dep]])
       levels(df[[input$var_dep]]) <- c(0, 1) 
+      
+      # Limpieza y conversión forzada a numéricas ordinarias para las variables independientes X
+      for(col in input$var_indep) {
+        if(is.factor(df[[col]]) || is.character(df[[col]])) {
+          df[[col]] <- as.numeric(as.character(df[[col]]))
+        }
+      }
+      
       df
     })
     
     # --- 4. MODELO COMPLETAMENTE REACTIVO ---
     modelo_log <- reactive({
+      req(evaluacion_logistica()$valido)
       req(input$var_dep, input$var_indep)
+      req(length(input$var_indep) >= 1)
       formula_str <- paste(input$var_dep, "~", paste(input$var_indep, collapse = "+"))
       glm(as.formula(formula_str), data = datos_log(), family = binomial)
     })
     
-    # --- 5. OUTPUTS DE TABLAS (CON SCROLL INTERNO NATIVO) ---
+    # --- 5. OUTPUTS DE TABLAS ---
     output$tabla_original <- DT::renderDT({
+      req(evaluacion_logistica()$valido)
       DT::datatable(
         datos_base(), 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
@@ -337,7 +418,8 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
     })
     
     output$tabla_preparada <- DT::renderDT({
-      req(datos_log())
+      req(evaluacion_logistica()$valido)
+      req(datos_log(), input$var_dep, input$var_indep)
       df_prep <- datos_log()[, c(input$var_dep, input$var_indep), drop = FALSE]
       
       DT::datatable(
@@ -349,6 +431,7 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
     })
     
     output$tabla_coefs <- DT::renderDT({
+      req(evaluacion_logistica()$valido)
       req(modelo_log())
       df_c <- broom::tidy(modelo_log())
       colnames(df_c) <- c("Término", "Estimación (Log-Odds)", "Error Estándar", "Estadístico z", "p-valor")
@@ -358,6 +441,7 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
     })
     
     output$tabla_odds <- DT::renderDT({
+      req(evaluacion_logistica()$valido)
       req(modelo_log())
       or <- exp(coef(modelo_log()))
       ci <- exp(suppressMessages(confint.default(modelo_log())))
@@ -374,65 +458,37 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
     })
     
     output$tabla_metricas <- DT::renderDT({
-      
+      req(evaluacion_logistica()$valido)
       req(modelo_log())
       
       probs <- predict(modelo_log(), type="response")
-      
       clases <- ifelse(probs>0.5,1,0)
-      
       reales <- as.numeric(as.character(datos_log()[[input$var_dep]]))
       
-      matriz <- table(Real=reales,
-                      Predicho=clases)
+      matriz <- table(Real=reales, Predicho=clases)
       
-      TP <- matriz[2,2]
+      TP <- if(nrow(matriz) > 1 && ncol(matriz) > 1) matriz[2,2] else 0
       TN <- matriz[1,1]
-      FP <- matriz[1,2]
-      FN <- matriz[2,1]
+      FP <- if(ncol(matriz) > 1) matriz[1,2] else 0
+      FN <- if(nrow(matriz) > 1) matriz[2,1] else 0
       
       accuracy <- (TP+TN)/sum(matriz)
+      precision <- ifelse((TP+FP)==0, NA, TP/(TP+FP))
+      recall <- ifelse((TP+FN)==0, NA, TP/(TP+FN))
       
-      precision <- ifelse((TP+FP)==0,
-                          NA,
-                          TP/(TP+FP))
-      
-      recall <- ifelse((TP+FN)==0,
-                       NA,
-                       TP/(TP+FN))
-      
-      f1 <- ifelse(is.na(precision) |
-                     is.na(recall) |
-                     (precision+recall)==0,
-                   NA,
-                   2*precision*recall/(precision+recall))
+      f1 <- ifelse(is.na(precision) | is.na(recall) | (precision+recall)==0,
+                   NA, 2*precision*recall/(precision+recall))
       
       df_m <- data.frame(
-        Métrica=c(
-          "Accuracy",
-          "Precision",
-          "Recall",
-          "F1-score"
-        ),
-        Valor=round(c(
-          accuracy,
-          precision,
-          recall,
-          f1
-        ),4)
+        Métrica=c("Accuracy", "Precision", "Recall", "F1-score"),
+        Valor=round(c(accuracy, precision, recall, f1),4)
       )
       
-      DT::datatable(
-        df_m,
-        options=list(
-          paging=FALSE,
-          scrollX=TRUE
-        ),
-        rownames=FALSE
-      )
-      
+      DT::datatable(df_m, options=list(paging=FALSE, scrollX=TRUE), rownames=FALSE)
     })
+    
     output$interp_resultados_log <- renderText({
+      req(evaluacion_logistica()$valido)
       req(input$var_dep)
       paste0(
         "Los coeficientes de Log-Odds indican el cambio en el logaritmo de la probabilidad a favor ante un aumento del regresor.\n",
@@ -446,16 +502,17 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
     
     # --- 6. CLASIFICACIÓN Y ROC ---
     output$matriz_confusion <- DT::renderDT({
+      req(evaluacion_logistica()$valido)
       req(modelo_log())
       preds <- predict(modelo_log(), type = "response")
       clases <- ifelse(preds > 0.5, 1, 0)
       
       matriz <- as.data.frame.matrix(table(Real = datos_log()[[input$var_dep]], Predicho = clases))
-      
       DT::datatable(matriz, options = list(paging = FALSE, searching = FALSE), class = 'cell-border compact', rownames = TRUE)
     })
     
     output$plot_roc <- renderPlot({
+      req(evaluacion_logistica()$valido)
       req(modelo_log())
       preds <- predict(modelo_log(), type = "response")
       res_roc <- pROC::roc(datos_log()[[input$var_dep]], preds)
@@ -464,6 +521,7 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
     })
     
     output$interp_rendimiento_log <- renderText({
+      req(evaluacion_logistica()$valido)
       req(modelo_log())
       paste0(
         "La matriz de confusión cuantifica los aciertos y los errores de clasificación utilizando un umbral estándar de corte p = 0.5.\n",
@@ -473,11 +531,12 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
         "con un Área Bajo la Curva (AUC) que suele superar el 0.95, demostrando el altísimo poder de clasificación clínica de la aplicación de R Shiny."
       )
     })
-    # --- 7. PESTAÑA 4: PREDICCIÓN (CURVA LOGÍSTICA DE LÍNEAS - AJUSTE SIGMOIDE) ---
+    
+    # --- 7. PESTAÑA 4: PREDICCIÓN ---
     output$plot_pred_log <- renderPlot({
+      req(evaluacion_logistica()$valido)
       req(modelo_log(), input$var_dep)
       
-      # Extraemos los Log-Odds (eje X) y las Probabilidades (eje Y)
       log_odds <- predict(modelo_log(), type = "link")
       probabilidades <- predict(modelo_log(), type = "response")
       
@@ -487,13 +546,10 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
         Real = factor(datos_log()[[input$var_dep]], labels = c("Benigno (0)", "Maligno (1)"))
       )
       
-      # Ordenamos por Log-Odds para que la línea se dibuje de izquierda a derecha sin cruzarse
       df_plot <- df_plot[order(df_plot$Log_Odds), ]
       
       ggplot(df_plot, aes(x = Log_Odds, y = Probabilidad)) +
-        # Añadimos la curva sigmoide teórica ajustada por tu modelo
         geom_line(color = "#1a446c", size = 1.2, alpha = 0.9, name = "Función Logística") +
-        # Pintamos los pacientes reales sobre la curva para ver dónde caen
         geom_point(aes(color = Real), size = 2.5, alpha = 0.5, position = position_jitter(height = 0.02, width = 0)) +
         theme_minimal() +
         labs(title = "Curva Ajustada del Modelo Regresión Logística",
@@ -506,11 +562,16 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
         theme(legend.position = "bottom")
     })
     
-
+    output$interp_pred_log <- renderText({
+      req(evaluacion_logistica()$valido)
+      req(modelo_log())
+      paste0(
+        "La gráfica sigmoidal ilustra la probabilidad predicha frente al log-odds del modelo.\n",
+        "Un buen ajuste muestra una separación clara de los puntos reales (0 y 1) en los extremos de la curva en forma de S."
+      )
+    })
   })
 }
-
-
 # -------------------------------
 # AUTOEVALUACION
 # -------------------------------
