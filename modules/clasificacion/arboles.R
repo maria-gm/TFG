@@ -5,148 +5,167 @@
 # -------------------------------
 # TEORIA
 # -------------------------------
-
+# =========================================================
+# ÁRBOLES DE CLASIFICACIÓN - EDICIÓN MEMORIA PREMIUM
+# =========================================================
 Arboles_Teoria_UI <- function(id) {
   ns <- NS(id)
   
+  # Estilos CSS personalizados para homogeneizar con el diseño premium
+  custom_css <- "
+    .theory-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .equation-container {
+      background-color: #f8fafc;
+      padding: 16px;
+      border-radius: 10px;
+      margin: 18px 0;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+    }
+    .metric-definition {
+      border-left: 4px solid #10b981;
+      padding-left: 16px;
+      margin-bottom: 20px;
+    }
+  "
+  
   tagList(
-    # Única llamada necesaria para activar MathJax en toda la página
     withMathJax(),
+    tags$head(tags$style(HTML(custom_css))),
     
     tags$div(
-      style = "padding: 20px; background-color: #fcfdfe;",
+      style = "padding: 30px; background-color: #fcfdfe;",
       
       # =====================================
-      # CABECERA
+      # CABECERA ESTILO PREMIUM
       # =====================================
-      h2(
-        "Árboles de Clasificación",
-        style = "font-weight: 800; color: #1a365d; margin-bottom: 5px;"
+      tags$div(
+        style = "margin-bottom: 25px;",
+        h1(
+          "Árboles de Clasificación",
+          style = "font-weight: 800; color: #1e3a8a; margin-bottom: 6px; font-size: 2.5rem;"
+        ),
+        p(
+          "Modelos predictivos basados en el aprendizaje supervisado que descubren de forma recursiva reglas de asociación estructuradas en flujos lógicos.",
+          style = "color: #64748b; font-size: 1.15rem; margin-bottom: 25px;"
+        )
       ),
       
-      p(
-        "Modelos predictivos basados en el aprendizaje supervisado que descubren de forma recursiva reglas de asociación estructuradas en flujos lógicos.",
-        style = "color: #64748b; font-size: 1.1rem; margin-bottom: 30px;"
-      ),
-      
       # =====================================
-      # TARJETAS PRINCIPALES
+      # BLOQUES INTRODUCTORIOS (ESTILO image_3552b6)
       # =====================================
       bslib::layout_column_wrap(
-        width = 1/3, # Tres columnas perfectamente alineadas
+        width = 1/3,
         heights_equal = "row",
+        style = "margin-bottom: 35px;",
         
-        # ---------------------------------
-        # 1. ¿QUÉ ES UN ÁRBOL?
-        # ---------------------------------
+        # Bloque 1: Estructura y Flujo
         bslib::card(
+          style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("1. Estructura y Flujo"),
-            style = "background: #e0e7ff;"
+            "1. Estructura y Flujo",
+            style = "background-color: #e0e7ff; color: #1e1b4b; font-weight: 700; font-size: 1.1rem; padding: 12px 16px;"
           ),
           bslib::card_body(
+            style = "padding: 20px; line-height: 1.6; color: #334155;",
             p("Técnica que segmenta jerárquicamente la muestra traduciendo las etiquetas conocidas de \\(Y\\) según sus atributos predictivos (Breiman et al., 2017). Se compone de:"),
             tags$ul(
-              style = "margin-top: 10px;",
-              tags$li(tags$b("Nodos y Ramas:"), " El nodo raíz (superior) e intermedios denotan pruebas lógicas sobre los atributos; las ramas bifurcan sus resultados.", style = "margin-bottom: 6px;"),
-              tags$li(tags$b("Hojas:"), " Nodos terminales que contienen la clase o categoría final asignada al individuo.")
+              style = "padding-left: 15px; margin-top: 10px; list-style-type: none;",
+              tags$li(style = "margin-bottom: 8px;", HTML("• <b>Nodos y Ramas:</b> El nodo raíz (superior) e intermedios denotan pruebas lógicas sobre los atributos; las ramas bifurcan sus resultados.")),
+              tags$li(style = "margin-bottom: 0;", HTML("• <b>Hojas:</b> Nodos terminales que contienen la clase o categoría final asignada al individuo."))
             )
           )
         ),
         
-        # ---------------------------------
-        # 2. INDUCCIÓN E HISTORIA
-        # ---------------------------------
+        # Bloque 2: Algoritmos Fundamentales
         bslib::card(
+          style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("2. Algoritmos Fundamentales"),
-            style = "background: #dcfce7;"
+            "2. Algoritmos Fundamentales",
+            style = "background-color: #dcfce7; color: #064e3b; font-weight: 700; font-size: 1.1rem; padding: 12px 16px;"
           ),
           bslib::card_body(
+            style = "padding: 20px; line-height: 1.6; color: #334155;",
             p("Desarrollados de manera independiente entre finales de los 70 y principios de los 80, dieron pie al grueso de la inducción moderna (Han et al., 2011):"),
             tags$ul(
-              style = "margin-top: 10px;",
-              tags$li(tags$b("Línea ID3 / C4.5:"), " Diseñados por J. Ross Quinlan, basados en el particionamiento multi-rama a través de la ganancia de información.", style = "margin-bottom: 6px;"),
-              tags$li(tags$b("Algoritmo CART:"), " Propuesto por Breiman, enfocado explícitamente en la generación iterativa de árboles de decisión binarios.")
+              style = "padding-left: 15px; margin-top: 10px; list-style-type: none;",
+              tags$li(style = "margin-bottom: 8px;", HTML("• <b>Línea ID3 / C4.5:</b> Diseñados por J. Ross Quinlan, basados en el particionamiento multi-rama a través de la ganancia de información.")),
+              tags$li(style = "margin-bottom: 0;", HTML("• <b>Algoritmo CART:</b> Propuesto por Breiman, enfocado explícitamente en la generación iterativa de árboles de decisión binarios."))
             )
           )
         ),
         
-        # ---------------------------------
-        # 3. ATRIBUTOS CRÍTICOS
-        # ---------------------------------
+        # Bloque 3: Ventajas y Rendimiento
         bslib::card(
+          style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("3. Ventajas y Rendimiento"),
-            style = "background: #fef3c7;"
+            "3. Ventajas y Rendimiento",
+            style = "background-color: #fef9c3; color: #713f12; font-weight: 700; font-size: 1.1rem; padding: 12px 16px;"
           ),
           bslib::card_body(
+            style = "padding: 20px; line-height: 1.6; color: #334155;",
             p("Esta metodología goza de una amplia adopción en minería de datos debido a sus propiedades intrínsecas (Han et al., 2011):"),
             tags$ul(
-              style = "margin-top: 10px;",
-              tags$li(tags$b("Cero caja negra:"), " Proporciona gráficos e interpretaciones intuitivas, idóneas para hallar patrones ocultos.", style = "margin-bottom: 6px;"),
-              tags$li(tags$b("Sin configuración:"), " No exige calibrar parámetros previos estrictos para entrenar sus reglas iniciales.", style = "margin-bottom: 6px;"),
-              tags$li(tags$b("Robustez:"), " Destaca por su fiabilidad y precisión en entornos multivariantes.")
+              style = "padding-left: 15px; margin-top: 10px; list-style-type: none;",
+              tags$li(style = "margin-bottom: 6px;", HTML("• <b>Cero caja negra:</b> Proporciona gráficos e interpretaciones intuitivas, idóneas para hallar patrones ocultos.")),
+              tags$li(style = "margin-bottom: 6px;", HTML("• <b>Sin configuración:</b> No exige calibrar parámetros previos estrictos para entrenar sus reglas iniciales.")),
+              tags$li(style = "margin-bottom: 0;", HTML("• <b>Robustez:</b> Destaca por su fiabilidad y precisión en entornos multivariantes."))
             )
           )
         )
-      ), # Fin del layout_column_wrap
-      
-      br(),
+      ),
       
       # =====================================
       # CRITERIOS DE PARTICIÓN
       # =====================================
+      h4(icon("chart-pie"), "Criterios de Partición y Medidas de Impureza", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        class = "theory-card", style = "margin-bottom: 30px;",
         bslib::card_body(
-          h4(icon("chart-pie"), "Criterios de Partición y Medidas de Impureza", style = "color: #1e40af; margin-bottom: 15px;"),
           p("Para realizar las divisiones lógicas, el algoritmo busca aislar las clases de forma que cada subnodo sea lo más homogéneo ('puro') posible, apoyándose en dos indicadores analíticos principales:"),
           
           bslib::layout_column_wrap(
             width = 1/2,
             style = "gap: 20px; margin-top: 15px;",
             
-            # Subcolumna: Entropía
             tags$div(
               style = "border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: white;",
-              tags$h5(tags$b("Entropía y Ganancia de Información"), style = "color: #1a365d; margin-bottom: 10px;"),
+              tags$h5(tags$b("Entropía y Ganancia de Información"), style = "color: #1e3a8a; margin-bottom: 10px;"),
               p("La entropía mide el grado de incertidumbre o desorden del subconjunto de datos \\(\\mathbf{S}\\):"),
-              p("$$H(\\mathbf{S}) = -\\sum_{i=1}^{c} p_i \\log_2 p_i$$"),
-              p("Donde \\(c\\) es el total de clases e \\(p_i\\) es la proporción del grupo \\(i\\). A partir de ella, se evalúa un atributo \\(A\\) buscando el que ", tags$b("maximice la ganancia"), " de reducción de desorden:"),
-              p("$$\\text{Gain}(\\mathbf{S}, A) = H(\\mathbf{S}) - \\sum_{v \\in \\text{Valores}(A)} \\frac{|\\mathbf{S}_v|}{|\\mathbf{S}|} H(\\mathbf{S}_v)$$")
+              tags$div(class = "equation-container", HTML("$$H(\\mathbf{S}) = -\\sum_{i=1}^{c} p_i \\log_2 p_i$$")),
+              p(HTML("Donde \\(c\\) es el total de clases e \\(p_i\\) es la proporción del grupo \\(i\\). A partir de ella, se evalúa un atributo \\(A\\) buscando el que <b>maximice la ganancia</b> de reducción de desorden:")),
+              tags$div(class = "equation-container", HTML("$$\\text{Gain}(\\mathbf{S}, A) = H(\\mathbf{S}) - \\sum_{v \\in \\text{Valores}(A)} \\frac{|\\mathbf{S}_v|}{|\\mathbf{S}|} H(\\mathbf{S}_v)$$"))
             ),
             
-            # Subcolumna: Gini
             tags$div(
               style = "border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: white;",
-              tags$h5(tags$b("Índice de Gini"), style = "color: #1a365d; margin-bottom: 10px;"),
+              tags$h5(tags$b("Índice de Gini"), style = "color: #1e3a8a; margin-bottom: 10px;"),
               p("Utilizado de forma predeterminada por el algoritmo CART, mide directamente la impureza o grado de mezcla de clases del nodo:"),
-              p("$$\\text{Gini}(\\mathbf{S}) = 1 - \\sum_{i=1}^{c} p_i^2$$"),
-              p("Este índice arroja valores mínimos (cercanos a 0) si la inmensa mayoría de las observaciones pertenecen a una única categoría. Aquí, el algoritmo selecciona el atributo que ", tags$b("minimice el índice de Gini"), ", forzando particiones lo más puras posibles.")
+              tags$div(class = "equation-container", HTML("$$\\text{Gini}(\\mathbf{S}) = 1 - \\sum_{i=1}^{c} p_i^2$$")),
+              p(HTML("Este índice arroja valores mínimos (cercanos a 0) si la inmensa mayoría de las observaciones pertenecen a una única categoría. Aquí, el algoritmo selecciona el atributo que <b>minimice el índice de Gini</b>, forzando particiones lo más puras posibles."))
             )
           )
         )
       ),
       
-      br(),
-      
       # =====================================
-      # DINÁMICA DE CONSTRUCCIÓN Y PARADA
+      # DINÁMICA DE CONSTRUCCIÓN
       # =====================================
+      h4(icon("gears"), "Construcción Recursiva y Condiciones de Parada", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        class = "theory-card", style = "margin-bottom: 30px;",
         bslib::card_body(
-          h4(icon("gears"), "Construcción Recursiva y Condiciones de Parada", style = "color: #1e40af; margin-bottom: 15px;"),
           p("El proceso sigue un enfoque recursivo descendente que arranca desde el nodo raíz con la totalidad de la muestra y divide los datos de forma iterativa según la tipología de las variables:"),
           tags$ul(
-            tags$li(tags$b("Variables categóricas:"), " Se abren simultáneamente tantas ramas físicas como valores distintos posea el atributo evaluado.", style = "margin-bottom: 6px;"),
-            tags$li(tags$b("Variables continuas:"), " Se calcula un punto de corte óptimo que segmenta los datos en dos subgrupos, originando particiones binarias.")
+            style = "padding-left: 20px;",
+            tags$li(style = "margin-bottom: 6px;", HTML("<b>Variables categóricas:</b> Se abren simultáneamente tantas ramas físicas como valores distintos posea el atributo evaluado.")),
+            tags$li(style = "margin-bottom: 15px;", HTML("<b>Variables continuas:</b> Se calcula un punto de corte óptimo que segmenta los datos en dos subgrupos, originando particiones binarias."))
           ),
-          
-          hr(style = "border-top: 1px solid #cbd5e1; margin: 15px 0;"),
-          
-          h5("Condiciones de Parada Estructurales:", style = "color: #1a365d; font-weight: bold; margin-bottom: 10px;"),
+          h5("Condiciones de Parada Estructurales:", style = "color: #1e3a8a; font-weight: bold; margin-bottom: 10px;"),
           tags$div(
             style = "display: flex; flex-direction: column; gap: 10px; margin-left: 10px;",
             tags$div(style = "border-left: 4px solid #10b981; padding-left: 12px;", "El subnodo alcanza un estado completamente puro (todos sus individuos pertenecen ya a la misma clase de \\(Y\\))."),
@@ -156,38 +175,67 @@ Arboles_Teoria_UI <- function(id) {
         )
       ),
       
-      br(),
-      
       # =====================================
-      # PODA (PRUNING)
+      # PODA (PRUNING) - TEXTO EXACTO DE MEMORIA
       # =====================================
+      h4(icon("scissors"), "Técnicas de Poda (Pruning) contra el Sobreajuste", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        class = "theory-card", style = "margin-bottom: 30px;",
         bslib::card_body(
-          h4(icon("scissors"), "Técnicas de Poda (Pruning) contra el Sobreajuste", style = "color: #1e40af; margin-bottom: 15px;"),
           p("Permitir que el árbol se ramifique sin restricciones suele inducir al sobreajuste (overfitting): el modelo memoriza el ruido de entrenamiento, mermando su capacidad de generalizar ante nuevos individuos (Han et al., 2011). Para mitigar este problema se aplican dos aproximaciones:"),
           tags$ul(
-            tags$li(tags$b("Poda previa (Pre-pruning):"), " Detiene el algoritmo de forma temprana antes de que la estructura gane una complejidad excesiva.", style = "margin-bottom: 6px;"),
-            tags$li(tags$b("Poda posterior (Post-pruning):"), " Colapsa ramas y simplifica nodos una vez que el árbol ha alcanzado su máximo crecimiento.")
+            style = "padding-left: 20px;",
+            tags$li(style = "margin-bottom: 6px;", HTML("<b>Poda previa (Pre-pruning):</b> Detiene el algoritmo de forma temprana antes de que la estructura gane una complejidad excesiva.")),
+            tags$li(style = "margin-bottom: 15px;", HTML("<b>Poda posterior (Post-pruning):</b> Colapsa ramas y simplifica nodos una vez que el árbol ha alcanzado su máximo crecimiento."))
           ),
           
           hr(style = "border-top: 1px solid #cbd5e1; margin: 20px 0;"),
           
+          # Sección literal de obtención de complejidad (Fiel a image_3561de)
+          p(HTML("El parámetro \\(\\alpha\\) no se fija de forma arbitraria, sino que se estima mediante procedimientos de validación. De manera que, para cada valor de \\(\\alpha\\), el algoritmo selecciona un subárbol \\(T_\\alpha\\). De entre todos los posibles subárboles, el óptimo es el que minimiza la función de coste-complejidad dentro del árbol máximo inicial \\(T_{\\text{max}}\\):")),
+          tags$div(class = "equation-container", HTML("$$T_\\alpha = \\arg \\min_{(T \\subseteq T_{\\text{max}})} [R(T) + \\alpha|T|]$$")),
+          p(HTML("En la práctica, se genera una secuencia de valores de \\(\\alpha\\) asociados a distintos subárboles obtenidos mediante poda por complejidad-coste y, posteriormente, se evalúa el rendimiento de cada uno de ellos sobre un conjunto de validación o mediante validación cruzada. El valor óptimo de \\(\\alpha\\) es aquel que minimiza el error de generalización (por ejemplo, tasa de error media en validación cruzada), logrando así el mejor equilibrio entre ajuste del modelo y simplicidad. Este procedimiento permite no solo evitar el sobreajuste sino garantizar una estructura con una capacidad óptima de generalización a nuevos datos."))
+        )
+      ),
+      
+      # =====================================
+      # APARTADO 3.5.4: MÉTRICAS (Fiel a image_3546d8)
+      # =====================================
+      h4(icon("chart-simple"), "3.5.4 Métricas de evaluación", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
+      bslib::card(
+        class = "theory-card",
+        bslib::card_body(
+          p("Una vez que se ha ajustado un modelo de clasificación, es necesario evaluar su capacidad predictiva para averiguar si generaliza correctamente nuevos individuos. (James et al., 2013)"),
+          p("Esta evaluación se realiza mediante diferentes métricas que miden el rendimiento de los diferentes modelos y que se calculan a partir de las predicciones obtenidas sobre el conjunto de datos de evaluación."),
+          p(HTML("Una de las métricas más utilizadas es la exactitud o <i>accuracy</i>, que mide la proporción de observaciones correctamente clasificadas respecto al total de observaciones evaluadas. Se define como:")),
+          tags$div(class = "equation-container", HTML("$$\\text{Accuracy} = \\frac{\\text{TP} + \\text{TN}}{\\text{TP} + \\text{TN} + \\text{FP} + \\text{FN}}$$")),
+          p(HTML("donde TP (<i>True Positives</i>) representa los verdaderos positivos, TN (<i>True Negatives</i>) los verdaderos negativos, FP (<i>False Positives</i>) los falsos positivos y FN (<i>False Negatives</i>) los falsos negativos.")),
+          p(HTML("Un valor de <i>accuracy</i> próximo a 1 indica un elevado porcentaje de clasificaciones correctas, mientras que valores más bajos reflejan un peor desempeño del modelo.")),
+          p(HTML("No obstante, esta métrica puede resultar engañosa cuando las clases están desbalanceadas, ya que un modelo podría obtener una alta exactitud simplemente prediciendo siempre la clase mayoritaria. Por este motivo, suele complementarse con otras métricas como la precisión (<i>precision</i>), la sensibilidad (<i>recall</i>) y la medida F1.")),
+          
           tags$div(
-            style = "border-left: 4px solid #ef4444; background: #fef2f2; padding: 12px; border-radius: 0 8px 8px 0;",
-            tags$h5(tags$b("Criterio de Coste-Complejidad en CART:"), style = "color: #991b1b; margin-bottom: 8px;"),
-            p("Busca un compromiso matemático óptimo que equilibre el error de clasificación con el número de hojas mediante la penalización por el parámetro \\(\\alpha\\):"),
-            p("$$R_\\alpha(T) = R(T) + \\alpha |T|$$"),
-            
-            p(style = "font-size: 0.9rem; margin-bottom: 0;", 
-              "Donde \\(R(T)\\) representa el error empírico del árbol \\(T\\), \\(|T|\\) es el conteo de nodos terminales y \\(\\alpha\\) es el factor regulador. Valores elevados de \\(\\alpha\\) barren la estructura en favor de modelos altamente interpretables y robustos.")
-          ) 
-        ) 
-      ) 
-    ) 
-  ) 
-} 
-
+            style = "margin-top: 20px; display: flex; flex-direction: column; gap: 5px;",
+            tags$div(
+              class = "metric-definition",
+              p(HTML("La precisión se define como la proporción de predicciones positivas correctas entre todas las predicciones positivas realizadas:")),
+              tags$div(class = "equation-container", HTML("$$\\text{Precision} = \\frac{\\text{TP}}{\\text{TP} + \\text{FP}}$$"))
+            ),
+            tags$div(
+              class = "metric-definition",
+              p(HTML("La sensibilidad o <i>recall</i> mide la capacidad del modelo para identificar correctamente los casos positivos:")),
+              tags$div(class = "equation-container", HTML("$$\\text{Recall} = \\frac{\\text{TP}}{\\text{TP} + \\text{FN}}$$"))
+            ),
+            tags$div(
+              class = "metric-definition",
+              p(HTML("Por último, la medida F1 combines ambas métricas en una única medida, calculada como la media armónica entre precisión y sensibilidad:")),
+              tags$div(class = "equation-container", HTML("$$\\text{F1} = 2 \\cdot \\frac{\\text{Precision} \\cdot \\text{Recall}}{\\text{Precision} + \\text{Recall}}$$"))
+            )
+          )
+        )
+      )
+    )
+  )
+}
 Arboles_Teoria_Server <- function(id){
   moduleServer(id, function(input, output, session){ })
 }

@@ -9,131 +9,150 @@
 LDA_Teoria_UI <- function(id) {
   ns <- NS(id)
   
+  # Estilos CSS personalizados para homogeneizar con el diseño premium
+  custom_css <- "
+    .theory-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .equation-container {
+      background-color: #f8fafc;
+      padding: 16px;
+      border-radius: 10px;
+      margin: 18px 0;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+    }
+    .metric-definition {
+      border-left: 4px solid #10b981;
+      padding-left: 16px;
+      margin-bottom: 20px;
+    }
+  "
+  
   tagList(
     # Única llamada necesaria para activar MathJax en toda la página
     withMathJax(),
+    tags$head(tags$style(HTML(custom_css))),
     
     tags$div(
-      style = "padding: 20px; background-color: #fcfdfe;",
+      style = "padding: 30px; background-color: #fcfdfe;",
       
       # =====================================
-      # CABECERA
+      # CABECERA ESTILO PREMIUM
       # =====================================
-      h2(
-        "Análisis Discriminante Lineal (LDA)",
-        style = "font-weight: 800; color: #1a365d; margin-bottom: 5px;"
+      tags$div(
+        style = "margin-bottom: 25px;",
+        h1(
+          "Análisis Discriminante Lineal (LDA)",
+          style = "font-weight: 800; color: #1e3a8a; margin-bottom: 6px; font-size: 2.5rem;"
+        ),
+        p(
+          "Técnica de clasificación multivariante basada en el modelado de la distribución de los predictores condicionada a cada clase.",
+          style = "color: #64748b; font-size: 1.15rem; margin-bottom: 25px;"
+        )
       ),
       
-      p(
-        "Técnica de clasificación multivariante basada en el modelado de la distribución de los predictores condicionada a cada clase.",
-        style = "color: #64748b; font-size: 1.1rem; margin-bottom: 30px;"
-      ),
-      
       # =====================================
-      # TARJETAS PRINCIPALES
+      # TARJETAS PRINCIPALES (ESTILO PASTEL ADAPTADO)
       # =====================================
       bslib::layout_column_wrap(
-        width = 1/3, # Tres columnas perfectamente niveladas
+        width = 1/3, 
         heights_equal = "row",
+        style = "margin-bottom: 35px;",
         
-        # ---------------------------------
         # 1. ENFOQUE DEL LDA
-        # ---------------------------------
         bslib::card(
+          style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("1. Planteamiento Probabilístico"),
-            style = "background: #e0e7ff;"
+            "1. Planteamiento Probabilístico",
+            style = "background-color: #e0e7ff; color: #1e1b4b; font-weight: 700; font-size: 1.1rem; padding: 12px 16px;"
           ),
           bslib::card_body(
+            style = "padding: 20px; line-height: 1.6; color: #334155;",
             p("Constituye una alternativa robusta a la regresión logística (James et al., 2013). En lugar de modelar la probabilidad directa de la clase, el LDA modela la distribución de los predictores en cada grupo:"),
-            p("$$\\text{Enfoque: } P(\\mathbf{X}=\\mathbf{x} \\mid Y=k)$$"),
+            tags$div(class = "equation-container", HTML("$$\\text{Enfoque: } P(\\mathbf{X}=\\mathbf{x} \\mid Y=k)$$")),
             p("A partir de esta densidad y mediante el teorema de Bayes, se deduce la probabilidad a posteriori de pertenencia.")
           )
         ),
         
-        # ---------------------------------
         # 2. HIPÓTESIS DEL MODELO
-        # ---------------------------------
         bslib::card(
+          style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("2. Supuestos Fundamentales"),
-            style = "background: #dcfce7;"
+            "2. Supuestos Fundamentales",
+            style = "background-color: #dcfce7; color: #064e3b; font-weight: 700; font-size: 1.1rem; padding: 12px 16px;"
           ),
           bslib::card_body(
-            p("Para estimar las funciones de densidad, el LDA se fundamenta estrictamente en dos hipótesis de partida:"),
+            style = "padding: 20px; line-height: 1.6; color: #334155;",
+            p("Para hacer viable la estimación de las funciones de densidad, el LDA se fundamenta estrictamente en dos hipótesis de partida:"),
             tags$ul(
-              style = "margin-top: 10px;",
-              tags$li(tags$b("Normalidad:"), " Las variables predictoras condicionadas a cada clase siguen una distribución normal multivariante.", style = "margin-bottom: 6px;"),
-              tags$li(tags$b("Homocedasticidad:"), " Todas las clases comparten la misma estructura de dispersión, asumiendo una única matriz de covarianzas común: \\(\\mathbf{\\Sigma}_1 = \\dots = \\mathbf{\\Sigma}_K = \\mathbf{\\Sigma}\\).")
+              style = "padding-left: 15px; margin-top: 10px; list-style-type: none;",
+              tags$li(style = "margin-bottom: 8px;", HTML("• <b>Normalidad:</b> Las variables predictoras condicionadas a cada clase siguen una distribución normal multivariante.")),
+              tags$li(style = "margin-bottom: 0;", HTML("• <b>Homocedasticidad:</b> Todas las clases comparten la misma estructura de dispersión, asumiendo una única matriz de covarianzas común: \\(\\mathbf{\\Sigma}_1 = \\dots = \\mathbf{\\Sigma}_K = \\mathbf{\\Sigma}\\)."))
             )
           )
         ),
         
-        # ---------------------------------
         # 3. CRITERIO DE PREFERENCIA
-        # ---------------------------------
         bslib::card(
+          style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("3. Ventajas frente a la Logística"),
-            style = "background: #fef3c7;"
+            "3. Ventajas frente a la Logística",
+            style = "background-color: #fef9c3; color: #713f12; font-weight: 700; font-size: 1.1rem; padding: 12px 16px;"
           ),
           bslib::card_body(
+            style = "padding: 20px; line-height: 1.6; color: #334155;",
             p("Proporciona estimaciones de parámetros significativamente más estables en los siguientes escenarios críticos:"),
             tags$ul(
-              style = "margin-top: 10px;",
-              tags$li("Categorías de respuesta netamente separadas.", style = "margin-bottom: 6px;"),
-              tags$li("Tamaño de muestra \\(n\\) reducido con predictores aproximadamente normales.", style = "margin-bottom: 6px;"),
-              tags$li("Variables respuesta múltiples o no binarias (\\(K > 2\\)).")
+              style = "padding-left: 15px; margin-top: 10px; list-style-type: none;",
+              tags$li(style = "margin-bottom: 6px;", HTML("• Categorías de respuesta netamente separadas.")),
+              tags$li(style = "margin-bottom: 6px;", HTML("• Tamaño de muestra \\(n\\) reducido con predictores aproximadamente normales.")),
+              tags$li(style = "margin-bottom: 0;", HTML("• Variables respuesta múltiples o no binarias (\\(K > 2\\))."))
             )
           )
         )
-      ), # Fin del layout_column_wrap
-      
-      br(),
+      ),
       
       # =====================================
       # CASO UNIVARIANTE VS MULTIVARIANTE
       # =====================================
       bslib::layout_column_wrap(
-        width = 1/2, # Dos columnas para contrastar univariante y multivariante
+        width = 1/2, 
         heights_equal = "row",
+        style = "margin-bottom: 30px;",
         
-        # ---------------------------------
         # ESTIMACIÓN CASO UNIVARIANTE
-        # ---------------------------------
         bslib::card(
-          style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+          class = "theory-card", style = "background: #f8fafc;",
           bslib::card_body(
-            h4(icon("calculator"), "Caso Univariante (Un solo predictor)", style = "color: #1e40af; margin-bottom: 15px;"),
+            h4(icon("calculator"), "Caso Univariante (Un solo predictor)", style = "color: #1e40af; margin-bottom: 15px; font-weight: 700;"),
             p("Considerando un único predictor continuo \\(X\\) con varianza común \\(\\sigma^2\\), la probabilidad a posteriori se calcula mediante el teorema de Bayes a partir de densidades normales gaussianas (Hastie et al., 2009):"),
-            p("$$P(Y=k \\mid X=x) = \\frac{\\pi_k \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left(-\\frac{(x-\\mu_k)^2}{2\\sigma^2}\\right)}{\\sum_{l=1}^{K} \\pi_l \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left(-\\frac{(x-\\mu_l)^2}{2\\sigma^2}\\right)}$$"),
-            p("Donde \\(\\pi_k\\) representa la probabilidad a priori de la clase y \\(\\mu_k\\) es la media escalar del predictor en dicha clase.")
+            tags$div(class = "equation-container", HTML("$$P(Y=k \\mid X=x) = \\frac{\\pi_k \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left(-\\frac{(x-\\mu_k)^2}{2\\sigma^2}\\right)}{\\sum_{l=1}^{K} \\pi_l \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left(-\\frac{(x-\\mu_l)^2}{2\\sigma^2}\\right)}$$")),
+            p(HTML("Donde \\(\\pi_k\\) representa la probabilidad a priori de la clase y \\(\\mu_k\\) es la media escalar del predictor en dicha clase."))
           )
         ),
         
-        # ---------------------------------
         # ESTIMACIÓN CASO MULTIVARIANTE
-        # ---------------------------------
         bslib::card(
-          style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+          class = "theory-card", style = "background: #f8fafc;",
           bslib::card_body(
-            h4(icon("matrix-org"), "Caso Multivariante (Múltiples predictores)", style = "color: #1e40af; margin-bottom: 15px;"),
+            h4(icon("layer-group"), "Caso Multivariante (Múltiples predictores)", style = "color: #1e40af; margin-bottom: 15px; font-weight: 700;"),
             p("Cuando se dispone de un vector de \\(p\\) predictores continuos \\(\\mathbf{x}\\), se asume que cada clase sigue una función de densidad normal multivariante \\(f_k(\\mathbf{x}) \\sim N(\\boldsymbol{\\mu}_k, \\mathbf{\\Sigma})\\):"),
-            p("$$f_k(\\mathbf{x}) = \\frac{1}{(2\\pi)^{p/2} |\\mathbf{\\Sigma}|^{1/2}} \\exp\\left( -\\frac{1}{2} (\\mathbf{x} - \\boldsymbol{\\mu}_k)^T \\mathbf{\\Sigma}^{-1} (\\mathbf{x} - \\boldsymbol{\\mu}_k) \\right)$$"),
-            p("Donde \\(\\boldsymbol{\\mu}_k\\) es el vector de medias del grupo \\(k\\), \\(|\\mathbf{\\Sigma}|\\) denota el determinante de la matriz de covarianzas común y \\(\\mathbf{\\Sigma}^{-1}\\) es su inversa.")
+            tags$div(class = "equation-container", HTML("$$f_k(\\mathbf{x}) = \\frac{1}{(2\\pi)^{p/2} |\\mathbf{\\Sigma}|^{1/2}} \\exp\\left( -\\frac{1}{2} (\\mathbf{x} - \\boldsymbol{\\mu}_k)^T \\mathbf{\\Sigma}^{-1} (\\mathbf{x} - \\boldsymbol{\\mu}_k) \\right)$$")),
+            p(HTML("Donde \\(\\boldsymbol{\\mu}_k\\) es el vector de medias del grupo \\(k\\), \\(|\\mathbf{\\Sigma}|\\) denota el determinante de la matriz de covarianzas común y \\(\\mathbf{\\Sigma}^{-1}\\) es su inversa."))
           )
         )
       ),
       
-      br(),
-      
       # =====================================
       # REGLAS DE DECISIÓN Y CLASIFICADOR
       # =====================================
+      h4(icon("arrow-right-to-bracket"), "Funciones Discriminantes Lineales y Regla de Decisión", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        class = "theory-card", style = "margin-bottom: 35px;",
         bslib::card_body(
-          h4(icon("arrow-right-to-bracket"), "Funciones Discriminantes Lineales y Regla de Decisión", style = "color: #1e40af; margin-bottom: 15px;"),
           p("Al simplificar analíticamente el logaritmo de las probabilidades para maximizar la asignación y cancelar los términos cuadráticos comunes, se derivan las funciones discriminantes lineales para ambos casos:"),
           
           tags$div(
@@ -141,12 +160,12 @@ LDA_Teoria_UI <- function(id) {
             tags$div(
               style = "border-left: 4px solid #10b981; padding-left: 12px;",
               tags$b("Función Discriminante Univariante (Escalar):"),
-              p("$$\\delta_k(x) = x \\cdot \\frac{\\mu_k}{\\sigma^2} - \\frac{\\mu_k^2}{2\\sigma^2} + \\log(\\pi_k)$$")
+              tags$div(class = "equation-container", HTML("$$\\delta_k(x) = x \\cdot \\frac{\\mu_k}{\\sigma^2} - \\frac{\\mu_k^2}{2\\sigma^2} + \\log(\\pi_k)$$"))
             ),
             tags$div(
               style = "border-left: 4px solid #8b5cf6; padding-left: 12px;",
               tags$b("Función Discriminante Multivariante (Matricial):"),
-              p("$$\\delta_k(\\mathbf{x}) = \\mathbf{x}^T \\mathbf{\\Sigma}^{-1} \\boldsymbol{\\mu}_k - \\frac{1}{2} \\boldsymbol{\\mu}_k^T \\mathbf{\\Sigma}^{-1} \\boldsymbol{\\mu}_k + \\log(\\pi_k)$$")
+              tags$div(class = "equation-container", HTML("$$\\delta_k(\\mathbf{x}) = \\mathbf{x}^T \\mathbf{\\Sigma}^{-1} \\boldsymbol{\\mu}_k - \\frac{1}{2} \\boldsymbol{\\mu}_k^T \\mathbf{\\Sigma}^{-1} \\boldsymbol{\\mu}_k + \\log(\\pi_k)$$"))
             )
           ),
           
@@ -156,14 +175,49 @@ LDA_Teoria_UI <- function(id) {
             style = "border-left: 4px solid #3b82f6; padding-left: 12px; background: #f0f9ff; padding: 12px; border-radius: 0 8px 8px 0;",
             tags$b(icon("circle-check"), "Regla General del Clasificador:"), 
             " Tanto en el escenario univariante como en el multivariante, el modelo asignará la nueva observación al grupo que optimice su respectiva función lineal:",
-            p("$$\\text{Clase asignada} = \\arg\\max_k \\delta_k(\\mathbf{x})$$")
+            tags$div(class = "equation-container", style = "background: white;", HTML("$$\\text{Clase asignada} = \\arg\\max_k \\delta_k(\\mathbf{x})$$"))
+          )
+        )
+      ),
+      
+      # =====================================
+      # APARTADO 3.5.4: MÉTRICAS
+      # =====================================
+      h4(icon("chart-simple"), "3.5.4 Métricas de evaluación", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
+      bslib::card(
+        class = "theory-card",
+        bslib::card_body(
+          p("Una vez que se ha ajustado un modelo de clasificación, es necesario evaluar su capacidad predictiva para averiguar si generaliza correctamente nuevos individuos. (James et al., 2013)"),
+          p("Esta evaluación se realiza mediante diferentes métricas que miden el rendimiento de los diferentes modelos y que se calculan a partir de las predicciones obtenidas sobre el conjunto de datos de evaluación."),
+          p(HTML("Una de las métricas más utilizadas es la exactitud o <i>accuracy</i>, que mide la proporción de observaciones correctamente clasificadas respecto al total de observaciones evaluadas. Se define como:")),
+          tags$div(class = "equation-container", HTML("$$\\text{Accuracy} = \\frac{\\text{TP} + \\text{TN}}{\\text{TP} + \\text{TN} + \\text{FP} + \\text{FN}}$$")),
+          p(HTML("donde TP (<i>True Positives</i>) representa los verdaderos positivos, TN (<i>True Negatives</i>) los verdaderos negativos, FP (<i>False Positives</i>) los falsos positivos y FN (<i>False Negatives</i>) los falsos negativos.")),
+          p(HTML("Un valor de <i>accuracy</i> próximo a 1 indica un elevado porcentaje de clasificaciones correctas, mientras que valores más bajos reflejan un peor desempeño del modelo.")),
+          p(HTML("No obstante, esta métrica puede resultar engañosa cuando las clases están desbalanceadas, ya que un modelo podría obtener una alta exactitud simplemente prediciendo siempre la clase mayoritaria. Por este motivo, suele complementarse con otras métricas como la precisión (<i>precision</i>), la sensibilidad (<i>recall</i>) y la medida F1.")),
+          
+          tags$div(
+            style = "margin-top: 20px; display: flex; flex-direction: column; gap: 5px;",
+            tags$div(
+              class = "metric-definition",
+              p(HTML("La precisión se define como la proporción de predicciones positivas correctas entre todas las predicciones positivas realizadas:")),
+              tags$div(class = "equation-container", HTML("$$\\text{Precision} = \\frac{\\text{TP}}{\\text{TP} + \\text{FP}}$$"))
+            ),
+            tags$div(
+              class = "metric-definition",
+              p(HTML("La sensibilidad o <i>recall</i> mide la capacidad del modelo para identificar correctamente los casos positivos:")),
+              tags$div(class = "equation-container", HTML("$$\\text{Recall} = \\frac{\\text{TP}}{\\text{TP} + \\text{FN}}$$"))
+            ),
+            tags$div(
+              class = "metric-definition",
+              p(HTML("Por último, la medida F1 combina ambas métricas en una única medida, calculada como la media armónica entre precisión y sensibilidad:")),
+              tags$div(class = "equation-container", HTML("$$\\text{F1} = 2 \\cdot \\frac{\\text{Precision} \\cdot \\text{Recall}}{\\text{Precision} + \\text{Recall}}$$"))
+            )
           )
         )
       )
     )
   )
 }
-
 LDA_Teoria_Server <- function(id){
   moduleServer(id, function(input, output, session){ })
 }

@@ -45,7 +45,7 @@ Jerarquicos_Teoria_UI <- function(id) {
             style = "background: #e0e7ff;"
           ),
           bslib::card_body(
-            p("Algoritmo que organiza los datos en grupos jerárquicos divididos por niveles, presentando dos enfoques según su construcción:"),
+            p("Algoritmo que organiza los datos en grupos divididos por niveles, presentando dos enfoques según su construcción:"),
             tags$ul(
               style = "margin-top: 10px;",
               tags$li(tags$b("Clústeres Aglomerativos:"), " Comienza con tantos grupos como observaciones. Fusiona sucesivamente los grupos más cercanos y actualiza las distancias hasta unificar todo en un único clúster.", style = "margin-bottom: 8px;"),
@@ -63,7 +63,7 @@ Jerarquicos_Teoria_UI <- function(id) {
             style = "background: #dcfce7;"
           ),
           bslib::card_body(
-            p("El algoritmo se apoya en disimilitudes midiendo la proximidad de las observaciones mediante una matriz simétrica de dimensión \\(N \\times N\\) (donde \\(N\\) representa el número total de individuos), calculada habitualmente con la distancia euclídea."),
+            p("El algoritmo se basa en una matriz simétrica de disimilitudes de dimensión \\(N\\times N\\), donde \\(N\\) representa el número de individuos. Habitualmente se emplea la distancia euclídea, aunque pueden utilizarse otras medidas de disimilitud según la naturaleza de los datos."),
             p("Para recalcular las distancias de forma eficiente entre los clústeres fusionados \\(P\\) y \\(Q\\) frente a un tercer grupo \\(R\\), se utiliza la fórmula de recurrencia de ", tags$b("Lance y Williams (Soto et al., 2006):")),
             p("$$d^2(R, P+Q) = \\delta_1 d^2(R,P) + \\delta_2 d^2(R,Q) + \\delta_3 d^2(P,Q) + \\delta_4 |d^2(R,P) - d^2(R,Q)|$$")
           )
@@ -117,12 +117,10 @@ Jerarquicos_Teoria_UI <- function(id) {
               tags$tr(tags$td(tags$b("Vecino más lejano")), tags$td("\\(1/2\\)"), tags$td("\\(1/2\\)"), tags$td("\\(0\\)"), tags$td("\\(1/2\\)")),
               tags$tr(tags$td(tags$b("Media")), tags$td("\\(\\frac{n_P}{n_P+n_Q}\\)"), tags$td("\\(\\frac{n_Q}{n_P+n_Q}\\)"), tags$td("\\(0\\)"), tags$td("\\(0\\)")),
               tags$tr(tags$td(tags$b("Centroide")), tags$td("\\(\\frac{n_P}{n_P+n_Q}\\)"), tags$td("\\(\\frac{n_Q}{n_P+n_Q}\\)"), tags$td("\\(-\\frac{n_P n_Q}{(n_P+n_Q)^2}\\)"), tags$td("\\(0\\)")),
-              tags$tr(tags$td(tags$b("Mediana")), tags$td("\\(1/2\\)"), tags$td("\\(1/2\\)"), tags$td("\\(-1/4\\)"), tags$td("\\(0\\)")),
-              tags$tr(tags$td(tags$b("Ward")), tags$td("\\(\\frac{n_R+n_P}{n_R+n_P+n_Q}\\)"), tags$td("\\(\\frac{n_R+n_Q}{n_R+n_P+n_Q}\\)"), tags$td("\\(-\\frac{n_R}{n_R+n_P+n_Q}\\)"), tags$td("\\(0\\)")),
-              tags$tr(tags$td(tags$b("Flexible")), tags$td("\\(\\frac{1-\\beta}{2}\\)"), tags$td("\\(\\frac{1-\\beta}{2}\\)"), tags$td("\\(\\beta\\)"), tags$td("\\(0\\)"))
+              tags$tr(tags$td(tags$b("Ward")), tags$td("\\(\\frac{n_R+n_P}{n_R+n_P+n_Q}\\)"), tags$td("\\(\\frac{n_R+n_Q}{n_R+n_P+n_Q}\\)"), tags$td("\\(-\\frac{n_R}{n_R+n_P+n_Q}\\)"), tags$td("\\(0\\)")) # Se removió la coma final
             )
           ),
-          p(style = "font-size: 0.8rem; color: #64748b; margin-top: 5px;", "Donde \\(n_R, n_P, n_Q\\) son el número de individuos de cada grupo y \\(\\beta\\) es un parámetro arbitrario entre 0 y 1.")
+          p(style = "font-size: 0.8rem; color: #64748b; margin-top: 5px;", "Donde \\(n_R, n_P, n_Q\\) son el número de individuos de cada grupo.")
         )
       ),
       
@@ -134,39 +132,101 @@ Jerarquicos_Teoria_UI <- function(id) {
       bslib::card(
         style = "border: 1px solid #cbd5e1; background: #f8fafc;",
         bslib::card_body(
-          h4(icon("diagram-project"), "Criterios de Enlace (Soto et al., 2006)", style = "color: #1e40af; margin-bottom: 15px;"),
+          
+          h4(
+            icon("diagram-project"),
+            "Criterios de Enlace (Soto et al., 2006)",
+            style = "color: #1e40af; margin-bottom: 15px;"
+          ),
           
           tags$div(
-            style = "display: flex; flex-direction: column; gap: 15px;",
+            style = "display:flex; flex-direction:column; gap:20px;",
             
+            #-------------------------------------------------
+            # Vecino más próximo
+            #-------------------------------------------------
             tags$div(
-              style = "border-left: 4px solid #3b82f6; padding-left: 12px;",
-              tags$b("Método del vecino más próximo: "),
-              "Utiliza la distancia mínima entre observaciones pares de cada clúster. Es sensible para la detección de outliers, pero propende a formar grupos muy grandes por encadenamiento."
+              style = "border-left:4px solid #3b82f6; padding-left:12px;",
+              
+              tags$b("Método del vecino más próximo"),
+              
+              p("$$d(P,Q)=\\min_{i\\in P,\\;j\\in Q} d(i,j)$$"),
+              
+              p(
+                "La distancia entre dos clústeres se define como la menor distancia entre cualquier par de observaciones pertenecientes a ambos grupos. ",
+                "Es sensible al efecto de encadenamiento, formando con frecuencia grupos alargados."
+              )
             ),
+            
+            #-------------------------------------------------
+            # Vecino más lejano
+            #-------------------------------------------------
             tags$div(
-              style = "border-left: 4px solid #ef4444; padding-left: 12px;",
-              tags$b("Método del vecino más lejano: "),
-              "Considera el máximo de las distancias entre las observaciones de los grupos. También ayuda a identificar outliers, generando soluciones con grupos pequeños y sumamente compactos."
+              style = "border-left:4px solid #ef4444; padding-left:12px;",
+              
+              tags$b("Método del vecino más lejano"),
+              
+              p("$$d(P,Q)=\\max_{i\\in P,\\;j\\in Q} d(i,j)$$"),
+              
+              p(
+                "La distancia entre dos clústeres corresponde a la mayor distancia entre sus observaciones. ",
+                "Genera grupos pequeños y compactos."
+              )
             ),
+            
+            #-------------------------------------------------
+            # Media
+            #-------------------------------------------------
             tags$div(
-              style = "border-left: 4px solid #10b981; padding-left: 12px;",
-              tags$b("Método de la media: "),
-              "Calcula la distancia promedio entre todas las combinaciones de pares de observaciones. Genera grupos equilibrados (ni sobre-dimensionados ni muy pequeños) y ofrece buenos resúmenes gráficos."
+              style = "border-left:4px solid #10b981; padding-left:12px;",
+              
+              tags$b("Método de la media"),
+              
+              p("$$D(P,Q)=\\frac{1}{n_Pn_Q}\\sum_{i\\in P}\\sum_{j\\in Q}d(i,j)$$"), # Se duplicaron barras en \sum
+              
+              p(
+                "Calcula la distancia media entre todos los pares de observaciones pertenecientes a ambos clústeres. ",
+                "Genera grupos equilibrados y proporciona buenos resúmenes gráficos.."
+              )
             ),
+            
+            #-------------------------------------------------
+            # Centroide
+            #-------------------------------------------------
             tags$div(
-              style = "border-left: 4px solid #f59e0b; padding-left: 12px;",
-              tags$b("Método del centroide: "),
-              "Mide el distanciamiento entre vectores medios (centroides) en escala de intervalo. Si hay disparidad severa de tamaños, el nuevo centroide se absorberá casi por completo en el clúster de mayor volumen."
+              style = "border-left:4px solid #f59e0b; padding-left:12px;",
+              
+              tags$b("Método del centroide"),
+              
+              p("$$D(P,Q)=\\|\\bar{x}_P-\\bar{x}_Q\\|$$"),
+              
+              p(
+                "La distancia se calcula entre los centroides de ambos grupos. ",
+                "Si los tamaños de los clústeres son muy diferentes, el centroide queda condicionado por el grupo de mayor tamaño."
+              )
             ),
+            
+            #-------------------------------------------------
+            # Ward
+            #-------------------------------------------------
             tags$div(
-              style = "border-left: 4px solid #8b5cf6; padding-left: 12px;",
-              tags$b("Método de Ward: "),
-              "Minimiza en cada paso la suma de cuadrados intragrupo basándose en la descomposición del ANOVA multivariante. Es altamente eficiente y construye conjuntos muy pequeños y homogéneos, aunque exhibe alta sensibilidad ante outliers."
+              style = "border-left:4px solid #8b5cf6; padding-left:12px;",
+              
+              tags$b("Método de Ward"),
+              
+              p("$$D(P,Q)=SSE(P\\cup Q)-SSE(P)-SSE(Q)$$"), # Añadido el $$ final y corregido \\cup
+              
+              p(
+                "Minimiza en cada iteración el incremento de la suma de cuadrados intragrupo, obteniendo grupos pequeños y homogéneos aunque sensibles a valores atípicos. ",
+                "Tiende a generar grupos compactos y homogéneos, aunque puede ser sensible a valores atípicos."
+              )
             )
+            
           )
+          
         )
       )
+      
     )
   )
 }

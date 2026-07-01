@@ -6,6 +6,7 @@
 # -------------------------------
 # TEORIA
 # -------------------------------
+
 Regresion_multiple_Teoria_UI <- function(id) {
   ns <- NS(id)
   
@@ -14,19 +15,19 @@ Regresion_multiple_Teoria_UI <- function(id) {
     withMathJax(),
     
     tags$div(
-      style = "padding: 20px; background-color: #fcfdfe;",
+      style = "padding: 24px; background-color: #fcfdfe;",
       
       # =====================================
       # CABECERA DEL MÓDULO
       # =====================================
       h2(
         "Regresión Lineal Múltiple",
-        style = "font-weight: 800; color: #1a365d; margin-bottom: 5px;"
+        style = "font-weight: 800; color: #1a365d; margin-bottom: 6px;"
       ),
       
       p(
-        "Estudio estructural de las relaciones lineales condicionales entre múltiples predictores y una variable respuesta cuantitativa.",
-        style = "color: #64748b; font-size: 1.1rem; margin-bottom: 30px;"
+        "Técnica estadística utilizada para estudiar la relación entre una serie de variables independientes y una variable dependiente con el objetivo de explicar o cuantificar el efecto de fenómenos diversos.",
+        style = "color: #64748b; font-size: 1.05rem; margin-bottom: 30px; max-width: 1100px; line-height: 1.5;"
       ),
       
       # =====================================
@@ -40,24 +41,36 @@ Regresion_multiple_Teoria_UI <- function(id) {
         # CARD 1: FORMULACIÓN
         # ---------------------------------
         bslib::card(
+          style = "border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02);",
           bslib::card_header(
             tags$b("1. Formulación del Modelo"),
-            style = "background: #e0e7ff;"
+            style = "background: #e0e7ff; color: #1e1b4b;"
           ),
           bslib::card_body(
-            p("Modela la influencia que ejerce un conjunto de variables explicativas sobre una variable dependiente continua mediante una combinación lineal ordinaria:"),
+            p("La formulación matemática de esta técnica se basa en el modelo lineal, expresándose de la siguiente forma:"),
             
-            # Inyección de HTML puro para evitar que R altere las barras invertidas
-            HTML("$$Y_i = \\beta_0 + \\beta_1 X_{1i} + \\beta_2 X_{2i} + \\dots + \\beta_p X_{pi} + \\varepsilon_i$$"),
+            tags$div(style = "margin: 12px 0; text-align: center;",
+                     HTML("$$Y_i = \\beta_0 + \\beta_1 X_{1i} + \\beta_2 X_{2i} + \\dots + \\beta_p X_{pi} + \\varepsilon_i$$")
+            ),
             p("Expresado formalmente en su álgebra matricial compacta:"),
-            HTML("$$\\mathbf{Y} = \\mathbf{X}\\boldsymbol{\\beta} + \\boldsymbol{\\varepsilon}$$"),
+            tags$div(style = "margin: 12px 0; text-align: center;",
+                     HTML("$$\\mathbf{Y} = \\mathbf{X}\\boldsymbol{\\beta} + \\boldsymbol{\\varepsilon}$$")
+            ),
             
             tags$ul(
-              style = "margin-top: 10px;",
-              tags$li(HTML("<b>\\(Y_i\\)</b> : valor de la variable respuesta para el individuo \\(i\\)."), style = "margin-bottom: 6px;"),
-              tags$li(HTML("<b>\\(X_{ji}\\)</b> : valor de la variable explicativa \\(j\\) para el individuo \\(i\\)."), style = "margin-bottom: 6px;"),
-              tags$li(HTML("<b>\\(\\beta_j\\)</b> : coeficiente o efecto marginal parcial del predictor \\(j\\)."), style = "margin-bottom: 6px;"),
-              tags$li(HTML("<b>\\(\\varepsilon_i\\)</b> : término de error o perturbación aleatoria del individuo \\(i\\)."))
+              style = "margin-top: 15px; padding-left: 20px;",
+              tags$li(style = "margin-bottom: 10px; line-height: 1.4;",
+                      HTML("<b>\\(\\beta_j\\)</b>: representan el efecto marginal, es decir, el cambio esperado en \\(Y_i\\) por cada unidad de cambio en \\(\\mathbf{X}_j\\), manteniendo los demás factores constantes.")
+              ),
+              tags$li(style = "margin-bottom: 10px; line-height: 1.4;",
+                      HTML("<b>\\(\\beta_0\\)</b>: representa el punto de intersección, es decir, el valor de \\(Y_i\\) cuando \\(X_{1i} = X_{2i} = \\dots = X_{pi} = 0\\).")
+              ),
+              tags$li(style = "margin-bottom: 10px; line-height: 1.4;",
+                      HTML("<b>\\(\\varepsilon_i\\)</b>: es el término de error.")
+              ),
+              tags$li(style = "line-height: 1.4;",
+                      HTML("<b>\\(\\mathbf{X}\\)</b>: es la matriz de características ampliada con una primera columna compuesta enteramente por unos (1) para incorporar el parámetro de intersección.")
+              )
             )
           )
         ),
@@ -66,36 +79,47 @@ Regresion_multiple_Teoria_UI <- function(id) {
         # CARD 2: OBJETIVOS
         # ---------------------------------
         bslib::card(
+          style = "border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("2. Objetivos del Análisis"),
-            style = "background: #dcfce7;"
+            tags$b("2. Objetivos e Introducción"),
+            style = "background: #dcfce7; color: #064e3b;"
           ),
           bslib::card_body(
-            p("Esta metodología multivariante persigue explotar el comportamiento de los regresores con dos fines primarios:"),
-            tags$ul(
-              style = "margin-top: 15px;",
-              tags$li(tags$b("Predicción:"), " Estimar valores futuros u observaciones potenciales de la variable respuesta a partir de nuevos escenarios simulados.", style = "margin-bottom: 10px;"),
-              tags$li(tags$b("Explicación:"), " Aislar el impacto estructural y la dirección de cada predictor bajo la condición estricta ceteris paribus.")
-            )
+            style = "line-height: 1.5;",
+            p("Las técnicas de regresión multivariante ayudan a descubrir cómo influyen un conjunto de variables predictoras en el valor de una variable dependiente."),
+            p("Esta metodología se estima por el método de los mínimos cuadrados, permitiendo estimar, minimizando el error, los parámetros que definen la relación entre las variables. Sin embargo, puede presentar problemas cuando las variables predictoras están correlacionadas entre sí (multicolinealidad) o cuando hay demasiadas variables predictoras (sobreajuste).")
           )
         ),
         
         # ---------------------------------
-        # CARD 3: COLINEALIDAD
+        # CARD 3: SUPUESTOS DEL MODELO (Movido aquí)
         # ---------------------------------
         bslib::card(
+          style = "border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("3. El Problema de la Colinealidad"),
-            style = "background: #fcd7d7; color: #721c24;"
+            tags$b("3. Supuestos del Modelo"),
+            style = "background: #fef3c7; color: #78350f;"
           ),
           bslib::card_body(
-            p("Ocurre cuando las variables independientes están fuertemente relacionadas entre sí, constituyendo una combinación lineal aproximada:"),
-            HTML("$$\\text{Var}(\\hat{\\boldsymbol{\\beta}}_{MCO}) = \\sigma^2 (\\mathbf{X}^T \\mathbf{X})^{-1}$$"),
-            p("Este solapamiento altera los resultados debido a que:"),
+            p("Para poder definir un modelo de regresión lineal es necesario que se cumpla con los siguientes supuestos básicos:"),
+            
             tags$ul(
-              style = "margin-top: 10px;",
-              tags$li(HTML("El determinante de \\(\\mathbf{X}^T \\mathbf{X}\\) se aproxima a cero, volviéndose casi singular."), style = "margin-bottom: 6px;"),
-              tags$li("La varianza de los estimadores se infla exponencialmente, desestabilizando los coeficientes reales.")
+              style = "margin-top: 10px; padding-left: 20px;",
+              tags$li(style = "margin-bottom: 10px; line-height: 1.4;",
+                      HTML("<b>Linealidad:</b> Implica que la relación entre la variable \\(Y\\) y las variables \\(X_i\\) sea lineal. Es decir, que el cambio de \\(Y\\) en función de \\(X_i\\) sea constante.") # Arreglado el X_i a MathJax
+              ),
+              tags$li(style = "margin-bottom: 10px; line-height: 1.4;",
+                      tags$b("Independencia:"), " Los errores del modelo serán independientes entre sí."
+              ),
+              tags$li(style = "margin-bottom: 10px; line-height: 1.4;",
+                      tags$b("Homocedasticidad:"), " Los errores tendrán varianza constante."
+              ),
+              tags$li(style = "margin-bottom: 10px; line-height: 1.4;",
+                      tags$b("Normalidad:"), " Los errores seguirán una distribución normal con media 0."
+              ),
+              tags$li(style = "line-height: 1.4;",
+                      tags$b("No colinealidad:"), " Las variables independientes no deben presentar una correlación elevada entre sí."
+              )
             )
           )
         )
@@ -104,29 +128,32 @@ Regresion_multiple_Teoria_UI <- function(id) {
       br(),
       
       # =====================================
-      # ESTIMACIÓN POR MCO (CORREGIDO DE LA CAPTURA)
+      # ESTIMACIÓN POR MCO
       # =====================================
       bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        style = "border: 1px solid #cbd5e1; background: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.02);",
         bslib::card_body(
           h4(
-            icon("calculator"), "Estimación por Mínimos Cuadrados Ordinarios (MCO)",
-            style = "color: #1e40af; margin-bottom: 10px;"
+            icon("calculator"), "Estimación de Parámetros por MCO",
+            style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"
           ),
-          p("La obtención de los coeficientes óptimos se realiza minimizando de forma matemática la función objetivo de la suma de los errores cuadráticos residuales:"),
+          p("Para estimar los parámetros del modelo, se usa el método de mínimos cuadrados ordinarios (MCO), cuyo objetivo es realizar la estimación de los \\(\\beta_i\\) minimizando la suma de los cuadrados de los residuos (las diferencias entre los valores observados y los valores predichos por el modelo):"),
           
-          # Solución al error de tu captura (Inyección limpia de LaTeX)
-          HTML("$$S(\\boldsymbol{\\beta}) = (\\mathbf{Y} - \\mathbf{X}\\boldsymbol{\\beta})^T(\\mathbf{Y} - \\mathbf{X}\\boldsymbol{\\beta})$$"),
+          tags$div(style = "margin: 15px 0; text-align: center;",
+                   HTML("$$S(\\boldsymbol{\\beta}) = (\\mathbf{Y} - \\mathbf{X}\\boldsymbol{\\beta})^T(\\mathbf{Y} - \\mathbf{X}\\boldsymbol{\\beta})$$")
+          ),
           
-          p("Derivando respecto al vector de parámetros e igualando a cero, se deduce la solución en forma cerrada:"),
+          p("Derivando respecto a \\(\\boldsymbol{\\beta}\\) e igualando a cero se obtiene la condición de mínimo, deduciéndose el estimador de MCO:"),
           
-          # Solución al error de tu captura (Inyección limpia de LaTeX)
-          HTML("$$\\hat{\\boldsymbol{\\beta}} = (\\mathbf{X}^T \\mathbf{X})^{-1} \\mathbf{X}^T \\mathbf{Y}$$"),
+          tags$div(style = "margin: 15px 0; text-align: center;",
+                   HTML("$$\\hat{\\boldsymbol{\\beta}} = (\\mathbf{X}^T \\mathbf{X})^{-1} \\mathbf{X}^T \\mathbf{Y}$$")
+          ),
           
+          p("Este estimador presenta las siguientes propiedades teóricas fundamentales:"),
           tags$ul(
-            style = "margin-top: 10px;",
-            tags$li(HTML("Garantiza estimadores lineales e insesgados si se cumplen los supuestos estructurales (\\(E[\\hat{\\boldsymbol{\\beta}}] = \\boldsymbol{\\beta}\\))."), style = "margin-bottom: 6px;"),
-            tags$li(HTML("Requiere de forma obligatoria que la matriz de diseño \\(\\mathbf{X}\\) sea de rango completo para asegurar la inversión de \\(\\mathbf{X}^T \\mathbf{X}\\)."))
+            style = "margin-top: 10px; padding-left: 20px;",
+            tags$li(style = "margin-bottom: 8px;", HTML("Es insesgado, por lo que: \\(E[\\hat{\\boldsymbol{\\beta}}] = \\boldsymbol{\\beta}\\).")),
+            tags$li(HTML("La matriz de varianzas-covarianzas viene dada por: \\(\\text{Var}(\\hat{\\boldsymbol{\\beta}}) = \\sigma^2 (\\mathbf{X}^T \\mathbf{X})^{-1}\\)."))
           )
         )
       ),
@@ -137,18 +164,26 @@ Regresion_multiple_Teoria_UI <- function(id) {
       # EVALUACIÓN DEL AJUSTE
       # =====================================
       bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        style = "border: 1px solid #cbd5e1; background: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.02);",
         bslib::card_body(
           h4(
-            icon("percentage"), "Evaluación del Modelo y Descomposición de la Varianza",
-            style = "color: #1e40af; margin-bottom: 10px;"
+            icon("percentage"), "Evaluación del Modelo",
+            style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"
           ),
-          p("La variabilidad total del modelo (SS_tot) se descompone jerárquicamente en varianza explicada por la regresión (SS_reg) y varianza residual (SS_res):"),
-          HTML("$$R^2 = \\frac{SS_{reg}}{SS_{tot}} = 1 - \\frac{SS_{res}}{SS_{tot}}$$"),
+          p("Una vez estimados los coeficientes, la variabilidad total de \\(\\mathbf{Y}\\) (\\(SS_{tot}\\)) se descompone en variabilidad explicada por el modelo (\\(SS_{reg}\\)) y residual (\\(SS_{res}\\)):"),
+          
+          tags$div(style = "margin: 15px 0; text-align: center;",
+                   HTML("$$R^2 = \\frac{SS_{reg}}{SS_{tot}} = 1 - \\frac{SS_{res}}{SS_{tot}}$$")
+          ),
+          
           tags$ul(
-            style = "margin-top: 10px;",
-            tags$li(HTML("<b>Coeficiente de Determinación (\\(R^2\\)):</b> Cuantifica la proporción de variabilidad explicada por el conjunto de regresores seleccionados."), style = "margin-bottom: 6px;"),
-            tags$li(HTML("<b>Contraste Global (Test F):</b> Evalúa mediante ANOVA la significación conjunta bajo la hipótesis nula \\(H_0: \\beta_1 = \\beta_2 = \\dots = \\beta_p = 0\\). Se distribuye mediante una ley \\(F_{p, n-p-1}\\)."))
+            style = "margin-top: 10px; padding-left: 20px;",
+            tags$li(style = "margin-bottom: 8px; line-height: 1.4;",
+                    HTML("<b>Coeficiente de Determinación (\\(R^2\\)):</b> Mide la proporción de la variabilidad total de \\(\\mathbf{Y}\\) que es explicada por el modelo. Toma valores entre 0 y 1; cuanto más próximo a 1, mayor capacidad explicativa.")
+            ),
+            tags$li(style = "line-height: 1.4;",
+                    HTML("<b>Contraste Global (Test F):</b> Su objetivo es evaluar si las variables explicativas son significativas de forma conjunta para explicar la variable respuesta bajo la hipótesis nula \\(H_0: \\beta_1 = \\beta_2 = \\dots = \\beta_p = 0\\).")
+            )
           )
         )
       ),
@@ -156,42 +191,22 @@ Regresion_multiple_Teoria_UI <- function(id) {
       br(),
       
       # =====================================
-      # SUPUESTOS CLÁSICOS DEL MODELO
+      # EL PROBLEMA DE LA COLINEALIDAD (Movido abajo)
       # =====================================
       bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        style = "border: 1px solid #cbd5e1; background: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.02);",
         bslib::card_body(
           h4(
-            icon("shield-check"), "Supuestos Clásicos Fundamentales",
-            style = "color: #1e40af; margin-bottom: 10px;"
+            icon("triangle-exclamation"), "El Problema de la Colinealidad",
+            style = "color: #b91c1c; margin-bottom: 12px; font-weight: 700;"
           ),
-          p("Para garantizar la validez del contraste y asegurar que los estimadores sean los mejores lineales e insesgados (Teorema de Gauss-Markov), las perturbaciones aleatorias deben validar los siguientes postulados esenciales:"),
-          
-          tags$ul(
-            style = "margin-top: 15px;",
-            tags$li(
-              tags$b("Linealidad:"), 
-              " La relación real que vincula a la variable respuesta con las explicativas debe presentar una tendencia estrictamente lineal en sus parámetros.",
-              style = "margin-bottom: 10px;"
-            ),
-            tags$li(
-              HTML("<b>Independencia / No Autocorrelación:</b> Las perturbaciones aleatorias de observaciones muestrales diferentes deben estar incorrelacionadas entre sí (\\(\\text{Cov}(\\varepsilon_i, \\varepsilon_j) = 0\\)), supuesto crítico en series de tiempo."),
-              style = "margin-bottom: 10px;"
-            ),
-            tags$li(
-              HTML("<b>Homocedasticidad:</b> La varianza condicional de los errores debe mantenerse constante ante cualquier combinación de niveles de los regresores explicativos (\\(\\text{Var}(\\varepsilon_i | \\mathbf{X}) = \\sigma^2\\))."),
-              style = "margin-bottom: 10px;"
-            ),
-            tags$li(
-              HTML("<b>Normalidad:</b> Las perturbaciones del modelo deben distribuirse de acuerdo con una ley normal con media cero (\\(\\boldsymbol{\\varepsilon} \\sim N(\\mathbf{0}, \\sigma^2 \\mathbf{I})\\)). Este postulado es la clave matemática que valida la robustez de los contrastes inferenciales individuales \\(t\\) y conjuntos \\(F\\) bajo muestras finitas.")
-            )
-          )
+          p("El supuesto de no colinealidad establece que las variables independientes no deben presentar una correlación elevada entre sí."),
+          p("Cuando existe una correlación alta, se genera inestabilidad en la estimación de los parámetros. Para solventar la multicolinealidad o el sobreajuste, existen extensiones y técnicas complementarias como los métodos de regularización (Ridge y Lasso) o la regresión sobre componentes principales (PCR).")
         )
       )
     )
   )
 }
-
 
 Regresion_multiple_Teoria_Server <- function(id){
   moduleServer(id, function(input, output, session){ })

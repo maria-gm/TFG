@@ -1,179 +1,240 @@
-# =====================================================
-#  Regresión múltiple- MODULO
-# =====================================================
-
-
-# -------------------------------
-# TEORIA
-# -------------------------------
-
+# =========================================================
+# REGRESIÓN LOGÍSTICA BINARIA - EDICIÓN MEMORIA PREMIUM
+# =========================================================
+# =========================================================
+# REGRESIÓN LOGÍSTICA BINARIA - EDICIÓN MEMORIA PREMIUM
+# =========================================================
 Regresion_logistica_Teoria_UI <- function(id) {
-  ns <- NS(id)
+  ns <- NS(id)  # <-- Corregido aquí: cambiado ':=' por '<-' o '='
+  
+  # Estilos CSS personalizados e idénticos al formato de la memoria
+  custom_css <- "
+    .theory-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .equation-container {
+      background-color: #f8fafc;
+      padding: 16px;
+      border-radius: 10px;
+      margin: 18px 0;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+    }
+    .confusion-matrix-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+    }
+    .confusion-matrix-table th, .confusion-matrix-table td {
+      border: 1px solid #cbd5e1;
+      padding: 12px;
+      text-align: center;
+    }
+    .metric-definition {
+      border-left: 4px solid #10b981;
+      padding-left: 16px;
+      margin-bottom: 20px;
+    }
+  "
   
   tagList(
-    # Única llamada necesaria para activar MathJax en la página
     withMathJax(),
+    tags$head(tags$style(HTML(custom_css))),
     
     tags$div(
-      style = "padding: 20px; background-color: #fcfdfe;",
+      style = "padding: 30px; background-color: #fcfdfe;",
       
       # =====================================
-      # CABECERA
+      # CABECERA ESTILO LDA
       # =====================================
-      h2(
-        "Regresión Logística",
-        style = "font-weight: 800; color: #1a365d; margin-bottom: 5px;"
+      tags$div(
+        style = "margin-bottom: 25px;",
+        h1(
+          "Regresión Logística Binaria",
+          style = "font-weight: 800; color: #1e3a8a; margin-bottom: 6px; font-size: 2.5rem;"
+        ),
+        p(
+          "Técnica de clasificación multivariante basada en el modelado de la probabilidad de ocurrencia de un fenómeno dicotómico.",
+          style = "color: #64748b; font-size: 1.15rem; margin-bottom: 25px;"
+        )
       ),
       
-      p(
-        "Modelización de variables dependientes categóricas binarias a partir de un conjunto de predictores.",
-        style = "color: #64748b; font-size: 1.1rem; margin-bottom: 30px;"
-      ),
-      
       # =====================================
-      # TARJETAS PRINCIPALES
+      # BLOQUES INTRODUCTORIOS (ESTILO image_3552b6)
       # =====================================
       bslib::layout_column_wrap(
-        width = 1/3, # Tres columnas perfectas
+        width = 1/3,
         heights_equal = "row",
+        style = "margin-bottom: 35px;",
         
-        # ---------------------------------
-        # FUNDAMENTO
-        # ---------------------------------
+        # Bloque 1: Planteamiento Probabilístico
         bslib::card(
+          style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("1. Fundamento matemático"),
-            style = "background: #e0e7ff;"
+            "1. Planteamiento Probabilístico",
+            style = "background-color: #e0e7ff; color: #1e1b4b; font-weight: 700; font-size: 1.1rem; padding: 12px 16px;"
           ),
           bslib::card_body(
-            p("Modela la probabilidad condicionada de que la variable respuesta pertenezca a la categoría de interés \\(Y = 1\\) mediante la función logística:"),
-            p("$$p(x_i; \\boldsymbol{\\beta}) = \\frac{e^{\\beta_0 + \\beta_1X_{1i} + \\dots + \\beta_pX_{pi}}}{1 + e^{\\beta_0 + \\beta_1X_{1i} + \\dots + \\beta_pX_{pi}}}$$"),
-            p("Garantiza así que las estimaciones se mantengan estrictamente dentro del rango de probabilidades \\([0, 1]\\).")
+            style = "padding: 20px; line-height: 1.6; color: #334155;",
+            p("La probabilidad de éxito de la variable dependiente dicotómica se define formalmente mediante la siguiente función logística:"),
+            tags$div(
+              style = "background: #f8fafc; padding: 10px; border-radius: 6px; text-align: center; margin: 10px 0; border: 1px solid #e2e8f0; font-size: 0.9rem;",
+              HTML("$$P(Y = 1 \\mid X = x) = \\frac{1}{1 + e^{-(\\beta_0 + \\beta_1 x_1 + \\dots + \\beta_p x_p)}}$$")
+            ),
+            p("Garantiza que las estimaciones resultantes queden estrictamente acotadas en el rango probabilístico [0, 1].")
           )
         ),
         
-        # ---------------------------------
-        # OBJETIVOS
-        # ---------------------------------
+        # Bloque 2: Elementos del Modelo
         bslib::card(
+          style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("2. Objetivos"),
-            style = "background: #dcfce7;"
+            "2. Elementos del Modelo",
+            style = "background-color: #dcfce7; color: #064e3b; font-weight: 700; font-size: 1.1rem; padding: 12px 16px;"
           ),
           bslib::card_body(
-            p("Este modelo de regresión multivariante persigue resolver problemas de clasificación y asociación buscando:"),
+            style = "padding: 20px; line-height: 1.6; color: #334155;",
             tags$ul(
-              style = "margin-top: 15px;",
-              tags$li("Comprobar hipótesis o relaciones causales entre variables.", style = "margin-bottom: 10px;"),
-              tags$li("Estudiar la probabilidad de ocurrencia de un fenómeno binario.", style = "margin-bottom: 10px;"),
-              tags$li("Encontrar el modelo con el mejor ajuste descriptivo y que sea altamente interpretable.", style = "margin-bottom: 10px;"),
-              tags$li("Clasificar nuevas observaciones estimando su probabilidad de pertenencia a un grupo.")
+              style = "padding-left: 15px; margin: 0; list-style-type: none;",
+              tags$li(style = "margin-bottom: 8px;", HTML("• <b>\\(Y\\)</b> es la variable dependiente.")),
+              tags$li(style = "margin-bottom: 8px;", HTML("• Las \\(p\\) variables explicativas se designan por <b>\\(x_1, x_2, \\dots, x_p\\)</b>.")),
+              tags$li(style = "margin-bottom: 8px;", HTML("• <b>\\(\\beta_0, \\beta_1, \\dots, \\beta_p\\)</b> son los parámetros del modelo.")),
+              tags$li(style = "margin-bottom: 0;", HTML("• <b>\\(e\\)</b> es la constante de Euler (\\(e \\approx 2,718\\))."))
             )
           )
         ),
         
-        # ---------------------------------
-        # CUÁNDO USARLO
-        # ---------------------------------
+        # Bloque 3: Escenario de Aplicación
         bslib::card(
+          style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
-            tags$b("3. ¿Cuándo usarlo?"),
-            style = "background: #fef3c7;"
+            "3. Escenario de Aplicación",
+            style = "background-color: #fef9c3; color: #713f12; font-weight: 700; font-size: 1.1rem; padding: 12px 16px;"
           ),
           bslib::card_body(
-            p("Se recomienda aplicar una regresión logística cuando tu base de datos presente:"),
-            tags$ul(
-              style = "margin-top: 15px;",
-              tags$li("Una variable resultado binaria o dicotómica (0 o 1).", style = "margin-bottom: 10px;"),
-              tags$li("Variables predictoras que pueden ser cuantitativas y/o categóricas.", style = "margin-bottom: 10px;"),
-              tags$li("Necesidad de analizar efectos marginales combinados sobre una probabilidad.", style = "margin-bottom: 10px;"),
-              tags$li("Casos donde no se cumplan los supuestos de continuidad o linealidad directa exigidos por la regresión lineal ordinaria.")
-            )
+            style = "padding: 20px; line-height: 1.6; color: #334155;",
+            p(HTML("Si la variable respuesta es de 2 categorías se trata de una <b>regresión logística binaria</b>.")),
+            p("El problema de la clasificación multiclase (más de 2 categorías) no se incluye en esta sección; en su lugar se aborda mediante el Análisis Discriminante Lineal, el cual presenta un enfoque distinto y supone normalidad y homocedasticidad en los datos.")
           )
         )
       ),
-      
-      br(),
-      
-      # =====================================
-      # FORMULACIÓN DEL MODELO Y LOGIT
-      # =====================================
-      bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
-        bslib::card_body(
-          h4(
-            icon("calculator"), "Transformación Logit y Odds Ratio",
-            style = "color: #1e40af; margin-bottom: 10px;"
-          ),
-          p("La transformación logit mapea la probabilidad a una escala lineal continua e infinita. Aplicando el logaritmo de las odds (posibilidades o ventajas), el modelo se linealiza de la siguiente forma:"),
-          p("$$\\log\\left(\\frac{p(x_i)}{1 - p(x_i)}\\right) = \\beta_0 + \\beta_1X_{1i} + \\dots + \\beta_pX_{pi}$$"),
-          tags$ul(
-            style = "margin-top: 10px;",
-            tags$li("La variable respuesta modelada de forma lineal no es directamente la probabilidad, sino el logaritmo de la ventaja.", style = "margin-bottom: 6px;"),
-            tags$li("A diferencia del modelo lineal ordinario, la regresión logística difiere notablemente tanto en su estructura no lineal como en la naturaleza de sus supuestos.")
-          )
-        )
-      ),
-      
-      br(),
       
       # =====================================
       # ESTIMACIÓN DE PARÁMETROS
       # =====================================
+      h4(icon("gears"), "Estimación de parámetros: Máxima Verosimilitul", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        class = "theory-card", style = "margin-bottom: 30px;",
         bslib::card_body(
-          h4(
-            icon("gears"), "Estimación de parámetros: Máxima Verosimilitud",
-            style = "color: #1e40af; margin-bottom: 10px;"
-          ),
-          p("A diferencia del modelo de regresión lineal simple o múltiple, los parámetros \\(\\boldsymbol{\\beta}\\) no se obtienen por el método de mínimos cuadrados ordinarios. En su lugar, se recurre al método de Máxima Verosimilitud (MLE), el cual optimiza y maximiza la función de log-verosimilitud para las \\(N\\) observaciones:"),
-          p("$$\\ell(\\boldsymbol{\\beta}) = \\sum_{i=1}^{N} \\left\\{ y_i \\log[p(x_i; \\boldsymbol{\\beta})] + (1 - y_i) \\log[1 - p(x_i; \\boldsymbol{\\beta})] \\right\\}$$"),
-          tags$ul(
-            style = "margin-top: 10px;",
-            tags$li("\\(y_i\\) : representa la respuesta binaria real observada (0 o 1) para cada individuo.", style = "margin-bottom: 6px;"),
-            tags$li("\\(p(x_i; \\boldsymbol{\\beta})\\) : es la probabilidad de éxito condicionada al valor de los predictores \\(x_i\\) y controlada por el vector de parámetros estocásticos.", style = "margin-bottom: 6px;"),
-            tags$li("El estimador busca los coeficientes numéricos precisos que maximicen la probabilidad matemática de observar la muestra exacta que ha sido recopilada.")
-          )
+          p("A diferencia del modelo de regresión lineal, los parámetros \\(\\boldsymbol{\\beta}\\) no se obtienen por mínimos cuadrados ordinarios, sino mediante el método de Máxima Verosimilitud (MLE). Este método busca los valores de \\(\\boldsymbol{\\beta}\\) que maximizan la probabilidad de observar los datos muestrales obtenidos."),
+          p("Para \\(N\\) observaciones, la función de log-verosimilitud se define como:"),
+          tags$div(class = "equation-container", HTML("$$\\ell(\\boldsymbol{\\beta}) = \\sum_{i=1}^{N} \\left[ y_i \\log(p(x_i; \\boldsymbol{\\beta})) + (1 - y_i) \\log(1 - p(x_i; \\boldsymbol{\\beta})) \\right]$$")),
+          p(HTML("Donde \\(\\mathbf{x}_i = (1, x_{i1}, \\dots, x_{ip})^T\\), \\(y_i\\) es la respuesta observada (0 o 1) y \\(p(x_i; \\boldsymbol{\\beta})\\) es la probabilidad de que \\(x_i\\) pertenezca a \\(Y = 1\\) dado el valor de \\(x_i\\) y el parámetro \\(\\boldsymbol{\\beta}\\). Esta expresión puede simplificarse como:")),
+          tags$div(class = "equation-container", HTML("$$\\ell(\\boldsymbol{\\beta}) = \\sum_{i=1}^{N} \\left[ y_i \\boldsymbol{\\beta}^T \\mathbf{x}_i - \\log(1 + e^{\\boldsymbol{\\beta}^T \\mathbf{x}_i}) \\right]$$")),
+          p("Para maximizar esta función, se deriva y se iguala a 0:"),
+          tags$div(class = "equation-container", HTML("$$\\frac{\\partial \\ell(\\boldsymbol{\\beta})}{\\partial \\boldsymbol{\\beta}} = \\sum_{i=1}^{N} \\mathbf{x}_i (y_i - p(x_i; \\boldsymbol{\\beta})) = 0$$")),
+          p(HTML("Como resultado, se genera un sistema de \\(p+1\\) ecuaciones no lineales. Dado que la primera componente de \\(\\mathbf{x}_i\\) es la intersección, la primera ecuación implica que el número esperado de eventos coincide con el observado:")),
+          tags$div(class = "equation-container", HTML("$$\\sum_{i=1}^{N} y_i = \\sum_{i=1}^{N} p(x_i; \\boldsymbol{\\beta})$$")),
+          p("Este sistema se resuelve de manera iterativa mediante algoritmos numéricos como el de Newton-Raphson.")
         )
-      ), 
-      
-      br(),
+      ),
       
       # =====================================
-      # EVALUACIÓN E INTERPRETACIÓN
+      # TRANSFORMACIÓN LOGIT
       # =====================================
+      h4(icon("arrow-right-arrow-left"), "Transformación Logit e Interpretación", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        class = "theory-card", style = "margin-bottom: 30px;",
         bslib::card_body(
-          h4(
-            icon("magnifying-glass"), "Interpretación y Evaluación del Modelo",
-            style = "color: #1e40af; margin-bottom: 15px;"
+          p("En cuanto a la interpretación de los coeficientes, el modelo de regresión logística se fundamenta en la transformación logit de la probabilidad \\(p\\) de que ocurra el evento de interés, expresándose como:"),
+          tags$div(class = "equation-container", HTML("$$\\log \\left( \\frac{p}{1 - p} \\right) = \\beta_0 + \\beta_1 X_1 + \\beta_2 X_2 + \\dots + \\beta_p X_p$$")),
+          p(HTML("Donde el cociente \\(\\frac{p}{1 - p}\\) representa las <i>odds</i> (razón de ventajas). Es decir, el cociente entre la probabilidad de que ocurra el evento de interés y la probabilidad de que no ocurra, siendo su logaritmo natural lineal respecto a los parámetros del modelo.")),
+          p(HTML("Los coeficientes \\(\\beta_i\\) estiman el cambio en el <i>logit</i> por cada unidad de incremento en \\(X_i\\), de modo que su interpretación directa no es intuitiva en la escala original. Por ello, se emplean las odds ratios (OR) o razones de posibilidades, los cuales se obtienen aplicando la función exponencial:")),
+          tags$div(class = "equation-container", HTML("$$\\text{OR}_i = e^{\\beta_i}$$")),
+          p(HTML("donde \\(\\text{OR}_i\\) representa el cambio multiplicativo de las odds asociado al incremento unitario en la variable \\(X_i\\), manteniendo constantes el resto de las variables. Valores superiores a 1 indican un aumento de las <i>odds</i> de que ocurra el evento, mientras que valores inferiores a 1 indican una disminución. Por otro lado, si la razón es igual a 1, los cambios en la variable independiente no tienen efecto sobre las odds de ocurrencia del evento."))
+        )
+      ),
+      
+      # =====================================
+      # EVALUACIÓN: CURVA ROC Y AUC
+      # =====================================
+      h4(icon("chart-area"), "Evaluación del Modelo: Curvas ROC y AUC", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
+      bslib::card(
+        class = "theory-card", style = "margin-bottom: 30px;",
+        bslib::card_body(
+          p("Una vez estimados los parámetros, es necesario evaluar la capacidad predictiva del modelo. Para ello, una de las medidas más utilizadas es la curva ROC (Receiver Operating Characteristic)."),
+          p("Esta representa la relación entre la tasa de verdaderos positivos (true positive rate, TPR) y la tasa de falsos positivos (false positive rate, FPR) para distintos umbrales de clasificación. La tasa de verdaderos positivos se conoce como sensibilidad y representa la proporción de casos positivos correctamente clasificados. Por su parte, la tasa de falsos positivos es FPR = 1 - Especificidad, siendo la especificidad la tasa de verdaderos negativos (true negative rate, TNR), es decir, la proporción de casos negativos correctamente identificados por el modelo. Matemáticamente:"),
+          tags$div(class = "equation-container", HTML("$$\\text{Sensibilidad} = \\frac{\\text{VP}}{\\text{VP} + \\text{FN}}, \\quad \\text{Especificidad} = \\frac{\\text{VN}}{\\text{VN} + \\text{FP}}$$")),
+          p(HTML("siendo <i>VP</i> el número de verdaderos positivos, <i>VN</i> el número de verdaderos negativos, <i>FP</i> el número de falsos positivos y <i>FN</i> el número de falsos negativos.")),
+          
+          # Tabla Matriz de Confusión Compacta
+          tags$div(
+            style = "margin: 20px auto; max-width: 550px;",
+            tags$table(
+              class = "confusion-matrix-table",
+              tags$tr(
+                tags$th(style = "border: none; background: transparent;"),
+                tags$th(colspan = "2", style = "background: #1e3a8a; color: white; font-weight: bold; padding: 8px;", "Clase Real")
+              ),
+              tags$tr(
+                tags$th(style = "background: #1e3a8a; color: white; font-weight: bold; padding: 8px; font-size:0.9rem;", "Predicción"),
+                tags$th(style = "background: #f1f5f9; color: #1e3a8a; font-weight: bold; width: 140px; padding: 8px;", "Positivo (1)"),
+                tags$th(style = "background: #f1f5f9; color: #1e3a8a; font-weight: bold; width: 140px; padding: 8px;", "Negativo (0)")
+              ),
+              tags$tr(
+                tags$td(style = "background: #f8fafc; font-weight: bold; padding: 10px;", "Positivo (1)"),
+                tags$td(style = "background: #ffffff; padding: 10px;", HTML("<b>VP</b>")),
+                tags$td(style = "background: #fff1f2; padding: 10px;", HTML("<span style='color:#be123c;'><b>FP</b></span>"))
+              ),
+              tags$tr(
+                tags$td(style = "background: #f8fafc; font-weight: bold; padding: 10px;", "Negativo (0)"),
+                tags$td(style = "background: #fff1f2; padding: 10px;", HTML("<span style='color:#be123c;'><b>FN</b></span>")),
+                tags$td(style = "background: #ffffff; padding: 10px;", HTML("<b>VN</b>"))
+              )
+            )
           ),
-          p("La interpretación práctica de los coeficientes estimados y la validación predictiva final constituyen fases críticas del análisis multivariante:"),
+          
+          p("De este modo, la curva ROC permite analizar la relación entre la capacidad del modelo para detectar correctamente los casos positivos y el número de falsas clasificaciones positivas, independientemente del umbral de clasificación elegido."),
+          p("En cuanto a la calidad global de la clasificación, suele resumirse mediante el Área Bajo la Curva (AUC), definida como:"),
+          tags$div(class = "equation-container", HTML("$$\\text{AUC} = \\int_{0}^{1} \\text{ROC}(x) \\, dx$$")),
+          p("El valor del AUC toma valores entre 0 y 1. Un valor cercano a 0.5 indica una capacidad predictiva similar al azar, mientras que valores próximos a 1 reflejan una excelente capacidad de discriminación entre ambas clases.")
+        )
+      ),
+      
+      # =====================================
+      # APARTADO 3.5.4: MÉTRICAS
+      # =====================================
+      h4(icon("chart-simple"), "3.5.4 Métricas de evaluación", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
+      bslib::card(
+        class = "theory-card",
+        bslib::card_body(
+          p("Una vez que se ha ajustado un modelo de clasificación, es necesario evaluar su capacidad predictiva para averiguar si generaliza correctamente nuevos individuos. Esta evaluación se realiza mediante diferentes métricas que miden el rendimiento de los diferentes modelos y que se calculan a partir de las predicciones obtenidas sobre el conjunto de datos de evaluación."),
+          p(HTML("Una de las métricas más utilizadas es la exactitud o <i>accuracy</i>, que mide la proporción de observaciones correctamente clasificadas respecto al total de observaciones evaluadas. Se define como:")),
+          tags$div(class = "equation-container", HTML("$$\\text{Accuracy} = \\frac{\\text{TP} + \\text{TN}}{\\text{TP} + \\text{TN} + \\text{FP} + \\text{FN}}$$")),
+          p(HTML("donde <b>TP</b> (<i>True Positives</i>) represents los verdaderos positivos, <b>TN</b> (<i>True Negatives</i>) los verdaderos negativos, <b>FP</b> (<i>False Positives</i>) los falsos positivos y <b>FN</b> (<i>False Negatives</i>) los falsos negativos. Un valor de <i>accuracy</i> próximo a 1 indica un elevado porcentaje de clasificaciones correctas, mientras que valores más bajos reflejan un peor desempeño del modelo.")),
+          p(HTML("No obstante, esta métrica puede resultar engañosa cuando las clases están desbalanceadas, ya que un modelo podría obtener una alta exactitud simplemente prediciendo siempre la clase mayoritaria. Por este motivo, suele complementarse con otras métricas como la precisión (<i>precision</i>), la sensibilidad (<i>recall</i>) y la medida F1.")),
           
           tags$div(
-            style = "display: flex; flex-direction: column; gap: 15px; margin-top: 15px;",
-            
-            # --------------------------------
-            # ODDS RATIOS
-            # --------------------------------
+            style = "margin-top: 20px; display: flex; flex-direction: column; gap: 5px;",
             tags$div(
-              style = "border-left: 4px solid #3b82f6; padding-left: 12px;",
-              tags$b("Odds Ratios (OR): "),
-              "La interpretación intuitiva de un coeficiente se realiza mediante su exponencial (\\(e^{\\beta_j}\\)). " ,
-              "Representa el cambio multiplicativo en las ventajas por cada incremento unitario en la variable predictora, manteniendo constantes el resto. " ,
-              "Valores superiores a 1 reflejan un aumento de la probabilidad del evento, mientras que valores inferiores a 1 implican una disminución."
+              class = "metric-definition",
+              p(HTML("La <b>precisión</b> se define como la proporción de predicciones positivas correctas entre todas las predicciones positivas realizadas:")),
+              tags$div(class = "equation-container", HTML("$$\\text{Precision} = \\frac{\\text{TP}}{\\text{TP} + \\text{FP}}$$"))
             ),
-            
-            # --------------------------------
-            # EVALUACIÓN PREDICTIVA (AUC)
-            # --------------------------------
             tags$div(
-              style = "border-left: 4px solid #10b981; padding-left: 12px;",
-              tags$b("Capacidad de Discriminación (Métrica AUC): "),
-              "La calidad general del clasificador se evalúa habitualmente calculando el Área Bajo la Curva (AUC). " ,
-              "El índice resultante oscila entre 0 y 1. Un valor cercano a 0.5 denota una capacidad puramente aleatoria (similar al azar), mientras que los valores próximos a 1 reflejan una excelente capacidad predictiva para separar con éxito ambas clases."
+              class = "metric-definition",
+              p(HTML("La <b>sensibilidad o <i>recall</i></b> mide la capacidad del modelo para identificar correctamente los casos positivos:")),
+              tags$div(class = "equation-container", HTML("$$\\text{Recall} = \\frac{\\text{TP}}{\\text{TP} + \\text{FN}}$$"))
+            ),
+            tags$div(
+              class = "metric-definition",
+              p(HTML("Por último, la <b>medida F1</b> combina ambas métricas en una única medida, calculada como la media armónica entre precisión y sensibilidad:")),
+              tags$div(class = "equation-container", HTML("$$\\text{F1} = 2 \\cdot \\frac{\\text{Precision} \\cdot \\text{Recall}}{\\text{Precision} + \\text{Recall}}$$"))
             )
           )
         )
@@ -181,7 +242,6 @@ Regresion_logistica_Teoria_UI <- function(id) {
     )
   )
 }
-
 Regresion_logistica_Teoria_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     # Módulo de servidor lógicamente vacío para visualizaciones estáticas teóricas

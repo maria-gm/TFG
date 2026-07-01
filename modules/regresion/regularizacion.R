@@ -1,156 +1,354 @@
 # =========================================================
 # REGULARIZACIÓN - TEORÍA
 # =========================================================
+# =========================================================
+# REGULARIZACIÓN - TEORÍA
+# =========================================================
 Regularizacion_Teoria_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Única llamada necesaria para activar el formateo matemático en la página
     withMathJax(),
     
     tags$div(
-      style = "padding: 20px; background-color: #fcfdfe;",
+      style = "padding:24px; background-color:#fcfdfe;",
       
-      # =====================================
+      #=========================================================
       # CABECERA
-      # =====================================
+      #=========================================================
       h2(
-        "Técnicas de Regularización y Reducción",
-        style = "font-weight: 800; color: #1a365d; margin-bottom: 5px;"
+        "Técnicas de Regularización y Reducción de Dimensión",
+        style = "font-weight:800; color:#1a365d; margin-bottom:6px;"
       ),
       
       p(
-        "Métodos estadísticos alternativos a los Mínimos Cuadrados Ordinarios (MCO) diseñados para resolver problemas de colinealidad y alta varianza mediante estrategias diferenciadas.",
-        style = "color: #64748b; font-size: 1.1rem; margin-bottom: 30px;"
+        "Los métodos de regularización y reducción de dimensión constituyen alternativas a la regresión lineal por Mínimos Cuadrados Ordinarios (MCO) cuando existe multicolinealidad entre las variables explicativas. Aunque persiguen el mismo objetivo de obtener modelos más estables y con mejor capacidad predictiva, lo hacen mediante estrategias diferentes.",
+        style = "color:#64748b; font-size:1.05rem; margin-bottom:30px; max-width:1100px; line-height:1.6;"
       ),
       
-      # =====================================
-      # ENFOQUES METODOLÓGICOS (DIFERENCIA CLAVE)
-      # =====================================
+      #=========================================================
+      # DIFERENCIAS ENTRE ENFOQUES
+      #=========================================================
       h4(
-        icon("layer-group"), "Enfoques para mitigar la colinealidad",
-        style = "color: #1e40af; margin-bottom: 15px; font-weight: 700;"
+        icon("layer-group"),
+        "Estrategias para tratar la multicolinealidad",
+        style = "color:#1e40af; margin-bottom:15px; font-weight:700;"
       ),
       
       bslib::layout_column_wrap(
         width = 1/2,
         heights_equal = "row",
         
-        # Enfoque por Penalización
+        #-----------------------------------------
+        # PENALIZACIÓN
+        #-----------------------------------------
         bslib::card(
-          style = "border-top: 4px solid #3b82f6;",
+          style = "border-top:4px solid #3b82f6;
+                 border-left:1px solid #e2e8f0;
+                 border-right:1px solid #e2e8f0;
+                 border-bottom:1px solid #e2e8f0;",
+          
           bslib::card_body(
-            h5("Métodos basados en Penalización (Ridge y Lasso)", style = "color: #1d4ed8; font-weight: 700;"),
-            p("Estos métodos conservan la totalidad de las variables predictoras originales del modelo en la matriz de datos."),
-            p("Su estrategia radica en modificar la función de pérdida del estimador agregando una restricción o castigo sobre la magnitud de los coeficientes, forzándolos a aproximarse o contraerse (shrinkage) hacia el cero para estabilizar la varianza.")
+            h5(
+              "Métodos basados en penalización (Ridge y Lasso)",
+              style = "color:#1d4ed8; font-weight:700;"
+            ),
+            
+            p(
+              "Estos métodos mantienen todas las variables explicativas originales del modelo y modifican la función objetivo de los Mínimos Cuadrados Ordinarios incorporando un término de penalización sobre los coeficientes de regresión."
+            ),
+            
+            p(
+              "La intensidad de dicha penalización viene controlada por el hiperparámetro \\(\\lambda\\). A medida que aumenta su valor, los coeficientes experimentan una mayor contracción (shrinkage), reduciendo la varianza del estimador y mejorando la estabilidad del modelo frente a la multicolinealidad."
+            )
           )
         ),
         
-        # Enfoque por Reducción de Dimensión
+        #-----------------------------------------
+        # REDUCCIÓN
+        #-----------------------------------------
         bslib::card(
-          style = "border-top: 4px solid #eab308;",
+          style = "border-top:4px solid #eab308;
+                 border-left:1px solid #e2e8f0;
+                 border-right:1px solid #e2e8f0;
+                 border-bottom:1px solid #e2e8f0;",
+          
           bslib::card_body(
-            h5("Métodos basados en Reducción (PCR)", style = "color: #b45309; font-weight: 700;"),
-            p("A diferencia de la penalización pura, este enfoque transforma el espacio geométrico de las variables explicativas."),
-            p("En lugar de utilizar los predictores originales, proyecta los datos originales en un número menor de dimensiones ortogonales e incorreladas (componentes principales), eliminando de raíz la colinealidad matemática antes del ajuste lineal.")
-          )
-        )
-      ),
-      
-      br(), br(),
-      
-      # =====================================
-      # TARJETAS DE LAS TRES TÉCNICAS RECOGIDAS
-      # =====================================
-      h4(
-        icon("list-check"), "Formulación formal de las metodologías",
-        style = "color: #1e40af; margin-bottom: 15px; font-weight: 700;"
-      ),
-      
-      bslib::layout_column_wrap(
-        width = 1/3, # Columnas perfectas distribuidas uniformemente
-        heights_equal = "row",
-        
-        # ---------------------------------
-        # REGRESIÓN RIDGE
-        # ---------------------------------
-        bslib::card(
-          bslib::card_header(
-            tags$b("Regresión Ridge (Penalización L2)"),
-            style = "background: #e0e7ff;"
-          ),
-          bslib::card_body(
-            p("Modifica el criterio de optimización tradicional sumando un castigo cuadrático proporcional al cuadrado de los coeficientes:"),
-            p("$$\\hat{\\beta}_{ridge} = \\text{argmin}_{\\beta} \\left\\{ \\sum_{i=1}^{N} \\left( y_i - \\beta_0 - \\sum_{j=1}^{p} x_{ij}\\beta_j \\right)^2 \\right\\} \\quad \\text{sujeto a} \\quad \\sum_{j=1}^{p} \\beta_j^2 \\le t$$"),
-            p("Consigue reducir sensiblemente la alta variabilidad de los estimadores MCO manteniendo todas las variables en juego.")
-          )
-        ),
-        
-        # ---------------------------------
-        # REGRESIÓN LASSO
-        # ---------------------------------
-        bslib::card(
-          bslib::card_header(
-            tags$b("Regresión Lasso (Penalización L1)"),
-            style = "background: #dcfce7;"
-          ),
-          bslib::card_body(
-            p("Sustituye la penalización cuadrática por una basada en el sumatorio de los valores absolutos de los parámetros:"),
-            p("$$\\hat{\\beta}_{lasso} = \\text{argmin}_{\\beta} \\left\\{ \\sum_{i=1}^{N} \\left( y_i - \\beta_0 - \\sum_{j=1}^{p} x_{ij}\\beta_j \\right)^2 \\right\\} \\quad \\text{sujeto a} \\quad \\sum_{j=1}^{p} |\\beta_j| \\le t$$"),
-            p("Debido a la geometría poliédrica de su restricción, tiene la propiedad de anular de manera exacta coeficientes, actuando de forma simultánea como un selector de variables.")
-          )
-        ),
-        
-        # ---------------------------------
-        # REGRESIÓN PCR
-        # ---------------------------------
-        bslib::card(
-          bslib::card_header(
-            tags$b("Regresión PCR (Reducción)"),
-            style = "background: #fef3c7;"
-          ),
-          bslib::card_body(
-            p("Aplica de forma previa un Análisis de Componentes Principales (ACP) sobre los predictores escalados y selecciona los primeros $M$ componentes:"),
-            p("$$Z_m = \\sum_{j=1}^{p} \\phi_{jm}X_j \\quad \\text{para } m = 1, \\dots, M$$"),
-            p("Posteriormente, efectúa una regresión lineal convencional utilizando este subconjunto transformador $Z$ de variables incorreladas.")
+            h5(
+              "Métodos basados en reducción de dimensión (PCR)",
+              style = "color:#b45309; font-weight:700;"
+            ),
+            
+            p(
+              "En lugar de penalizar los coeficientes del modelo, estos métodos transforman previamente el espacio de las variables explicativas mediante un Análisis de Componentes Principales."
+            ),
+            
+            p(
+              "Posteriormente se seleccionan únicamente los primeros \\(M\\) componentes principales, que son ortogonales e incorrelados entre sí, eliminando la multicolinealidad antes de ajustar el modelo de regresión."
+            )
           )
         )
       ),
       
       br(),
+      br(),
       
-      # =====================================
-      # CÓMO SE ELIGEN LOS PARÁMETROS CRÍTICOS
-      # =====================================
+      #=========================================================
+      # MÉTODOS (GRID DE 3 COLUMNAS CORREGIDO)
+      #=========================================================
+      h4(
+        icon("list-check"),
+        "Formulación de los métodos",
+        style = "color:#1e40af; margin-bottom:15px; font-weight:700;"
+      ),
+      
+      bslib::layout_column_wrap(
+        width = 1/3,
+        heights_equal = "row",
+        
+        #=========================================================
+        # RIDGE
+        #=========================================================
+        bslib::card(
+          style = "border:1px solid #e2e8f0;
+                 box-shadow:0 1px 3px rgba(0,0,0,0.02);",
+          
+          bslib::card_header(
+            tags$b("Regresión Ridge (Penalización \\(L_2\\))"),
+            style = "background:#e0e7ff; color:#1e1b4b;"
+          ),
+          
+          bslib::card_body(
+            p(
+              "La regresión Ridge modifica la función objetivo de los Mínimos Cuadrados Ordinarios añadiendo una penalización cuadrática sobre los coeficientes de regresión:"
+            ),
+            
+            tags$div(
+              style = "margin:14px 0; text-align:center;",
+              HTML("
+$$
+\\hat{\\boldsymbol{\\beta}}^{Ridge}
+=
+\\operatorname*{arg\\,min}_{\\boldsymbol{\\beta}}
+\\left\\{
+\\sum_{i=1}^{n}
+\\left(
+y_i-
+\\beta_0-
+\\sum_{j=1}^{p}x_{ij}\\beta_j
+\\right)^2
++
+\\lambda
+\\sum_{j=1}^{p}
+\\beta_j^2
+\\right\\}
+$$")
+            ),
+            
+            p(
+              "El parámetro \\(\\lambda\\ge0\\) controla la intensidad de la penalización. A medida que aumenta su valor, los coeficientes se contraen progresivamente hacia cero, reduciendo la varianza del estimador sin eliminar variables del modelo."
+            ),
+            
+            p(
+              "Como consecuencia, la solución depende de la matriz \\((\\mathbf{X}^{T}\\mathbf{X}+\\lambda\\mathbf{I})\\), que permanece invertible incluso cuando existe multicolinealidad entre las variables explicativas."
+            )
+          )
+        ),
+        
+        #=========================================================
+        # LASSO
+        #=========================================================
+        bslib::card(
+          style = "border:1px solid #e2e8f0;
+                 box-shadow:0 1px 3px rgba(0,0,0,0.02);",
+          
+          bslib::card_header(
+            tags$b("Regresión Lasso (Penalización \\(L_1\\))"),
+            style = "background:#dcfce7; color:#064e3b;"
+          ),
+          
+          bslib::card_body(
+            p(
+              "La regresión Lasso sustituye la penalización cuadrática por una penalización basada en el valor absoluto de los coeficientes:"
+            ),
+            
+            tags$div(
+              style = "margin:14px 0; text-align:center;",
+              HTML("
+$$
+\\hat{\\boldsymbol{\\beta}}^{Lasso}
+=
+\\operatorname*{arg\\,min}_{\\boldsymbol{\\beta}}
+\\left\\{
+\\sum_{i=1}^{n}
+\\left(
+y_i-
+\\beta_0-
+\\sum_{j=1}^{p}x_{ij}\\beta_j
+\\right)^2
++
+\\lambda
+\\sum_{j=1}^{p}
+|\\beta_j|
+\\right\\}
+$$")
+            ),
+            
+            p(
+              "El hiperparámetro \\(\\lambda\\ge0\\) controla la intensidad de la penalización. Al aumentar su valor, some coeficientes pueden hacerse exactamente iguales a cero."
+            ),
+            
+            p(
+              "De este modo, además de reducir la variabilidad del estimador, la regresión Lasso realiza automáticamente selección de variables al eliminar del modelo aquellas cuyos coeficientes son nulos."
+            )
+          )
+        ),
+        
+        #=========================================================
+        # PCR (CON FÓRMULA DE RETROTRANSFORMACIÓN AÑADIDA)
+        #=========================================================
+        bslib::card(
+          style = "border:1px solid #e2e8f0;
+                 box-shadow:0 1px 3px rgba(0,0,0,0.02);",
+          
+          bslib::card_header(
+            tags$b("Regresión mediante Componentes Principales (PCR)"),
+            style = "background:#fef3c7; color:#78350f;"
+          ),
+          
+          bslib::card_body(
+            p(
+              "La regresión mediante Componentes Principales (PCR) combina un Análisis de Componentes Principales (ACP) con un modelo de regresión lineal. A diferencia de los métodos de penalización, no modifica la función objetivo de los Mínimos Cuadrados Ordinarios, sino que transforma previamente las variables explicativas en un nuevo conjunto de componentes principales."
+            ),
+            
+            p(
+              "Sea \\(\\mathbf{X}\\in\\mathbb{R}^{n\\times p}\\) la matriz de variables explicativas estandarizadas. El ACP construye una nueva representación de los datos mediante:"
+            ),
+            
+            tags$div(
+              style = "margin:12px 0; text-align:center;",
+              HTML("
+$$
+\\mathbf{Z}=\\mathbf{X}\\mathbf{A}
+$$")
+            ),
+            
+            p(
+              "donde \\(\\mathbf{A}=(\\mathbf{a}_1,\\ldots,\\mathbf{a}_p)\\) es la matriz de cargas (autovectores) y \\(\\mathbf{Z}=(\\mathbf{z}_1,\\ldots,\\mathbf{z}_p)\\) contiene las componentes principales, que son combinaciones lineales ortogonales de las variables originales."
+            ),
+            
+            p(
+              "Posteriormente, se seleccionan las primeras \\(M\\) componentes principales y sobre ellas se ajusta un modelo de regresión lineal por MCO, obteniendo los coeficientes estimados \\(\\hat{\\boldsymbol{\\theta}}\\):"
+            ),
+            
+            tags$div(
+              style = "margin:12px 0; text-align:center;",
+              HTML("
+$$
+y_i=
+\\theta_0+
+\\sum_{m=1}^{M}
+\\theta_m z_{im}
++
+\\varepsilon_i
+$$")
+            ),
+            
+            p(
+              "El hiperparámetro \\(M\\le p\\) determina el número de componentes retenidas. Al ser ortogonales entre sí, la multicolinealidad desaparece antes de realizar el ajuste."
+            ),
+            
+            # --- NUEVA SECCIÓN: FORMULA DE LA IMAGEN ---
+            p(
+              style = "margin-top:15px; border-top: 1px dashed #f59e0b; padding-top:12px;",
+              "Finalmente, los coeficientes en el espacio original se obtienen como combinación lineal:"
+            ),
+            
+            tags$div(
+              style = "margin:14px 0; text-align:center;",
+              HTML("
+$$
+\\hat{\\boldsymbol{\\beta}}_{PCR}^{(M)} = \\mathbf{A}_M \\hat{\\boldsymbol{\\theta}}
+$$")
+            ),
+            
+            p(
+              style = "font-size:0.9rem; color:#78350f;",
+              "Donde \\(\\mathbf{A}_M\\) representa la submatriz que contiene únicamente las primeras \\(M\\) columnas de la matriz de cargas estructurales \\(\\mathbf{A}\\). Esta operación permite transformar las estimaciones obtenidas en el espacio reducido de componentes de vuelta a los predictores originales."
+            )
+          )
+        )
+      ), # Fin del layout_column_wrap de 3 columnas
+      
+      br(),
+      br(),
+      
+      #=========================================================
+      # HIPERPARÁMETROS
+      #=========================================================
       bslib::card(
-        style = "border: 1px solid #cbd5e1; background: #f8fafc;",
+        style = "border:1px solid #cbd5e1;
+               background:#f8fafc;
+               box-shadow:0 1px 3px rgba(0,0,0,0.02);",
+        
         bslib::card_body(
           h4(
-            icon("sliders"), "Criterio de selección para los parámetros libres (\\(\\lambda\\) y \\(M\\))",
-            style = "color: #1e40af; margin-bottom: 15px;"
+            icon("sliders"),
+            "Selección de los hiperparámetros (\\(\\lambda\\) y \\(M\\))",
+            style = "color:#1e40af; margin-bottom:15px; font-weight:700;"
           ),
-          p("Una fase crítica e indispensable en el diseño de estos tres métodos consiste en determinar de forma óptima el valor de sus parámetros ajustables. En ningún caso pueden ser inferidos de forma analítica directa mediante mínimos cuadrados, por lo que se recurre empíricamente al procedimiento de **Validación Cruzada (Cross-Validation)**:"),
+          
+          p(
+            "La eficacia de estos métodos depende de la elección adecuada de sus hiperparámetros. Para ello, se emplea habitualmente la Validación Cruzada (Cross-Validation), que permite estimar el error de predicción sobre diferentes particiones de los datos y seleccionar los valores que ofrecen el mejor compromiso entre complejidad y capacidad predictiva."
+          ),
           
           tags$div(
-            style = "display: flex; flex-direction: column; gap: 20px; margin-top: 15px;",
+            style = "display:flex; flex-direction:column; gap:20px; margin-top:18px;",
             
-            # Elección de Lambda
+            #=====================================================
+            # LAMBDA
+            #=====================================================
             tags$div(
-              style = "border-left: 4px solid #3b82f6; padding-left: 15px;",
-              tags$b("Elección del hiperparámetro de penalización (\\(\\lambda\\)) en Ridge y Lasso:"),
-              p("El coeficiente multiplicador $\\lambda$ cuantifica de manera estricta la intensidad de la restricción aplicada. Para su elección, el algoritmo evalúa una malla o grid de múltiples valores alternativos de lambda a través de validación cruzada dividiendo la muestra en $k$ bloques (folds)."),
+              style = "border-left:4px solid #3b82f6; padding-left:16px; line-height:1.6;",
+              HTML("<b>Selección del hiperparámetro óptimo \\(\\lambda^*\\) en Ridge y Lasso</b>"),
+              p(
+                "El hiperparámetro \\(\\lambda\\ge0\\) controla la intensidad de la penalización aplicada sobre los coeficientes de regresión. Para determinar el valor óptimo \\(\\lambda^*\\), se evalúa una rejilla de posibles valores mediante Validación Cruzada, dividiendo la muestra en \\(k\\) subconjuntos (folds) y calculando el Error Cuadrático Medio de Predicción (ECMP) asociado a cada uno de ellos."
+              ),
+              
+              p(
+                "A partir de la curva del ECMP obtuvo mediante Validación Cruzada, pueden emplearse dos criterios habituales para seleccionar \\(\\lambda^*\\):"
+              ),
+              
               tags$ul(
-                tags$li(tags$b("\\(\\lambda_{\\text{min}}\\):"), " Es el valor concreto que genera el menor error cuadrático medio de predicción global."),
-                tags$li(tags$b("\\(\\lambda_{\\text{1se}}\\):"), " Es un criterio más conservador que selecciona el valor más restrictivo de lambda localizado a una distancia máxima de una desviación estándar del mínimo absoluto, priorizando la parsimonia.")
+                style = "margin-top:8px; padding-left:22px;",
+                tags$li(
+                  style = "margin-bottom:8px;",
+                  HTML("<b>\\(\\lambda_{min}\\):</b> valor de \\(\\lambda\\) que minimiza el Error Cuadrático Medio de Predicción obtenido mediante validación cruzada.")
+                ),
+                tags$li(
+                  HTML("<b>\\(\\lambda_{1se}\\):</b> mayor valor de \\(\\lambda\\) cuyo error se encuentra dentro de una desviación estándar respecto al mínimo. Este criterio suele producir modelos más parsimoniosos sin perder capacidad predictiva.")
+                )
               )
             ),
             
-            # Elección de M
+            #=====================================================
+            # M
+            #=====================================================
             tags$div(
-              style = "border-left: 4px solid #eab308; padding-left: 15px;",
-              tags$b("Elección del número de componentes principales (\\(M\\)) en PCR:"),
-              p("El número entero $M$ regula cuántas dimensiones sintéticas e incorreladas del espacio predictor se incorporarán a la ecuación final (donde $M < p$)."),
-              p("Su estimación se computa aplicando idénticamente validación cruzada multibloque: se calcula secuencialmente el error cuadrático de predicción del modelo variando el número de componentes desde $1$ hasta $p$. Se fija como óptimo el entero $M$ que minimiza la curva del error de validación cruzada. Si se eligiesen todas las componentes ($M = p$), el modelo PCR colapsaría y equivaldría numéricamente a una estimación MCO convencional.")
+              style = "border-left:4px solid #eab308; padding-left:16px; line-height:1.6;",
+              HTML("<b>Selección del número de componentes \\(M\\) en PCR</b>"),
+              
+              p(
+                "El hiperparámetro \\(M\\) determina el número de componentes principales retenidas para ajustar posteriormente el modelo de regresión, verificándose que \\(1\\le M\\le p\\)."
+              ),
+              
+              p(
+                "Su selección también se realiza mediante Validación Cruzada, evaluando sucesivamente modelos construidos con un número creciente de componentes principales."
+              ),
+              
+              p(
+                "Finalmente, se selecciona el valor óptimo \\(M^*\\), correspondiente al número de componentes que minimiza el Error Cuadrático Medio de Predicción, logrando un equilibrio adecuado entre reducción de dimensión y capacidad predictiva."
+              )
             )
           )
         )
@@ -158,7 +356,6 @@ Regularizacion_Teoria_UI <- function(id) {
     )
   )
 }
-
 Regularizacion_Teoria_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     # Módulo dedicado exclusivamente al renderizado estructurado del marco conceptual
