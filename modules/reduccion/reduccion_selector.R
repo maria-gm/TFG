@@ -27,14 +27,14 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     # =====================================================
-    # MINIGRÁFICOS CONCEPTUALES PARA LA PORTADA
+    # GRÁFICOS  PARA LA PORTADA
     # =====================================================
     output$plot_mini_pca <- renderPlot({
       par(mar = c(2, 2, 1.5, 1))
       set.seed(42)
       x <- rnorm(80)
       y <- 0.7 * x + rnorm(80, sd = 0.4)
-      plot(x, y, pch = 16, col = "#cbd5e1", xlab = "", ylab = "", axes = FALSE, main = "Rotación de Ejes", col.main = "#1e3a8a", cex.main = 0.9)
+      plot(x, y, pch = 16, col = "#cbd5e1", xlab = "", ylab = "", axes = FALSE, main = "Componentes principales", col.main = "#1e3a8a", cex.main = 0.9)
       box(col = "#e2e8f0")
       abline(a = 0, b = 0.7, col = "#3b82f6", lwd = 3)
       abline(a = 0, b = -1/0.7, col = "#93c5fd", lwd = 2)
@@ -42,7 +42,7 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
     
     output$plot_mini_af <- renderPlot({
       par(mar = c(1, 1, 1.5, 1))
-      plot(1, type = "n", xlab = "", ylab = "", xlim = c(0, 10), ylim = c(0, 10), axes = FALSE, main = "Variables Latentes", col.main = "#065f46", cex.main = 0.9)
+      plot(1, type = "n", xlab = "", ylab = "", xlim = c(0, 10), ylim = c(0, 10), axes = FALSE, main = "Variables Latentes (Factores) ", col.main = "#065f46", cex.main = 0.9)
       box(col = "#e2e8f0")
       symbols(5, 8, circles = 1.2, inches = FALSE, add = TRUE, fg = "#10b981", bg = "#e6f4ea", lwd = 2)
       text(5, 8, "Factor F", col = "#065f46", font = 2, cex = 0.9)
@@ -56,7 +56,7 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
       set.seed(12)
       px <- rnorm(30, mean = 2, sd = 1)
       py <- rnorm(30, mean = 2, sd = 1)
-      plot(px, py, pch = 20, col = rgb(0.6, 0.6, 0.6, 0.5), xlab = "", ylab = "", axes = FALSE, xlim = c(-1, 5), ylim = c(-1, 5), main = "Sujetos + Vectores", col.main = "#92400e", cex.main = 0.9)
+      plot(px, py, pch = 20, col = rgb(0.6, 0.6, 0.6, 0.5), xlab = "", ylab = "", axes = FALSE, xlim = c(-1, 5), ylim = c(-1, 5), main = "Individuos y variables", col.main = "#92400e", cex.main = 0.9)
       box(col = "#e2e8f0")
       arrows(0, 0, c(3.5, 1, 4), c(1.5, 3.8, 3.5), length = 0.08, col = "#f59e0b", lwd = 2.5)
       text(c(3.8, 1, 4.3), c(1.5, 4.1, 3.5), c("V1", "V2", "V3"), col = "#78350f", font = 2, cex = 0.8)
@@ -83,7 +83,7 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
                 style = "border-top: 4px solid #3b82f6;",
                 bslib::card_header(tags$b("PCA (Componentes Principales)")),
                 bslib::card_body(
-                  p("Maximiza la varianza proyectando sobre nuevos ejes ortogonales incorrelados."),
+                  p("El PCA reduce la dimensionalidad de los datos transformándolos en un nuevo conjunto de ejes ortogonales ordenados por la cantidad de varianza que capturan."),
                   plotOutput(ns("plot_mini_pca"), height = "140px")
                 )
               ),
@@ -91,7 +91,7 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
                 style = "border-top: 4px solid #10b981;",
                 bslib::card_header(tags$b("AF (Análisis Factorial)")),
                 bslib::card_body(
-                  p("Agrupa variables observadas según factores latentes comunes no medibles."),
+                  p("Agrupa las variables que están estrechamente relacionadas en dimensiones subyacentes más simples, llamadas factores"),
                   plotOutput(ns("plot_mini_af"), height = "140px")
                 )
               ),
@@ -99,7 +99,7 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
                 style = "border-top: 4px solid #f59e0b;",
                 bslib::card_header(tags$b("BIPLOT (Visualización)")),
                 bslib::card_body(
-                  p("Representación geométrica simultánea de individuos y variables en rango 2."),
+                  p("Realiza una representación  simultánea de individuos y variables en un espacio de baja dimensionalidad"),
                   plotOutput(ns("plot_mini_biplot"), height = "140px")
                 )
               )

@@ -187,7 +187,6 @@ LDA_Analisis_UI <- function(id) {
         width = 3,
         wellPanel(
           h4("Configuración"),
-          p("El modelo se recalcula de forma reactiva instantánea al alterar cualquier parámetro."),
           hr(),
           
           uiOutput(ns("target_ui")),
@@ -198,6 +197,8 @@ LDA_Analisis_UI <- function(id) {
           helpText(
             "LDA maximiza la separación entre las categorías de la variable objetivo utilizando combinaciones lineales de los predictores."
           ),
+          br(),br(),
+          helpText("Nota: Se eliminan filas con valores faltantes automáticamente."),
           
           uiOutput(ns("ui_dl_lda")) 
         )

@@ -196,182 +196,93 @@ Arboles_Teoria_Server <- function(id){
 # ANALISIS
 # -------------------------------
 Arboles_Analisis_UI <- function(id){
-  
   ns <- NS(id)
-  
   tagList(
-    
-    #--------------------------------------------------
-    # TÍTULO (igual estilo que logística)
-    #--------------------------------------------------
-    h3(
-      "Análisis",
-      style = "color: #1a446c;
-               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-               font-weight: 600;
-               margin-top: 40px;
-               margin-bottom: 20px;
-               border-bottom: 2px solid #f4f6f9;
-               padding-bottom: 10px;"
-    ),
+    h3("Análisis", 
+       style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
-      
-      #--------------------------------------------------
       # PANEL LATERAL (IZQUIERDA)
-      #--------------------------------------------------
-      column(
-        4,
-        
-        wellPanel(
-          h4("Configuración Árbol de Decisión"),
-          p("Ajuste los parámetros del modelo CART (Classification and Regression Trees)."),
-          
-          hr(),
-          
-          uiOutput(ns("target_ui")),
-          uiOutput(ns("predictors_ui")),
-          
-          hr(),
-          
-          sliderInput(
-            ns("maxdepth"),
-            "Profundidad máxima",
-            min = 1,
-            max = 30,
-            value = 5
-          ),
-          
-          sliderInput(
-            ns("cp"),
-            "Parámetro de complejidad (cp)",
-            min = 0.0001,
-            max = 0.1,
-            value = 0.01,
-            step = 0.001
-          ),
-          
-          hr(),
-          
-          uiOutput(ns("ui_dl_tree")),
-          
-          helpText("El árbol se recalcula automáticamente al modificar los parámetros.")
-        )
+      column(4,
+             wellPanel(
+               h4("Configuración Árbol de Decisión"),
+               p("Ajuste los parámetros del modelo CART (Classification and Regression Trees)."),
+               hr(),
+               uiOutput(ns("target_ui")),
+               uiOutput(ns("predictors_ui")),
+               hr(),
+               sliderInput(ns("maxdepth"), "Profundidad máxima:", min = 1, max = 10, value = 5),
+               sliderInput(ns("cp"), "Parámetro de complejidad (cp):", min = 0.0001, max = 0.1, value = 0.01, step = 0.001),
+               hr(),
+               helpText("Nota: Se eliminan filas con valores faltantes automáticamente.")
+             )
       ),
       
-      #--------------------------------------------------
       # PANEL PRINCIPAL (DERECHA)
-      #--------------------------------------------------
-      column(
-        8,
-        
-        tabsetPanel(
-          id = ns("tabs_tree"),
-          
-          #-------------------------
-          # 1. DATOS
-          #-------------------------
-          tabPanel(
-            "1. Datos",
-            
-            br(),
-            
-            p(
-              "Se muestran los datos originales y la versión estandarizada utilizada en el modelo.",
-              style = "color: #7f8c8d; font-style: italic; margin-bottom: 20px;"
-            ),
-            
-            h4("Dataset original", style = "color: #2c3e50; font-weight: 500;"),
-            DT::DTOutput(ns("dataset")),
-            
-            br(), hr(), br(),
-            
-            h4("Dataset estandarizado", style = "color: #2c3e50; font-weight: 500;"),
-            DT::DTOutput(ns("dataset_std"))
-          ),
-          
-          #-------------------------
-          # 2. ÁRBOL
-          #-------------------------
-          tabPanel(
-            "2. Árbol",
-            
-            br(),
-            
-            h4("Estructura del árbol", style = "color: #2c3e50; font-weight: 500;"),
-            plotOutput(ns("tree_plot"), height = "650px"),
-            
-            br(),
-            
-            h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"),
-            verbatimTextOutput(ns("interp_arbol"))
-          ),
-          
-          #-------------------------
-          # 3. MÉTRICAS
-          #-------------------------
-          tabPanel(
-            "3. Métricas",
-            
-            br(),
-            
-            h4("Rendimiento del modelo", style = "color: #2c3e50; font-weight: 500;"),
-            DT::DTOutput(ns("tabla_metricas")),
-            
-            br(),
-            
-            h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"),
-            verbatimTextOutput(ns("interp_metricas"))
-          ),
-          
-          #-------------------------
-          # 4. IMPORTANCIA
-          #-------------------------
-          tabPanel(
-            "4. Importancia",
-            
-            br(),
-            
-            h4("Importancia de variables", style = "color: #2c3e50; font-weight: 500;"),
-            plotOutput(ns("importance_plot"), height = "450px"),
-            
-            br(),
-            
-            verbatimTextOutput(ns("interp_importancia"))
-          ),
-          
-          #-------------------------
-          # 5. REGLAS
-          #-------------------------
-          tabPanel(
-            "5. Reglas",
-            
-            br(),
-            
-            h4("Reglas del árbol", style = "color: #2c3e50; font-weight: 500;"),
-            verbatimTextOutput(ns("tree_rules")),
-            
-            br(),
-            
-            verbatimTextOutput(ns("interp_reglas"))
-          ),
-          
-          #-------------------------
-          # 6. CP
-          #-------------------------
-          tabPanel(
-            "6. Selección de cp",
-            
-            br(),
-            
-            h4("Complejidad del modelo", style = "color: #2c3e50; font-weight: 500;"),
-            plotOutput(ns("cp_selector"), height = "450px"),
-            
-            br(),
-            
-            verbatimTextOutput(ns("interp_cp"))
-          )
-        )
+      column(8,
+             uiOutput(ns("mensaje_error_ui")),
+             
+             tabsetPanel(
+               id = ns("tabs_tree"),
+               
+               # PESTAÑA 1: DATOS
+               tabPanel("1. Datos", 
+                        br(),
+                        p("Se muestran los datos originales y la versión estandarizada utilizada en el modelo.", 
+                          style = "color: #7f8c8d; font-style: italic; margin-bottom: 20px;"),
+                        h4("Dataset original", style = "color: #2c3e50; font-weight: 500;"), 
+                        DT::DTOutput(ns("dataset")),
+                        br(), hr(), br(),
+                        h4("Dataset estandarizado (Z-scores)", style = "color: #2c3e50; font-weight: 500;"), 
+                        DT::DTOutput(ns("dataset_std"))
+               ),
+               # PESTAÑA 2: SELECCIÓN CP
+               tabPanel("2. Selección de cp", 
+                        br(),
+                        h4("Complejidad del modelo", style = "color: #2c3e50; font-weight: 500;"), 
+                        plotOutput(ns("cp_selector"), height = "450px"),
+                        br(),
+                        verbatimTextOutput(ns("interp_cp"))
+               ),
+               
+               # PESTAÑA 3: ÁRBOL
+               tabPanel("3. Árbol", 
+                        br(),
+                        h4("Estructura del árbol", style = "color: #2c3e50; font-weight: 500;"), 
+                        plotOutput(ns("tree_plot"), height = "650px"),
+                        br(),
+                        h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"), 
+                        verbatimTextOutput(ns("interp_arbol"))
+               ),
+               
+               # PESTAÑA 4: MÉTRICAS
+               tabPanel("4. Métricas", 
+                        br(),
+                        h4("Rendimiento del modelo", style = "color: #2c3e50; font-weight: 500;"), 
+                        DT::DTOutput(ns("tabla_metricas")),
+                        br(),
+                        h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"), 
+                        verbatimTextOutput(ns("interp_metricas"))
+               ),
+               
+               # PESTAÑA 5: IMPORTANCIA
+               tabPanel("5. Importancia", 
+                        br(),
+                        h4("Importancia de variables", style = "color: #2c3e50; font-weight: 500;"), 
+                        plotOutput(ns("importance_plot"), height = "450px"),
+                        br(),
+                        verbatimTextOutput(ns("interp_importancia"))
+               ),
+               
+               # PESTAÑA 6: REGLAS
+               tabPanel("6. Reglas", 
+                        br(),
+                        h4("Reglas del árbol", style = "color: #2c3e50; font-weight: 500;"), 
+                        verbatimTextOutput(ns("tree_rules")),
+                        br(),
+                        verbatimTextOutput(ns("interp_reglas"))
+               )
+             )
       )
     )
   )
@@ -381,15 +292,26 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   moduleServer(id, function(input, output, session) {
     
     ns <- session$ns
-    
     backtick <- function(x) paste0("`", x, "`")
     
-    #--------------------------------------------------
-    # 1. DATOS
-    #--------------------------------------------------
-    datos_base <- reactive({
+    # --- 1. PROCESAMIENTO GLOBAL Y VALIDACIONES ---
+    datos_preprocesados <- reactive({
       df <- if (!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
-      req(df)
+      
+      crear_banner_error <- function(mensaje) {
+        div(
+          style = "background-color: #fdf2f2; color: #9b1c1c; border: 1px solid #fde8e8; padding: 20px; margin-bottom: 25px; border-radius: 6px;",
+          tags$span(style = "font-weight: bold; font-size: 16px;", tags$i(class = "fa fa-exclamation-triangle"), " No es posible realizar el análisis."),
+          br(),
+          tags$span(style = "font-style: italic; color: #4b5563; font-size: 14px;", "Información: El modelo CART requiere un conjunto mínimo de observaciones estructuradas."),
+          br(), br(),
+          tags$span(style = "font-weight: 500;", mensaje)
+        )
+      }
+      
+      if (is.null(df)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("No se han detectado datos en el sistema.")))
+      }
       
       df[] <- lapply(df, function(x) {
         if (is.factor(x) || is.character(x)) {
@@ -398,7 +320,33 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         } else x
       })
       
-      na.omit(df)
+      df_limpio <- na.omit(df)
+      if (nrow(df_limpio) < 15) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 15 observaciones completas (sin valores omitidos) para entrenar el algoritmo.")))
+      }
+      
+      if (ncol(df_limpio) < 2) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("El dataset debe contar con al menos una variable dependiente y una predictora.")))
+      }
+      
+      return(list(valido = TRUE, base = df_limpio))
+    })
+    
+    output$mensaje_error_ui <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) return(prep$ui_error)
+      return(NULL)
+    })
+    
+    datos_base <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
+    
+    datos_std <- reactive({
+      req(input$target_var)
+      df <- datos_base()
+      num <- sapply(df, is.numeric)
+      num[input$target_var] <- FALSE
+      if (any(num)) df[, num] <- scale(df[, num, drop = FALSE])
+      df
     })
     
     #--------------------------------------------------
@@ -421,7 +369,6 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
                      multiple = TRUE,
                      selected = opts[1:min(4, length(opts))])
     })
-    
     #--------------------------------------------------
     # 3. DATASET
     #--------------------------------------------------

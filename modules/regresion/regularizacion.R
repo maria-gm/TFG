@@ -171,12 +171,13 @@ Regularizacion_Teoria_Server <- function(id) {
 Regularizacion_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
+    # Título corporativo unificado
     h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
       #--------------------------------------------------
-      # PANEL LATERAL
+      # PANEL LATERAL (FIJO)
       #--------------------------------------------------
       column(4,
              wellPanel(
@@ -204,7 +205,6 @@ Regularizacion_Analisis_UI <- function(id){
                ),
                
                hr(),
-               helpText("Nota: El análisis responde automáticamente en tiempo real."),
                helpText("Nota: Se eliminan filas con valores faltantes automáticamente.")
              )
       ),
@@ -213,13 +213,17 @@ Regularizacion_Analisis_UI <- function(id){
       # PANEL PRINCIPAL
       #--------------------------------------------------
       column(8,
+             # Banner de error (Aparece arriba de las pestañas, idéntico a las capturas)
+             uiOutput(ns("mensaje_error_ui")),
+             
              tabsetPanel(
                id = ns("tabs_reg"),
                
                # PESTAÑA 1: DATOS
                tabPanel("1. Datos y Escala", 
                         br(),
-                        p("Información: Para estos algoritmos es vital estandarizar las columnas para igualar las magnitudes de penalización.", style = "color: #7f8c8d; font-style: italic; margin-bottom: 25px;"),
+                        p("Información: Para estos algoritmos es vital estandarizar las columnas para igualar las magnitudes de penalización.", 
+                          style = "color: #7f8c8d; font-style: italic; margin-bottom: 25px;"),
                         h4("Dataset original preparado", style = "color: #2c3e50; font-weight: 500;"), 
                         DT::DTOutput(ns("tabla_original")),
                         br(), hr(), br(),
@@ -227,20 +231,19 @@ Regularizacion_Analisis_UI <- function(id){
                         DT::DTOutput(ns("tabla_preparada"))
                ),
                
-               # PESTAÑA 2: OPTIMIZACIÓN POR CV (RESCATADO Y AMPLIADO)
+               # PESTAÑA 2: OPTIMIZACIÓN
                tabPanel("2. Optimización Automática (CV)",
                         br(),
                         uiOutput(ns("ui_sugerencia_optima")),
                         br(),
                         plotOutput(ns("cv_plot"), height = "420px"),
                         br(),
-                        # Contenedores dinámicos exclusivos de PCR rescatados de tu script
                         conditionalPanel(
                           condition = sprintf("input['%s'] == 'pcr'", ns("metodo")),
-                          h4("Tabla de Varianza Explicada por Componente", style = "color: #2c3e50; font-weight: 500;"),
+                          h4("Varianza Explicada por Componente", style = "color: #2c3e50; font-weight: 500;"),
                           DT::DTOutput(ns("tabla_varianza")),
                           br(), hr(), br(),
-                          h4("Resumen Formal del Modelo PCR (Summary)", style = "color: #2c3e50; font-weight: 500;"),
+                          h4("Resumen Formal del Modelo (Summary)", style = "color: #2c3e50; font-weight: 500;"),
                           verbatimTextOutput(ns("summary_pcr"))
                         ),
                         br(),
@@ -248,7 +251,7 @@ Regularizacion_Analisis_UI <- function(id){
                         verbatimTextOutput(ns("interp_cv"))
                ),
                
-               # PESTAÑA 3: COEFICIENTES (TU CAPTURA DE PUNTOS E INTERVALOS)
+               # PESTAÑA 3: COEFICIENTES
                tabPanel("3. Coeficientes del Modelo", 
                         br(),
                         h4("Magnitud de los Coeficientes Ajustados", style = "color: #2c3e50; font-weight: 500;"), 
@@ -275,24 +278,57 @@ Regularizacion_Analisis_UI <- function(id){
     )
   )
 }
-
 Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   moduleServer(id, function(input, output, session) {
     
-    # --- 1. PROCESAMIENTO DE DATOS ---
-    datos_base <- reactive({
+    # --- 1. PROCESAMIENTO GLOBAL Y VALIDACIONES ---
+    datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
-      req(df)
-      df[complete.cases(df[, sapply(df, is.numeric)]), ]
+      
+      crear_banner_error <- function(mensaje) {
+        div(
+          style = "background-color: #fdf2f2; color: #9b1c1c; border: 1px solid #fde8e8; padding: 20px; margin-bottom: 25px; border-radius: 6px;",
+          tags$span(style = "font-weight: bold; font-size: 16px;", tags$i(class = "fa fa-exclamation-triangle"), " No es posible realizar el análisis."),
+          br(),
+          tags$span(style = "font-style: italic; color: #4b5563; font-size: 14px;", "Información: Los métodos de regularización requieren datos cuantitativos completos."),
+          br(), br(),
+          tags$span(style = "font-weight: 500;", mensaje)
+        )
+      }
+      
+      if (is.null(df)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("No se han detectado datos cargados.")))
+      }
+      
+      # Filtro de registros completos en numéricas
+      df_limpio <- df[complete.cases(df[, sapply(df, is.numeric), drop = FALSE]), , drop = FALSE]
+      if (nrow(df_limpio) < 15) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 15 registros completos tras eliminar valores perdidos (NA).")))
+      }
+      
+      df_num <- df_limpio[, sapply(df_limpio, is.numeric), drop = FALSE]
+      if (ncol(df_num) < 3) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Estas técnicas requieren al menos 1 variable respuesta (Y) y 2 predictores (X) métricos.")))
+      }
+      
+      # Control de varianza
+      if (any(sapply(df_num, sd, na.rm = TRUE) == 0)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Existen columnas con varianza cero que impiden la normalización necesaria.")))
+      }
+      
+      return(list(valido = TRUE, base = df_limpio, num = df_num))
     })
     
-    datos_num <- reactive({
-      df <- datos_base()
-      df_n <- df[, sapply(df, is.numeric), drop = FALSE]
-      cols_validas <- sapply(df_n, function(x) length(unique(x)) > 15)
-      if(sum(cols_validas) < 2) return(df_n)
-      df_n[, cols_validas, drop = FALSE]
+    # Renderizado del Banner sobre las pestañas
+    output$mensaje_error_ui <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) return(prep$ui_error)
+      return(NULL)
     })
+    
+    # Conexiones seguras
+    datos_base <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
+    datos_num  <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$num })
     
     datos_preparados <- reactive({
       req(input$var_dep, input$var_indep)
@@ -302,18 +338,16 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     
     # --- 2. SELECTORES ---
     output$ui_var_dep <- renderUI({
-      nums <- names(datos_num())
-      selectInput(session$ns("var_dep"), "Variable Dependiente (Y):", choices = nums)
+      req(datos_preprocesados()$valido)
+      selectInput(session$ns("var_dep"), "Variable Dependiente (Y):", choices = names(datos_num()))
     })
     
     output$ui_var_indep <- renderUI({
       req(input$var_dep)
       nums <- setdiff(names(datos_num()), input$var_dep)
-      selectizeInput(
-        session$ns("var_indep"), "Variables Independientes (X):", 
-        choices = nums, multiple = TRUE, selected = nums[1:min(6, length(nums))],
-        options = list('plugins' = list('remove_button'))
-      )
+      selectizeInput(session$ns("var_indep"), "Variables Independientes (X):", 
+                     choices = nums, multiple = TRUE, selected = nums[1:min(6, length(nums))],
+                     options = list('plugins' = list('remove_button')))
     })
     
     # --- 3. MODELOS DE VALIDACIÓN CRUZADA (AUTOMÁTICOS) ---
@@ -525,9 +559,8 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       )
     })
     
-  }) # Cierre de moduleServer
-} # Cierre de Regularizacion_Analisis_Server
-
+  }) 
+} 
 
 
 # =========================================================

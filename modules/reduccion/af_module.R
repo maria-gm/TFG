@@ -227,7 +227,6 @@ AF_Analisis_UI <- function(id){
       #--------------------------------------------------
       # PANEL LATERAL
       #--------------------------------------------------
-      
       column(
         width = 3,
         
@@ -253,14 +252,15 @@ AF_Analisis_UI <- function(id){
           
           br(),
           
-          uiOutput(ns("ui_dl_af"))
+          uiOutput(ns("ui_dl_af")),
+          br(),
+          helpText("Nota: Se eliminan filas con valores faltantes automáticamente."),
         )
       ),
       
       #--------------------------------------------------
       # PANEL PRINCIPAL
       #--------------------------------------------------
-      
       column(
         width = 9,
         
@@ -270,12 +270,12 @@ AF_Analisis_UI <- function(id){
           #================================================
           # DATOS
           #================================================
-          
           tabPanel(
             "Datos",
             value = "datos",
             
             br(),
+            uiOutput(ns("alerta_datos_af")), # Alerta local inyectada sin romper la UI
             
             p("Información: El análisis se ejecuta exclusivamente sobre las columnas de tipo numérico.", 
               style = "color: #7f8c8d; font-style: italic; margin-bottom: 25px;"),
@@ -292,12 +292,12 @@ AF_Analisis_UI <- function(id){
           #================================================
           # DIAGNÓSTICO
           #================================================
-          
           tabPanel(
             "Diagnóstico",
             value = "diagnostico",
             
             br(),
+            uiOutput(ns("alerta_diag_af")), # Alerta local inyectada sin romper la UI
             
             wellPanel(
               p("Evaluación de la adecuación muestral para el Análisis Factorial.")
@@ -320,12 +320,12 @@ AF_Analisis_UI <- function(id){
           #================================================
           # SELECCIÓN DE FACTORES
           #================================================
-          
           tabPanel(
             "Selección de Factores",
             value = "componentes",
             
             br(),
+            uiOutput(ns("alerta_scree_af")), # Alerta local inyectada sin romper la UI
             
             wellPanel(
               p("Scree plot y varianza común explicada.")
@@ -348,12 +348,12 @@ AF_Analisis_UI <- function(id){
           #================================================
           # CARGAS FACTORIALES (LOADINGS)
           #================================================
-          
           tabPanel(
             "Cargas Factoriales",
             value = "variables",
             
             br(),
+            uiOutput(ns("alerta_loadings_af")), # Alerta local inyectada sin romper la UI
             
             wellPanel(
               p("Interpretación de cargas factoriales. Las celdas resaltadas superan la magnitud mínima de contribución.")
@@ -393,12 +393,12 @@ AF_Analisis_UI <- function(id){
           #================================================
           # PUNTUACIONES (SCORES)
           #================================================
-          
           tabPanel(
             "Puntuaciones Factoriales",
             value = "individuos",
             
             br(),
+            uiOutput(ns("alerta_scores_af")), # Alerta local inyectada sin romper la UI
             
             h4("Puntuaciones de los individuos", style = "color: #2c3e50; font-weight: 500;"),
             plotOutput(ns("scores_plot_af"), height = "600px"),
@@ -424,23 +424,54 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     
     ns <- session$ns
     
-    #--------------------------------------------------
-    # MANEJO DE DATOS
-    #--------------------------------------------------
-    datos_num <- reactive({
+    datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
-      req(df)
-      df_n <- df[, sapply(df, is.numeric), drop = FALSE]
-      df_n[complete.cases(df_n), ]
+      
+      crear_banner_error <- function(mensaje) {
+        div(
+          style = "background-color: #fdf2f2; color: #9b1c1c; border: 1px solid #fde8e8; padding: 20px; margin-bottom: 25px; border-radius: 6px;",
+          tags$span(style = "font-weight: bold; font-size: 16px;", tags$i(class = "fa fa-exclamation-triangle"), " No es posible realizar el análisis."),
+          br(),
+          tags$span(style = "font-style: italic; color: #4b5563; font-size: 14px;", "Información: El Análisis Factorial (AF) requiere variables métricas continuas intercorrelacionadas."),
+          br(), br(),
+          tags$span(style = "font-weight: 500;", mensaje)
+        )
+      }
+      
+      if (is.null(df)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("No se han detectado datos en el sistema.")))
+      }
+      
+      # Filtrar únicamente columnas numéricas
+      df_num <- df[, sapply(df, is.numeric), drop = FALSE]
+      
+      # Omitir registros incompletos (Filas con NAs)
+      df_clean <- na.omit(df_num)
+           
+       if (ncol(df_final) < 3) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Se necesitan al menos 3 variables numéricas para justificar una reducción dimensional.")))
+      }
+      if (nrow(df_clean) < 15) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 15 observaciones completas para validar la estructura dimensional.")))
+      }
+      
+      return(list(valido = TRUE, base_limpia = df_final))
     })
     
-    datos_std <- reactive({
-      req(datos_num())
-      scale(datos_num())
+    # Renderizado único del banner superior de error
+    output$mensaje_error_ui <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) return(prep$ui_error)
+      return(NULL)
     })
+    
+    # Enlaces reactivos seguros garantizados por req()
+    datos_num <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base_limpia })
+    
+    datos_std <- reactive({ req(datos_num()); scale(datos_num()) })
     
     #--------------------------------------------------
-    # LÓGICA DEL ANÁLISIS FACTORIAL (MÉTODO FIXED 'pa')
+    # Método de los ejes principales
     #--------------------------------------------------
     af_res <- reactive({
       req(datos_num(), input$n_factores, input$metodo_rot)
@@ -452,7 +483,7 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       if(n_fact > max_factores) n_fact <- max(1, max_factores)
       
       psych::fa(
-        r = datos_num(), 
+        r = datos_std(), 
         nfactors = n_fact, 
         fm = "pa", 
         rotate = met_rot,
@@ -464,7 +495,7 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     # SELECTORES LATERALES DINÁMICOS
     #--------------------------------------------------
     output$panel_lateral_af <- renderUI({
-      req(datos_num())
+      req(datos_preprocesados()$valido)
       p_vars <- ncol(datos_num())
       max_factores <- max(1, floor((2 * p_vars + 1 - sqrt(8 * p_vars + 1)) / 2))
       
@@ -527,7 +558,7 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     # BOTÓN DE DESCARGA DINÁMICO
     #--------------------------------------------------
     output$ui_dl_af <- renderUI({
-      req(input$n_factores)
+      req(datos_preprocesados()$valido, input$n_factores)
       f <- round(input$n_factores)
       downloadButton(
         ns("dl_af"),
@@ -538,35 +569,71 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     #--------------------------------------------------
-    # TABLAS DE DATOS
+    # TABLAS DE DATOS 
     #--------------------------------------------------
     output$dataset_af <- DT::renderDT({
       df_base <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
       req(df_base)
       
       DT::datatable(
-        df_base[complete.cases(df_base[, sapply(df_base, is.numeric)]), ], # Dataset Completo con categóricas
+        df_base[complete.cases(df_base[, sapply(df_base, is.numeric)]), ], 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
         class = 'cell-border stripe hover compact'
       ) %>% 
-        DT::formatRound(columns = names(datos_num()), digits = 3)
+        DT::formatRound(columns = which(sapply(df_base, is.numeric)), digits = 3)
     })
     
     output$dataset_std_af <- DT::renderDT({
       req(datos_std())
       
       DT::datatable(
-        round(as.data.frame(datos_std()), 3), # Matriz de números tipificados Z-scores puras
+        round(as.data.frame(datos_std()), 3), 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
         class = 'cell-border stripe hover compact'
       )
     })
+    
     #--------------------------------------------------
     # DIAGNÓSTICO
     #--------------------------------------------------
     output$bartlett_test_af <- renderPrint({
       req(datos_std())
-      psych::cortest.bartlett(cor(datos_std()))
+      psych::cortest.bartlett(cor(datos_std()), n = nrow(datos_std()))
+    })
+    
+    # Inyección local del banner en Diagnóstico si es inválido
+    output$alerta_diag_af <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) return(prep$ui_error)
+      return(NULL)
+    })
+    
+    # Inyección local del banner en Datos si es inválido
+    output$alerta_datos_af <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) return(prep$ui_error)
+      return(NULL)
+    })
+    
+    # Inyección local del banner en Selección si es inválido
+    output$alerta_scree_af <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) return(prep$ui_error)
+      return(NULL)
+    })
+    
+    # Inyección local del banner en Cargas si es inválido
+    output$alerta_loadings_af <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) return(prep$ui_error)
+      return(NULL)
+    })
+    
+    # Inyección local del banner en Puntuaciones si es inválido
+    output$alerta_scores_af <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) return(prep$ui_error)
+      return(NULL)
     })
     
     output$kmo_test <- renderPrint({
@@ -585,13 +652,12 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     #--------------------------------------------------
-    # SCREE PLOT (GRÁFICO DE SEDIMENTACIÓN ESPECÍFICO DE AF)
+    # SCREE PLOT
     #--------------------------------------------------
     output$scree_af <- renderPlot({
       req(datos_num(), input$n_factores)
       f_sel <- round(input$n_factores)
       
-      # Cálculo de eigenvalues de la matriz de correlación reducida (factorizable)
       ev <- eigen(cor(datos_num()))$values
       
       plot(
@@ -603,7 +669,7 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
         main = "Scree Plot (Análisis Factorial)"
       )
       axis(1, at = 1:length(ev), labels = 1:length(ev))
-      abline(h = 1, col = "blue", lty = 3) # Criterio de Kaiser
+      abline(h = 1, col = "blue", lty = 3) 
       abline(v = f_sel, col = "red", lty = 2)
       
       mtext(
@@ -618,87 +684,68 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     #--------------------------------------------------
     output$var_table_af <- DT::renderDT({
       req(af_res())
-      af <- af_res()
+      var_info <- af_res()$Vaccounted
+      req(var_info)
       
-      var_info <- af$Vaccounted
-      if(is.null(var_info)) return(NULL)
+      var_transpuesta <- as.data.frame(t(var_info))
       
-      tabla <- as.data.frame(var_info)
       DT::datatable(
-        round(tabla, 3),
-        options = list(paging = FALSE, scrollX = TRUE, autoWidth = TRUE),
+        round(var_transpuesta, 3),
+        options = list(
+          paging = FALSE, 
+          searching = FALSE,  
+          info = FALSE,       
+          scrollX = TRUE, 
+          autoWidth = TRUE
+        ),
         class = 'cell-border stripe hover compact'
       )
     })
     
     output$interp_varianza_af <- renderText({
       req(af_res(), input$n_factores)
-      af <- af_res()
-      f <- round(input$n_factores)
+      f <- as.integer(input$n_factores)
+      var_info <- af_res()$Vaccounted
       
-      var_info <- af$Vaccounted
-      var_total <- if(!is.null(var_info)) round(tail(var_info["Cumulative Proportion", ], 1) * 100, 2) else NA
+      req(var_info, "Cumulative Var" %in% rownames(var_info))
+      
+      f_valido <- min(f, ncol(var_info))
+      
+      var_acumulada_f <- round(var_info["Cumulative Var", f_valido] * 100, 2)
       
       paste0(
-        "El modelo actual con ", f, " factores logra explicar un total de ", var_total, "% de la varianza común de los datos sugeridos.\n\n",
-        "Ejemplo práctico (Dataset 'wines'): A diferencia de ACP que busca varianza total, el AF se enfoca en ",
-        "la varianza común (comunalidad). Al extraer 3 factores con rotación Varimax sobre wines, se suelen identificar ",
-        "tres dimensiones subyacentes bien definidas que justifican las agrupaciones de las propiedades químicas básicas."
+        "El modelo actual con ", f_valido, " factores logra explicar un total acumulado de ", var_acumulada_f, "% de la varianza total de los datos originales.\n\n",
+        "Ejemplo práctico (Dataset 'wines'): Al extraer factores con rotación Varimax sobre wines, se suelen identificar 3 ",
+        "dimensiones subyacentes bien definidas."
       )
     })
     
     #--------------------------------------------------
-    # CARGAS FACTORIALES CON COLOR BICOLOR
+    # CARGAS FACTORIALES CON COLOR 
     #--------------------------------------------------
     output$loadings_table_af <- DT::renderDT({
+      req(af_res(), input$tipo_cargas)
+      umbral <- if(!is.null(input$af_magnitud_carga)) input$af_magnitud_carga else 0.3
       
-      req(af_res())
-      
-      umbral <- if(!is.null(input$af_magnitud_carga))
-        input$af_magnitud_carga
-      else
-        0.3
-      
-      if(input$tipo_cargas=="rotadas"){
-        
+      if(input$tipo_cargas == "rotadas"){
         cargas <- as.data.frame(unclass(af_res()$loadings))
-        
-      }else{
-        
-        af_sin_rotar <- psych::fa(
-          r = datos_num(),
-          nfactors = round(input$n_factores),
-          fm = "pa",
-          rotate = "none"
-        )
-        
+      } else {
+        af_sin_rotar <- psych::fa(r = datos_std(), nfactors = round(input$n_factores), fm = "pa", rotate = "none")
         cargas <- as.data.frame(unclass(af_sin_rotar$loadings))
-        
       }
       
       DT::datatable(
-        round(cargas,3),
-        options=list(
-          paging=FALSE,
-          scrollY="400px",
-          scrollX=TRUE,
-          autoWidth=TRUE
-        ),
-        class='cell-border stripe hover compact'
+        round(cargas, 3),
+        options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
+        class = 'cell-border stripe hover compact'
       ) %>%
         DT::formatStyle(
-          columns=1:ncol(cargas),
-          backgroundColor=DT::styleInterval(
-            cuts=c(-umbral,umbral),
-            values=c("#fcd7d7","transparent","#d4edda")
-          ),
-          fontWeight=DT::styleInterval(
-            cuts=c(-umbral,umbral),
-            values=c("bold","normal","bold")
-          )
+          columns = 1:ncol(cargas),
+          backgroundColor = DT::styleInterval(cuts = c(-umbral, umbral), values = c("#fcd7d7", "transparent", "#d4edda")),
+          fontWeight = DT::styleInterval(cuts = c(-umbral, umbral), values = c("bold", "normal", "bold"))
         )
-      
     })
+    
     output$interp_loadings_af <- renderText({
       req(input$n_factores)
       umbral <- if(!is.null(input$af_magnitud_carga)) input$af_magnitud_carga else 0.3
@@ -713,7 +760,6 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     output$comunalidades_table <- DT::renderDT({
-      
       req(af_res())
       af <- af_res()
       
@@ -727,67 +773,43 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       DT::datatable(
         df_comun,
         rownames = FALSE,  
-        options = list(
-          paging = FALSE,
-          scrollY = "300px",
-          scrollX = TRUE,
-          autoWidth = TRUE
-        ),
+        options = list(paging = FALSE, scrollY = "300px", scrollX = TRUE, autoWidth = TRUE),
         class = "cell-border stripe hover compact"
       )
-      
     })
+    
     output$interp_comunalidades_af <- renderText({
-      
       req(af_res())
-      
       h2 <- af_res()$communality
-      
-      buenas <- sum(h2 >= 0.50)
-      
-      medias <- sum(h2 >= 0.30 & h2 < 0.50)
-      
-      bajas <- sum(h2 < 0.30)
+      buenas <- sum(h2 >= 0.50); medias <- sum(h2 >= 0.30 & h2 < 0.50); bajas <- sum(h2 < 0.30)
       
       paste0(
-        
         "Las comunalidades (H²) indican la proporción de la variabilidad de cada variable explicada por los factores retenidos, mientras que la unicidad (U²) representa la parte no explicada.\n\n",
-        
         "En este análisis se obtienen:\n",
-        
         "- Variables bien representadas (H² ≥ 0.50): ", buenas, ".\n",
-        
-        "- Variables con representación moderada (0.30 ≤ H² < 0.50): ", medias, ".\n",
-        
+        "- Variables con representation moderada (0.30 ≤ H² < 0.50): ", medias, ".\n",
         "- Variables poco representadas (H² < 0.30): ", bajas, ".\n\n",
-        
-        "En general, las variables con comunalidades altas pueden interpretarse con mayor confianza dentro del modelo factorial, mientras que las de comunalidad baja aportan poca información común y conviene interpretarlas con cautela."
-        
+        "En general, las variables con comunalidades altas pueden interpretarse con mayor confianza dentro del modelo factorial, mientras que las de comunalidad baja aportan poca información común."
       )
-      
     })
+    
     #--------------------------------------------------
     # PUNTUACIONES FACTORIALES (SCORES)
     #--------------------------------------------------
     output$scores_plot_af <- renderPlot({
       req(af_res())
-      af <- af_res()
+      scores_df <- as.data.frame(af_res()$scores)
       
       e_x <- if(!is.null(input$af_eje_x)) as.numeric(input$af_eje_x) else 1
-      e_y <- if(!is.null(input$af_eje_y)) as.numeric(input$af_eje_y) else min(2, ncol(af$scores))
-      
-      scores_df <- as.data.frame(af$scores)
+      e_y <- if(!is.null(input$af_eje_y)) as.numeric(input$af_eje_y) else min(2, ncol(scores_df))
       req(ncol(scores_df) >= max(e_x, e_y))
       
       plot(
         scores_df[, e_x], scores_df[, e_y],
-        # Parámetros del gráfico de puntuaciones factoriales
         xlab = paste("Factor", e_x), 
         ylab = paste("Factor", e_y),
         main = "Espacio Factorial de los Individuos (Scores)",
-        col = "#1a446c", 
-        pch = 19, 
-        cex = 1.2
+        col = "#1a446c", pch = 19, cex = 1.2
       )
       grid()
       abline(h = 0, v = 0, lty = 2, col = "gray")
@@ -795,10 +817,8 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     
     output$scores_table_af <- DT::renderDT({
       req(af_res())
-      af <- af_res()
-      
       DT::datatable(
-        round(as.data.frame(af$scores), 3),
+        round(as.data.frame(af_res()$scores), 3),
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
         class = 'cell-border stripe hover compact'
       )
@@ -806,7 +826,6 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     
     output$interp_scores_af <- renderText({
       req(input$n_factores)
-      
       paste0(
         "Muestra las coordenadas estimadas de cada una de las observaciones respecto a las nuevas variables latentes (factores).\n\n",
         "Ejemplo práctico (Dataset 'wines'): En este plano factorial de observaciones, las muestras químicas ",
@@ -819,17 +838,15 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     # GESTOR DE DESCARGAS AF
     #--------------------------------------------------
     output$dl_af <- downloadHandler(
-      filename = function() {
-        paste("AF_Resultados_Factores.csv", sep = "")
-      },
+      filename = function() { "AF_Resultados_Factores.csv" },
       content = function(file) {
         req(af_res())
         write.csv(as.data.frame(af_res()$scores), file, row.names = TRUE)
       }
     )
-    
   }) 
-} 
+}
+
 # =====================================================
 #   AUTOEVALUACIÓN 
 # =====================================================  
@@ -946,10 +963,11 @@ AF_Auto_Server <- function(id) {
       list(texto = "¿Qué tipo de rotación usar si factores están correlacionados?", opciones = c("Ortogonal", "Oblicua", "Ninguna", "PCA"), correcta = "Oblicua"),
       list(texto = "¿Qué compone la varianza total?", opciones = c("Comunalidad + varianza única", "Solo comunalidad", "Solo error", "Solo factores"), correcta = "Comunalidad + varianza única"),
       list(texto = "¿Qué asumen los errores en AF?", opciones = c("Están correlacionados", "No están correlacionados entre sí ni con factores", "Son factores comunes", "Son variables observadas"), correcta = "No están correlacionados entre sí ni con factores"),
-      list(texto = "¿Qué diferencia AF exploratorio y confirmatorio?", opciones = c("No hay diferencia", "Exploratorio busca estructura y confirmatorio la valida", "Uno usa PCA", "Uno es supervisado"), correcta = "Exploratorio busca estructura y confirmatorio la valida"),
-      list(texto = "¿Qué son los factores únicos?", opciones = c("Parte común", "Parte específica y error", "Variables observadas", "Clusters"), correcta = "Parte específica y error"),
-      list(texto = "¿Qué hace la rotación factorial?", opciones = c("Cambia datos", "Facilita interpretación", "Elimina variables", "Aumenta varianza"), correcta = "Facilita interpretación")
-    )
+      list(texto = "Si la variable 'Magnesium' presenta una comunalidad de 0.22 tras la extracción factorial en los datos de 'wines', ¿cómo debe interpretarse analíticamente este resultado?", opciones = c("Los factores comunes solo logran explicar un 22% de su varianza, quedando el 78% como varianza única o error", "El magnesio es la variable predictora más importante del modelo", "La variable debe eliminarse porque tiene valores negativos", "El factor extraído es idéntico a la variable magnesio"), correcta = "Los factores comunes solo logran explicar un 22% de su varianza, quedando el 78% como varianza única o error"),
+      list(texto = "Si realizas una rotación 'Varimax' y observas que 'Alcohol' y 'Color Intensity' se desplazan casi por completo al Factor 2, liberando de carga al Factor 1, ¿qué objetivo estadístico has alcanzado?", opciones = c("Estructura simple: facilitar la separación e interpretación de los factores", "Aumentar artificialmente el número de variables originales", "Eliminar los errores aleatorios de las barricas", "Cambiar los coeficientes de correlación original"), correcta = "Estructura simple: facilitar la separación e interpretación de los factores"),
+      list(texto = "¿Cúantos factores deberías retener en el dataset wines", opciones = c("Ninguno,se descartar todo el análisis por baja varianza","Los 3 primeros",  "Hay que retener los 13 factores obligatoriamente", "Se utilizar únicamente el primer factor"), correcta = "Los 3 primeros")
+      
+                )
     
     preguntas_usuario <- reactiveVal(list())
     

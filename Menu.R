@@ -6,12 +6,12 @@ Menu_UI <- function(id){
   
   tagList(
     # =====================================================
-    # BLOQUE SUPERIOR: INTRODUCCIÓN Y EJEMPLOS (ALTURA ALINEADA)
+    # BLOQUE SUPERIOR
     # =====================================================
     div(
       style = "display: flex; flex-wrap: wrap; margin-top: 10px; gap: 20px;",
       
-      # COLUMNA IZQUIERDA: GUÍA DE INICIO (CRECE NATURALMENTE)
+      # COLUMNA IZQUIERDA: GUÍA DE INICIO 
       div(
         style = "flex: 5; min-width: 300px; display: flex;",
         card(
@@ -32,7 +32,7 @@ Menu_UI <- function(id){
         )
       ),
       
-      # COLUMNA DERECHA: CUADRÍCULA 2X2 DE DATASETS
+      # COLUMNA DERECHA: CUADRÍCULA DE DATASETS
       div(
         style = "flex: 7; min-width: 400px; display: flex; flex-direction: column;",
         h5(icon("download"), " Repositorio de Datasets de Ejemplo", style = "margin-bottom: 15px; font-weight: bold; color: #2C3E50; font-size: 1.05rem;"),
@@ -100,20 +100,19 @@ Menu_UI <- function(id){
     ),
     
     # =====================================================
-    # BLOQUE INFERIOR: SINCRO CON SELECCIÓN DE DICCIONARIO Y CARGA
+    # BLOQUE INFERIOR: SELECCIÓN DE DICCIONARIO Y CARGA
     # =====================================================
     hr(style = "margin: 20px 0;"),
     fluidRow(
       style = "display: flex; flex-wrap: wrap; gap: 20px;",
       
-      # DICCIONARIO DE VARIABLES (ALTURA FIJA Y SCROLL INTERNO)
+      # DICCIONARIO DE VARIABLES
       div(
         style = "flex: 1; min-width: 300px; display: flex;",
         card(
           style = "width: 100%; height: 380px; display: flex; flex-direction: column; padding: 14px;",
           card_header(strong("📖 Diccionario de Variables"), style = "background-color: #f8f9fa; border: none; margin-bottom: 10px;"),
           
-          # Selector reactivo vinculado directamente con input$dataset_info_select del Server
           selectInput(ns("dataset_info_select"), "Selecciona un Dataset para inspeccionar:",
                       choices = c("Wine" = "wine", 
                                   "Penguins" = "penguins", 
@@ -121,7 +120,6 @@ Menu_UI <- function(id){
                                   "Breast Cancer" = "cancer"),
                       selected = "wine", width = "100%"),
           
-          # Salida reactiva del diccionario que gestiona el switch() del Server
           div(
             style = "overflow-y: auto; flex-grow: 1; padding: 8px; border: 1px solid #e3e6f0; border-radius: 4px; background-color: #fafafa;",
             uiOutput(ns("informacion_dataset_ui"))
@@ -146,11 +144,11 @@ Menu_UI <- function(id){
                        icon = icon("sync"), 
                        class = "btn-warning", 
                        style = "width: 100%; color: #212529; font-weight: bold; margin-bottom: 10px;"),
-          # Contenedor dinámico donde se renderiza la vista previa (output$vista_previa_panel)
+          # Contenedor dinámico para la vista previa (output$vista_previa_panel)
         uiOutput(ns("vista_previa_panel"))))))}
 
 # =====================================================
-# LÓGICA DEL SERVER PARA LA CONSULTA DENTRO DEL MÓDULO MENÚ
+# SERVER 
 # =====================================================
 Menu_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
@@ -270,7 +268,7 @@ Menu_Server <- function(id) {
     })
       
      
-    # Escuchar carga del archivo del usuario
+    # Carga del archivo del usuario
     observeEvent(input$file_usuario, {
       req(input$file_usuario)
       df <- tryCatch({
@@ -308,7 +306,7 @@ Menu_Server <- function(id) {
       head(dataset_usuario_dinamico(), 5)
     }, striped = TRUE, bordered = TRUE, spacing = "s")
     
-    # Controladores de Descarga (Incluido Breast Cancer)
+    # Controladores de Descarga 
     output$download_wine <- downloadHandler(
       filename = function() { "wine_dataset.csv" },
       content = function(file) { write.csv(datos_ejemplo$PCA, file, row.names = FALSE) }

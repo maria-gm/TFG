@@ -31,10 +31,8 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     # =====================================================
-    # 1. INSTANCIACIÓN FIJA DE SERVIDORES (FUERA DE RENDERUI)
+    # 1.SERVIDORES 
     # =====================================================
-    # Se inicializan una sola vez y quedan a la escucha de forma limpia e independiente
-    
     # Servidores Jerárquicos
     Jerarquicos_Teoria_Server("jerarquico_teoria")
     Jerarquicos_Analisis_Server("jerarquico_analisis", 
@@ -58,11 +56,11 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
     
     
     # =====================================================
-    # 2. RENDERIZACIÓN DE MINIGRÁFICOS CONCEPTUALES
+    # 2. RENDERIZACIÓN DE GRÁFICOS CONCEPTUALES
     # =====================================================
     output$plot_mini_jerarquico <- renderPlot({
       par(mar = c(2, 2, 1.5, 1))
-      plot(1, type = "n", xlab = "", ylab = "", xlim = c(0, 10), ylim = c(0, 10), axes = FALSE, main = "Dendrograma (Árbol)", col.main = "#1e3a8a", cex.main = 0.9)
+      plot(1, type = "n", xlab = "", ylab = "", xlim = c(0, 10), ylim = c(0, 10), axes = FALSE, main = "Dendrograma", col.main = "#1e3a8a", cex.main = 0.9)
       box(col = "#e2e8f0")
       lines(c(2, 2, 4, 4), c(0, 4, 4, 0), col = "#3b82f6", lwd = 2)
       lines(c(6, 6, 8, 8), c(0, 6, 6, 0), col = "#3b82f6", lwd = 2)
@@ -93,7 +91,7 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     # =====================================================
-    # 3. INTERFAZ DINÁMICA (SÓLO INTERCAMBIA HTML / VISTAS)
+    # 3. INTERFAZ DINÁMICA 
     # =====================================================
     output$interfaz_maestra_dinamica <- renderUI({
       req(input$tecnica)
@@ -112,7 +110,7 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
               bslib::card(
                 style = "border-top: 4px solid #3b82f6;",
                 bslib::card_header(tags$b("Clústeres Jerárquicos")),
-                bslib::card_body(p("Construye una jerarquía de grupos de forma ascendente reflejada en un árbol."), plotOutput(ns("plot_mini_jerarquico"), height = "135px"))
+                bslib::card_body(p("Organiza a los individuos en niveles estructurados construyendo una jerarquía"), plotOutput(ns("plot_mini_jerarquico"), height = "135px"))
               ),
               bslib::card(
                 style = "border-top: 4px solid #10b981;",
@@ -122,7 +120,7 @@ Agrupamiento_Server <- function(id, datos, datos_ejemplo = NULL){
               bslib::card(
                 style = "border-top: 4px solid #f59e0b;",
                 bslib::card_header(tags$b("Algoritmo DBSCAN")),
-                bslib::card_body(p("Agrupa por regiones de alta densidad conectada, aislando el ruido."), plotOutput(ns("plot_mini_dbscan"), height = "135px"))
+                bslib::card_body(p("Identifican regiones con alta concentración de individuos separadas por zonas vacías."), plotOutput(ns("plot_mini_dbscan"), height = "135px"))
               )
             )
           )

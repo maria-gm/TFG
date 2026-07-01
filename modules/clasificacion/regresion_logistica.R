@@ -210,7 +210,6 @@ Regresion_logistica_Analisis_UI <- function(id){
                uiOutput(ns("ui_var_indep")),
                hr(),
                helpText("La regresión logística predice la probabilidad condicional de pertenecer a una categoría específica (Evento)."),
-               helpText("Nota: El análisis se ejecuta automáticamente al cambiar cualquier parámetro."),
                helpText("Nota: Se eliminan filas con valores faltantes automáticamente.")
              )
       ),

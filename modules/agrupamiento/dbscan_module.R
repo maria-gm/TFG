@@ -228,7 +228,6 @@ DBSCAN_Teoria_Server <- function(id){
 # -------------------------------
 # ANALISIS
 # -------------------------------
-
 DBSCAN_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
@@ -271,6 +270,9 @@ DBSCAN_Analisis_UI <- function(id){
       # PANEL PRINCIPAL (A LA DERECHA)
       #--------------------------------------------------
       column(8,
+             # Contenedor dinámico para el banner de error rojo
+             uiOutput(ns("mensaje_error_ui")),
+             
              tabsetPanel(
                id = ns("tabs_dbscan"),
                
@@ -305,44 +307,96 @@ DBSCAN_Analisis_UI <- function(id){
     )
   )
 }
-
 DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
   moduleServer(id, function(input, output, session){
     
-    # 1. DATOS BASE (Limpieza inicial para sincronizar filas)
-    datos_base <- reactive({
+    # --- 1. ÚNICA VALIDACIÓN Y PREPROCESADO GLOBAL ---
+    datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
-      req(df)
-      df[complete.cases(df), , drop = FALSE]
+      
+      # Generador del banner de error rojo HTML nativo
+      crear_banner_error <- function(mensaje) {
+        div(
+          class = "alert alert-danger",
+          style = "background-color: #f2dede; color: #a94442; border-color: #ebccd1; padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; font-family: inherit;",
+          tags$b(icon("triangle-exclamation"), " No es posible realizar el análisis."),
+          br(),
+          tags$span(style = "font-style: italic; color: #555555;", "Información: El algoritmo de densidad DBSCAN se ejecuta exclusivamente sobre variables cuantitativas."),
+          br(), br(),
+          tags$b(mensaje)
+        )
+      }
+      
+      # Validaciones estructurales del dataset
+      if (is.null(df)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("No se han detectado datos cargados. Por favor, suba un archivo o seleccione un ejemplo.")))
+      }
+      if (nrow(df) < 10) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 10 observaciones válidas para estructurar agrupaciones estables basadas en densidad.")))
+      }
+      
+      # Filtro de casos completos (Remoción de NAs)
+      df_limpio <- df[complete.cases(df), , drop = FALSE]
+      if (nrow(df_limpio) < 10) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("El dataset no contiene suficientes filas completas (mínimo 10) tras eliminar registros con valores perdidos (NA).")))
+      }
+      
+      # Aislamiento y filtro de columnas cuantitativas
+      df_num <- df_limpio[, sapply(df_limpio, is.numeric), drop = FALSE]
+      cols_validas <- sapply(df_num, function(x) length(unique(x)) > 15)
+      
+      if(sum(cols_validas) < 2) {
+        if (ncol(df_num) < 2) {
+          return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos dos variables numéricas en el conjunto de datos para calcular densidades espaciales.")))
+        }
+      } else {
+        df_num <- df_num[, cols_validas, drop = FALSE]
+      }
+      
+      # Control de varianza cero (Evitar desbordamiento en escala)
+      sd_cols <- sapply(df_num, sd, na.rm = TRUE)
+      if (any(sd_cols == 0)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Una o más variables cuantitativas seleccionadas tienen varianza cero (valores constantes) y no pueden ser normalizadas.")))
+      }
+      
+      # Reindexación homogénea y cálculo de Z-scores
+      rownames(df_limpio) <- 1:nrow(df_limpio)
+      rownames(df_num) <- 1:nrow(df_num)
+      df_scaled <- scale(df_num)
+      
+      return(list(
+        valido = TRUE,
+        base   = df_limpio,
+        num    = df_num,
+        scaled = df_scaled
+      ))
     })
     
-    # 2. DATOS NUMÉRICOS (Solo para el cálculo)
-    datos_num <- reactive({
-      df <- datos_base()
-      df_n <- df[, sapply(df, is.numeric), drop = FALSE]
-      cols_validas <- sapply(df_n, function(x) length(unique(x)) > 15)
-      if(sum(cols_validas) < 2) return(df_n)
-      df_n[, cols_validas, drop = FALSE]
+    # --- 2. RENDERIZADO DEL BANNER DE ERROR EN LA UI ---
+    output$mensaje_error_ui <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) {
+        return(prep$ui_error)
+      }
+      return(NULL) # Oculto completamente si pasa los controles de calidad
     })
     
-    datos_scale <- reactive({ 
-      req(ncol(datos_num()) >= 2)
-      scale(datos_num()) 
-    })
+    # --- 3. ENLACES REACTIVOS SEGUROS (CON REQ) ---
+    datos_base  <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
+    datos_num   <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$num })
+    datos_scale <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$scaled })
     
-    # 3. PCA (Cálculo independiente para visualización)
+    # --- 4. MODELADO INTERNO (PCA Y DBSCAN) ---
     pca_res <- reactive({ 
       req(datos_scale())
       prcomp(datos_scale()) 
     })
     
-    # 4. MODELO DBSCAN
     modelo_db <- reactive({
       req(datos_scale(), input$eps, input$minPts)
       dbscan::dbscan(datos_scale(), eps = input$eps, minPts = input$minPts)
     })
     
-    # 5. UNIÓN DE DATOS
     df_final <- reactive({
       req(pca_res(), modelo_db(), datos_base())
       
@@ -355,8 +409,9 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       df_viz
     })
     
-    # --- 6. SELECTOR DINÁMICO ---
+    # --- 5. OUTPUT: SELECTOR DINÁMICO ---
     output$ui_var_cat <- renderUI({
+      req(datos_preprocesados()$valido)
       df <- datos_base()
       nom_cats <- names(df)[sapply(df, function(x) {
         is.factor(x) || is.character(x) || (is.numeric(x) && length(unique(x)) <= 5)
@@ -367,10 +422,11 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
                   selected = "Ninguna") 
     })
     
-    # --- 7. TABLAS DE DATOS (CORREGIDO: ORIGINAL COMPLETO VS NUMÉRICO PURO) ---
+    # --- 6. OUTPUT: TABLAS DE DATOS ---
     output$tabla_datos <- DT::renderDT({
+      req(datos_preprocesados()$valido)
       DT::datatable(
-        datos_base(), # Dataset original entero con sus categorías de control
+        datos_base(), 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
         class = 'cell-border stripe hover compact'
       ) %>% 
@@ -380,13 +436,13 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     output$tabla_scale <- DT::renderDT({
       req(datos_scale())
       DT::datatable(
-        round(as.data.frame(datos_scale()), 3), # Matriz pura de Z-scores numéricos
+        round(as.data.frame(datos_scale()), 3), 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
         class = 'cell-border stripe hover compact'
       )
     })
     
-    # --- 8. TIMING OPTIMIZACIÓN (k-dist) ---
+    # --- 7. OUTPUT: OPTIMIZACIÓN (k-dist) ---
     output$kdist_plot <- renderPlot({
       req(datos_scale())
       dbscan::kNNdistplot(datos_scale(), k = input$minPts)
@@ -405,7 +461,7 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       )
     })
     
-    # --- 9. RENDERIZADO DEL GRÁFICO ---
+    # --- 8. OUTPUT: VISUALIZACIÓN ---
     output$cluster_plot <- renderPlot({
       req(df_final())
       df <- df_final()
@@ -426,7 +482,7 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
              subtitle = "Nota: El Clúster 0 representa el RUIDO (Outliers detectados)")
     })
     
-    # --- 10. TABLA RESUMEN COMPACTA ---
+    # --- 9. OUTPUT: TABLA RESUMEN COMPACTA ---
     output$resumen_db <- DT::renderDT({
       req(modelo_db())
       tab <- as.data.frame(table(Clúster = modelo_db()$cluster))
@@ -451,10 +507,11 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       )
     })
     
-    # --- 11. BOTÓN DE DESCARGA ---
+    # --- 10. GESTOR DE DESCARGAS ---
     output$dl_db <- downloadHandler(
       filename = function() { paste("Análisis_DBSCAN_", Sys.Date(), ".csv", sep="") },
       content = function(file) {
+        req(datos_base(), modelo_db())
         df_out <- datos_base()
         df_out$DBSCAN_Cluster <- modelo_db()$cluster
         write.csv(df_out, file, row.names = FALSE)
@@ -463,8 +520,6 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     
   })
 }
-
-
 # -------------------------------
 # AUTOEVALUACION
 # -------------------------------

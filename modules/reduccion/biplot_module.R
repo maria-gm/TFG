@@ -85,11 +85,11 @@ BIPLOT_Teoria_UI <- function(id) {
             )
           )
         )
-      ), # Fin del layout_column_wrap
+      ), 
       
       br(),
       
-      # Nota especial para el HJ Biplot
+      # Nota para el HJ Biplot
       bslib::card(
         style = "border: 1px solid #cbd5e1; background: #f8fafc;",
         full_screen = FALSE,
@@ -101,9 +101,7 @@ BIPLOT_Teoria_UI <- function(id) {
     )
   )
 }
-# -------------------------------
-# TEORIA
-# -------------------------------
+
 BIPLOT_Teoria_Server <- function(id){
   moduleServer(id, function(input, output, session){ })
 }
@@ -115,89 +113,74 @@ BIPLOT_Analisis_UI <- function(id){
   ns <- NS(id)
   
   tagList(
-    
-    # Título personalizado idéntico al de ACP y AF
-    h3("Análisis", 
+    h3("Análisis ", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
-      
       #--------------------------------------------------
-      # PANEL LATERAL (A LA IZQUIERDA)
+      # PANEL LATERAL PERMANENTE
       #--------------------------------------------------
-      
       column(
         width = 3,
-        
         wellPanel(
-          
           h4("Configuración"),
+          p("Parámetros de proyección para el Biplot."),
           
-          p("Seleccione las variables numéricas y los parámetros de proyección para el Biplot."),
+          selectInput(
+            ns("tipo_biplot"),
+            "Tipo de biplot:",
+            choices = c(
+              "HJ (Máxima calidad conjunta)" = "HJ",
+              "GH (Prioriza variables)" = "GH", 
+              "JK (Prioriza individuos)" = "JK", 
+              "SQRT (Equilibrio de varianza)" = "SQRT"
+            ),
+            selected = "HJ"
+          ),
+          
+          radioButtons(
+            ns("tipo_vista"),
+            "Visualización:",
+            choices = c("2D", "3D"),
+            inline = TRUE,
+            selected = "2D"
+          ),
+          
+          # Contenedor dinámico exclusivo para los checkboxes
+          uiOutput(ns("dinamico_panel_lateral")),
           
           hr(),
-          
-          uiOutput(ns("panel_lateral_biplot")),
-          
-          hr(),
-          
-          helpText(
-            "Los vectores representan las variables y los puntos corresponden a las observaciones."
-          )
+          helpText("Los vectores representan las variables y los puntos corresponden a las observaciones.")
         )
       ),
       
       #--------------------------------------------------
       # PANEL PRINCIPAL
       #--------------------------------------------------
-      
       column(
         width = 9,
-        
         tabsetPanel(
           id = ns("tabs_biplot"),
           
-          #================================================
-          # DATOS
-          #================================================
-          
           tabPanel(
-            "Datos",
-            value = "datos",
-            
+            "Datos", value = "datos",
             br(),
-            
-            p("Información: El análisis multidimensional se ejecuta exclusivamente sobre variables numéricas.", 
-              style = "color: #7f8c8d; font-style: italic; margin-bottom: 25px;"),
-            
+            uiOutput(ns("alerta_datos_biplot")),
             h4("Dataset original", style = "color: #2c3e50; font-weight: 500;"),
             DT::DTOutput(ns("dataset_table")),
-            
             br(), hr(), br(),
-            
             h4("Dataset estandarizado", style = "color: #2c3e50; font-weight: 500;"),
             DT::DTOutput(ns("dataset_std_table"))
           ),
           
-          #================================================
-          # REPRESENTACIÓN BIPLOT
-          #================================================
-          
           tabPanel(
-            "Proyección Biplot",
-            value = "proyeccion",
-            
+            "Proyección Biplot", value = "proyeccion",
             br(),
-            
-            wellPanel(
-              p("Análisis visual simultáneo de filas (individuos) y columnas (variables).")
-            ),
-            
+            uiOutput(ns("alerta_proj_biplot")),
+            wellPanel(p("Análisis visual simultáneo de filas (individuos) y columnas (variables).")),
             h4("Representación Gráfica Interactiva", style = "color: #2c3e50; font-weight: 500;"),
-            plotlyOutput(ns("biplot"), height = "550px"),
-            
+            plotlyOutput(ns("biplot_grafico"), height = "550px"),
             br(),
-            
             h4("Interpretación", style = "color: #2c3e50; font-weight: 500;"),
             verbatimTextOutput(ns("interp_biplot"))
           )
@@ -207,230 +190,191 @@ BIPLOT_Analisis_UI <- function(id){
   )
 }
 
-# =====================================================
-# SERVER
-# =====================================================
 BIPLOT_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
   
   moduleServer(id, function(input, output, session){
     
     ns <- session$ns
     
-    #--------------------------------------------------
-    # MANEJO DE DATOS BASE
-    #--------------------------------------------------
-    datos_reactivos <- reactive({
-      df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
-      req(df)
-      df
-    })
+    # ==========================================================================
+    # FUNCIONES LOCALES DE VALIDACIÓN (Encapsuladas en el Server)
+    # ==========================================================================
+    validar_datos_multivar <- function(df, min_vars = 2, min_obs = 3) {
+      if (is.null(df)) return("No se han cargado datos.")
+      df_num <- df[, sapply(df, is.numeric), drop = FALSE]
+      if (ncol(df_num) < min_vars) {
+        return(paste0("El dataset no tiene suficientes variables numéricas (mínimo requerido: ", min_vars, ")."))
+      }
+      df_clean <- df_num[complete.cases(df_num), ]
+      if (nrow(df_clean) < min_obs) {
+        return(paste0("No hay suficientes observaciones completas (sin valores ausentes) para el análisis (mínimo requerido: ", min_obs, ")."))
+      }
+      return(NULL)
+    }
     
-    datos_num <- reactive({
-      df <- datos_reactivos()
-      df_n <- df[, sapply(df, is.numeric), drop = FALSE]
-      
-      validate(
-        need(ncol(df_n) >= 2, "Se necesitan al menos 2 variables numéricas en el dataset.")
+    preprocesar_datos <- function(df) {
+      df_num <- df[, sapply(df, is.numeric), drop = FALSE]
+      df_clean <- df_num[complete.cases(df_num), ]
+      as.matrix(scale(df_clean, center = TRUE, scale = TRUE))
+    }
+ 
+    mensaje_error_analisis <- function(mensaje) {
+      shiny::tags$div(
+        class = "alert alert-danger",
+        style = "background-color: #f2dede; color: #a94442; border-color: #ebccd1; padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; font-family: inherit;",
+        tags$b(icon("triangle-exclamation"), " No es posible realizar el análisis."),
+        br(),
+        mensaje
       )
-      df_n[complete.cases(df_n), ]
+    }
+    
+    # ==========================================================================
+    # LÓGICA REACTIVA DEL MÓDULO
+    # ==========================================================================
+    
+    # 1. Evaluación de Calidad
+    evaluacion_biplot <- reactive({
+      df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
+      error_msg <- validar_datos_multivar(df, min_vars = 2, min_obs = 3)
+      if (!is.null(error_msg)) return(list(valido = FALSE, mensaje = error_msg))
+      
+      df_num <- df[, sapply(df, is.numeric), drop = FALSE]
+      df_clean <- df_num[complete.cases(df_num), ]
+      
+      var_ok <- apply(df_clean, 2, var) > 0
+      if (sum(var_ok) < 2) return(list(valido = FALSE, mensaje = "Se requieren al menos 2 variables con varianza mayor a cero."))
+      
+      return(list(valido = TRUE, datos = df_clean[, var_ok, drop = FALSE]))
     })
     
-    #--------------------------------------------------
-    # CONTROLES LATERALES DINÁMICOS (A LA IZQUIERDA)
-    #--------------------------------------------------
-    output$panel_lateral_biplot <- renderUI({
-      req(datos_num())
+    # Gestión de Banners de Alerta
+    output$alerta_datos_biplot <- renderUI({
+      eval <- evaluacion_biplot()
+      if (!eval$valido) mensaje_error_analisis(eval$mensaje) else NULL
+    })
+    output$alerta_proj_biplot <- renderUI({
+      eval <- evaluacion_biplot()
+      if (!eval$valido) mensaje_error_analisis(eval$mensaje) else NULL
+    })
+    
+    # 2. Renderizado del Selector de Variables en el Panel Lateral
+    output$dinamico_panel_lateral <- renderUI({
+      req(evaluacion_biplot()$valido)
+      columnas <- names(evaluacion_biplot()$datos)
       
-      elementos <- list(
-        selectInput(
-          ns("tipo_biplot"),
-          "Tipo de biplot:",
-          choices = c(
-            "HJ (Máxima calidad conjunta)" = "HJ",
-            "GH (Prioriza variables)" = "GH", 
-            "JK (Prioriza individuos)" = "JK", 
-            "SQRT (Equilibrio de varianza)" = "SQRT"
-          ),
-          selected = "HJ"
-        ),
-        
-        radioButtons(
-          ns("tipo_vista"),
-          "Visualización:",
-          choices = c("2D", "3D"),
-          inline = TRUE,
-          selected = "2D"
+      tagList(
+        hr(),
+        checkboxGroupInput(
+          ns("vars_seleccionadas"),
+          label = "Variables para el análisis:",
+          choices = columnas,
+          selected = columnas
         )
       )
-      
-      # Añadir selector de variables sólo en la pestaña "Datos" para no saturar
-      if (!is.null(input$tabs_biplot) && input$tabs_biplot == "datos") {
-        elementos <- c(elementos, list(
-          hr(),
-          checkboxGroupInput(
-            ns("vars"),
-            "Selecciona variables para el análisis:",
-            choices = names(datos_num()),
-            selected = names(datos_num())
-          )
-        ))
-      }
-      
-      tagList(elementos)
     })
     
-    #--------------------------------------------------
-    # DATOS SELECCIONADOS Y ESTANDARIZADOS
-    #--------------------------------------------------
-    datos_sel <- reactive({
-      variables <- if(!is.null(input$vars)) input$vars else names(datos_num())
-      req(length(variables) >= 2)
-      
-      df <- datos_num()[, variables, drop = FALSE]
-      df
-    })
-    
+    # 3. Preparación de Matrices de Datos
     datos_std <- reactive({
-      df <- datos_sel()
-      var_ok <- apply(df, 2, var) > 0
-      df <- df[, var_ok, drop = FALSE]
+      req(evaluacion_biplot()$valido, input$vars_seleccionadas)
+      req(length(input$vars_seleccionadas) >= 2)
       
-      validate(
-        need(ncol(df) >= 2, "Se requieren al menos 2 variables con varianza mayor a cero.")
-      )
-      scale(df)
+      df_original <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
+      matriz_std <- preprocesar_datos(df_original)
+      
+      matriz_std[, input$vars_seleccionadas, drop = FALSE]
     })
     
-    #--------------------------------------------------
-    # TABLAS DE DATOS (CON SCROLL INTERNO, SIN PAGINACIÓN)
-    #--------------------------------------------------
-    output$dataset_table <- DT::renderDT({
-      df_completo <- datos_reactivos()
-      req(df_completo)
-      
-      DT::datatable(
-        # Muestra el dataset original entero con las columnas cualitativas
-        df_completo[complete.cases(df_completo[, names(datos_sel())]), ], 
-        options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
-        class = 'cell-border stripe hover compact'
-      ) %>% 
-        DT::formatRound(columns = names(datos_sel()), digits = 3)
-    })
-    
-    output$dataset_std_table <- DT::renderDT({
-      req(datos_std())
-      
-      DT::datatable(
-        # Matriz pura de números tipificados Z-scores seleccionados
-        round(as.data.frame(datos_std()), 3), 
-        options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
-        class = 'cell-border stripe hover compact'
-      )
-    })
-    #--------------------------------------------------
-    # CÁLCULO ALGEBRAICO (SVD / COORDENADAS)
-    #--------------------------------------------------
+    # 4. Descomposición SVD y Coordenadas del Biplot
     coords <- reactive({
-      req(datos_std())
+      req(evaluacion_biplot()$valido)
+      req(datos_std(), input$tipo_vista, input$tipo_biplot)
+      
       s <- svd(datos_std())
-      
-      k <- ifelse(!is.null(input$tipo_vista) && input$tipo_vista == "3D", 3, 2)
-      
-      validate(
-        need(length(s$d) >= k, paste("Se necesitan al menos", k, "componentes de varianza disponibles."))
-      )
+      k <- ifelse(input$tipo_vista == "3D", 3, 2)
+      if (length(s$d) < k) k <- length(s$d)
+      req(k >= 2)
       
       U <- s$u[, 1:k, drop = FALSE]
       V <- s$v[, 1:k, drop = FALSE]
       D <- diag(s$d[1:k], nrow = k)
       D_sqrt <- diag(sqrt(s$d[1:k]), nrow = k)
       
-      tipo <- if(!is.null(input$tipo_biplot)) input$tipo_biplot else "HJ"
+      A <- switch(input$tipo_biplot,
+                  "GH" = U,
+                  "JK" = U %*% D,
+                  "SQRT" = U %*% D_sqrt,
+                  U %*% D) # HJ por defecto
       
-      if(tipo == "GH"){
-        A <- U
-        B <- V %*% D
-      } else if(tipo == "JK"){
-        A <- U %*% D
-        B <- V
-      } else if(tipo == "SQRT"){
-        A <- U %*% D_sqrt
-        B <- V %*% D_sqrt
-      } else { 
-        A <- U %*% D
-        B <- V %*% D
-      }
+      B <- switch(input$tipo_biplot,
+                  "GH" = V %*% D,
+                  "JK" = V,
+                  "SQRT" = V %*% D_sqrt,
+                  V %*% D)
       
       colnames(A) <- paste0("Dim", 1:k)
       colnames(B) <- paste0("Dim", 1:k)
-      rownames(A) <- rownames(datos_sel())
-      rownames(B) <- colnames(datos_sel())
+      rownames(A) <- rownames(datos_std())
+      rownames(B) <- colnames(datos_std())
       
       list(A = A, B = B, k = k)
     })
     
-    #--------------------------------------------------
-    # REPRESENTACIÓN BIPLOT INTERACTIVA (PLOTLY)
-    #--------------------------------------------------
-    output$biplot <- renderPlotly({
+    # 5. Renderizado de Tablas
+    output$dataset_table <- DT::renderDT({
+      req(evaluacion_biplot()$valido)
+      df_base <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
+      req(df_base, input$vars_seleccionadas)
+      DT::datatable(df_base[complete.cases(df_base[, input$vars_seleccionadas]), ], 
+                    options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE))
+    })
+    
+    output$dataset_std_table <- DT::renderDT({
+      req(evaluacion_biplot()$valido)
+      req(datos_std())
+      DT::datatable(round(as.data.frame(datos_std()), 3), 
+                    options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE))
+    })
+    
+    # 6. Renderizado del Gráfico Interactivo (Plotly) Corregido
+    output$biplot_grafico <- renderPlotly({
+      req(evaluacion_biplot()$valido)
+      req(coords())
       c <- coords()
       A <- as.data.frame(c$A)
       B <- as.data.frame(c$B)
       
       if(c$k == 2) {
-        # Visualización 2D
+        # Proyección 2D
         p <- plot_ly() %>%
-          add_markers(
-            data = A, x = ~Dim1, y = ~Dim2, text = rownames(A),
-            marker = list(size = 6, color = '#2c3e50'), name = "Individuos", hoverinfo = "text"
-          )
+          add_markers(data = A, x = ~Dim1, y = ~Dim2, text = rownames(A), 
+                      marker = list(color = '#2c3e50', size = 6), name = "Individuos", hoverinfo = "text")
         
         for(i in 1:nrow(B)) {
-          p <- p %>% add_segments(
-            x = 0, y = 0, xend = B$Dim1[i], yend = B$Dim2[i],
-            line = list(color = '#e74c3c', width = 2), showlegend = FALSE
-          )
+          p <- p %>% add_segments(x = 0, y = 0, xend = B$Dim1[i], yend = B$Dim2[i], 
+                                  line = list(color = '#e74c3c', width = 2), showlegend = FALSE)
         }
         
-        p <- p %>% add_text(
-          data = B, x = ~Dim1 * 1.1, y = ~Dim2 * 1.1, text = rownames(B),
-          textfont = list(color = '#e74c3c', size = 12, weight = 'bold'), name = "Variables"
-        ) %>%
-          layout(
-            xaxis = list(title = "Dimensión 1", zeroline = TRUE),
-            yaxis = list(title = "Dimensión 2", zeroline = TRUE),
-            margin = list(t = 40)
-          )
+        p %>% add_text(data = B, x = ~Dim1*1.1, y = ~Dim2*1.1, text = rownames(B), 
+                       textfont = list(color = '#e74c3c', size = 12, weight = 'bold'), name = "Variables") %>%
+          layout(xaxis = list(title = "Dimensión 1", zeroline = TRUE),
+                 yaxis = list(title = "Dimensión 2", zeroline = TRUE))
       } else {
-        # Visualización 3D (Corregido el operador := por <-)
+        # Proyección 3D
         p <- plot_ly() %>%
-          add_markers(
-            data = A, x = ~Dim1, y = ~Dim2, z = ~Dim3, text = rownames(A),
-            marker = list(size = 4, color = '#2c3e50'), name = "Individuos", hoverinfo = "text"
-          )
+          add_markers(data = A, x = ~Dim1, y = ~Dim2, z = ~Dim3, text = rownames(A), 
+                      marker = list(size = 3, color = '#2c3e50'), name = "Individuos", hoverinfo = "text")
         
         for(i in 1:nrow(B)) {
-          p <- p %>% add_trace(
-            x = c(0, B$Dim1[i]), y = c(0, B$Dim2[i]), z = c(0, B$Dim3[i]),
-            type = "scatter3d", mode = "lines",
-            line = list(color = '#e74c3c', width = 3), showlegend = FALSE
-          )
+          p <- p %>% add_trace(x = c(0, B$Dim1[i]), y = c(0, B$Dim2[i]), z = c(0, B$Dim3[i]), 
+                               type = "scatter3d", mode = "lines", line = list(color = '#e74c3c', width = 3), showlegend = FALSE)
         }
         
-        p <- p %>% add_text(
-          data = B, x = ~Dim1 * 1.1, y = ~Dim2 * 1.1, z = ~Dim3 * 1.1, text = rownames(B),
-          textfont = list(color = '#e74c3c', size = 11, weight = 'bold'), name = "Variables"
-        ) %>%
-          layout(
-            scene = list(
-              xaxis = list(title = "Dimensión 1"),
-              yaxis = list(title = "Dimensión 2"),
-              zaxis = list(title = "Dimensión 3")
-            ),
-            margin = list(t = 40)
-          )
+        p %>% add_text(data = B, x = ~Dim1*1.1, y = ~Dim2*1.1, z = ~Dim3*1.1, text = rownames(B), 
+                       textfont = list(color = '#e74c3c', size = 11, weight = 'bold'), name = "Variables") %>%
+          layout(scene = list(xaxis = list(title = "Dimensión 1"),
+                              yaxis = list(title = "Dimensión 2"),
+                              zaxis = list(title = "Dimensión 3")))
       }
-      p
     })
     
     #--------------------------------------------------
@@ -496,8 +440,6 @@ BIPLOT_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     
   }) 
 } 
-
-
 # -------------------------------
 # AUTOEVALUACION
 # -------------------------------
@@ -505,7 +447,6 @@ BIPLOT_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
     tags$head(
       tags$style(HTML("
         /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
@@ -604,7 +545,6 @@ BIPLOT_Auto_Server <- function(id) {
       list(texto = "¿Cuál es el objetivo principal de los biplots?", opciones = c("Representar gráficamente individuos y variables en un mismo plano", "Calcular medias muestrales", "Eliminar la multicolinealidad", "Clasificar observaciones"), correcta = "Representar gráficamente individuos y variables en un mismo plano"),
       list(texto = "¿Qué caracteriza a los HJ-Biplots?", opciones = c("Representación solo de variables", "Igual calidad de representación para filas y columnas", "Uso exclusivo en regresión logística", "No utilizan descomposición SVD"), correcta = "Igual calidad de representación para filas y columnas"),
       list(texto = "¿Qué es la bondad de ajuste en un biplot?", opciones = c("El porcentaje de varianza explicada por el plano", "El número de variables eliminadas", "El error de predicción del modelo", "El número de clusters obtenidos"), correcta = "El porcentaje de varianza explicada por el plano"),
-      list(texto = "¿Cuál NO es un tipo de biplot clásico?", opciones = c("Gabriel biplot", "JK biplot", "HJ-biplot", "K-means biplot"), correcta = "K-means biplot"),
       list(texto = "¿Qué representa la proximidad entre individuos en un biplot?", opciones = c("Diferencia en escalas", "Independencia estadística", "Similitud entre observaciones", "Correlación entre variables"), correcta = "Similitud entre observaciones"),
       list(texto = "¿Qué tipo de representación preserva mejor las distancias entre individuos?", opciones = c("Representación de variables", "PCA sin estandarizar", "Representación centrada solo en variables", "Representación de individuos (fila-métrica)"), correcta = "Representación de individuos (fila-métrica)"),
       list(texto = "¿Qué significa la longitud de una variable en el biplot?", opciones = c("Su varianza o contribución al plano", "El número de observaciones", "El número de componentes", "El error estándar"), correcta = "Su varianza o contribución al plano"),
@@ -612,10 +552,12 @@ BIPLOT_Auto_Server <- function(id) {
       list(texto = "¿Qué ocurre si dos variables forman un ángulo pequeño en un biplot?", opciones = c("Son independientes", "Están positivamente correlacionadas", "Están negativamente correlacionadas", "No tienen interpretación"), correcta = "Están positivamente correlacionadas"),
       list(texto = "¿Qué indica un ángulo de 90 grados entre dos variables en el biplot?", opciones = c("Correlación máxima", "Que son linealmente independientes", "Que miden lo mismo", "Error de cálculo"), correcta = "Que son linealmente independientes"),
       list(texto = "Si un individuo se proyecta muy cerca del origen, ¿qué significa?", opciones = c("Tiene valores extremos", "Está mal representado o cercano a la media", "Es un outlier", "No pertenece al dataset"), correcta = "Está mal representado o cercano a la media"),
-      list(texto = "¿Qué herramienta matemática es la base para construir un Biplot?", opciones = c("Descomposición en Valores Singulares (SVD)", "Regresión lineal", "Chi-cuadrado", "Apriori"), correcta = "Descomposición en Valores Singulares (SVD)"),
       list(texto = "¿Qué eje del biplot suele explicar más información?", opciones = c("Eje vertical", "Eje horizontal", "Ambos por igual", "Tercer eje"), correcta = "Eje horizontal"),
-      list(texto = "¿En qué consiste la calidad de representación de un punto?", opciones = c("Color del punto", "Qué tan bien refleja el plano 2D la estructura real", "Tamaño de etiqueta", "Escala de ejes"), correcta = "Qué tan bien refleja el plano 2D la estructura real")
+      list(texto = "¿En qué consiste la calidad de representación de un punto?", opciones = c("Color del punto", "Qué tan bien refleja el plano 2D la estructura real", "Tamaño de etiqueta", "Escala de ejes"), correcta = "Qué tan bien refleja el plano 2D la estructura real"),
+      list(texto = "Al observar un HJ-Biplot del dataset, el vector químico 'Ash' (cenizas) es extremadamente corto en comparación con 'Alcohol'. ¿Qué conclusión matemática extrae?", opciones = c("La variable 'Ash' no tiene variabilidad real en el dataset", "La variable 'Ash' está mal representada en este plano biplot 2D (baja calidad de representación)", "El alcohol tiene menos impacto en la varianza estructural que las cenizas", "La medición de las cenizas se introdujo incorrectamente"), correcta = "La variable 'Ash' está mal representada en este plano biplot 2D (baja calidad de representación)"),
+      list(texto = "Si el vino marcado con la etiqueta 'Observation 46' se ubica exactamente sobre la punta del vector de la variable 'Magnesium', ¿qué podemos asegurar con certeza sobre esa botella?", opciones = c("Que es el vino con menos magnesio de la bodega", "Que tiene un valor sustancialmente superior a la media en contenido de magnesio", "Que es un valor atípico que arruina el ajuste global", "Que su valor de magnesio es exactamente cero"), correcta = "Que tiene un valor sustancialmente superior a la media en contenido de magnesio")
     )
+    
     
     preguntas_usuario <- reactiveVal(list())
     
@@ -635,7 +577,7 @@ BIPLOT_Auto_Server <- function(id) {
     
     preguntas_ordenadas <- reactiveVal(NULL)
     
-    # Al arrancar, asigna IDs y selecciona una muestra aleatoria inicial de exactamente 10 preguntas
+    # muestra aleatoria inicial de  10 preguntas
     observe({
       lista_enriquecida <- lapply(seq_along(todas_preguntas()), function(idx) {
         p <- todas_preguntas()[[idx]]

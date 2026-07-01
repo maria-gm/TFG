@@ -10,7 +10,7 @@ Jerarquicos_Teoria_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Única llamada necesaria para activar MathJax en toda la página
+    # Activar MathJax en toda la página
     withMathJax(),
     
     tags$div(
@@ -33,7 +33,7 @@ Jerarquicos_Teoria_UI <- function(id) {
       # TARJETAS PRINCIPALES
       # =====================================
       bslib::layout_column_wrap(
-        width = 1/3, # Tres columnas niveladas
+        width = 1/3, # Tres columnas 
         heights_equal = "row",
         
         # ---------------------------------
@@ -86,7 +86,7 @@ Jerarquicos_Teoria_UI <- function(id) {
             )
           )
         )
-      ), # Fin del layout_column_wrap
+      ), 
       
       br(),
       
@@ -187,7 +187,7 @@ Jerarquicos_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
     # Título personalizado idéntico a los módulos anteriores
-    h3("Autoevaluación", 
+    h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
@@ -211,10 +211,15 @@ Jerarquicos_Analisis_UI <- function(id){
                ),
                
                hr(),
-               downloadButton(ns("dl_data"), "Descargar Clústeres (CSV)", class = "btn-success", style = "width: 100%;")
+               downloadButton(ns("dl_data"), "Descargar Clústeres (CSV)", class = "btn-success", style = "width: 100%;"),
+               br(),br(),
+               helpText("Nota: Se eliminan filas con valores faltantes automáticamente.")
              )
       ),
       column(8,
+             # Contenedor dinámico para el banner de error rojo (Aparece arriba de las pestañas si la validación falla)
+             uiOutput(ns("mensaje_error_ui")),
+             
              tabsetPanel(id = ns("tabs"),
                          tabPanel("1. Datos", 
                                   br(),
@@ -260,49 +265,93 @@ Jerarquicos_Analisis_UI <- function(id){
     )
   )
 }
-
 Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   
   moduleServer(id, function(input, output, session) {
     
-    # --- 1. DATOS BASE ---
-    datos_base <- reactive({
+    # --- 1. ÚNICA VALIDACIÓN Y PREPROCESADO GLOBAL ---
+    datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
-      req(df)
-      df <- df[complete.cases(df), , drop = FALSE]
-      req(nrow(df) > 0)
-      rownames(df) <- 1:nrow(df)
-      df
-    })
-    
-    # --- 2. SELECCIÓN DE NUMÉRICOS ---
-    datos_num <- reactive({
-      df <- datos_base()
-      df_n <- df[, sapply(df, is.numeric), drop = FALSE]
-      cols_validas <- sapply(df_n, function(x) length(unique(x)) > 15)
+      
+      # Generador del banner de error rojo HTML (Idéntico a tus capturas del ACP/AF)
+      crear_banner_error <- function(mensaje) {
+        div(
+          class = "alert alert-danger",
+          style = "background-color: #f2dede; color: #a94442; border-color: #ebccd1; padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; font-family: inherit;",
+          tags$b(icon("triangle-exclamation"), " No es posible realizar el análisis."),
+          br(),
+          tags$span(style = "font-style: italic; color: #555555;", "Información: El análisis se ejecuta exclusivamente sobre las columnas de tipo numérico."),
+          br(), br(),
+          tags$b(mensaje)
+        )
+      }
+      
+      # Validaciones estructurales de la técnica
+      if (is.null(df)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("No se han detectado datos cargados. Por favor, suba un archivo o seleccione un ejemplo.")))
+      }
+      if (nrow(df) < 10) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 10 observaciones válidas para estructurar un árbol jerárquico consistente.")))
+      }
+      
+      # Filtro de casos completos
+      df_limpio <- df[complete.cases(df), , drop = FALSE]
+      if (nrow(df_limpio) < 10) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("El dataset no contiene suficientes filas completas (mínimo 10) tras eliminar registros con valores perdidos (NA).")))
+      }
+      
+      # Aislamiento y filtro de columnas numéricas
+      df_num <- df_limpio[, sapply(df_limpio, is.numeric), drop = FALSE]
+      cols_validas <- sapply(df_num, function(x) length(unique(x)) > 15)
+      
       if(sum(cols_validas) < 2) {
-        req(ncol(df_n) >= 2)
-        return(df_n)
-      } 
-      df_n[, cols_validas, drop = FALSE]
+        if (ncol(df_num) < 2) {
+          return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos dos variables numéricas en el conjunto de datos.")))
+        }
+      } else {
+        df_num <- df_num[, cols_validas, drop = FALSE]
+      }
+      
+      # Control de varianza cero
+      sd_cols <- sapply(df_num, sd, na.rm = TRUE)
+      if (any(sd_cols == 0)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Una o más variables cuantitativas seleccionadas tienen varianza cero (constantes) y no pueden estandarizarse.")))
+      }
+      
+      # Sincronización final e índices
+      rownames(df_limpio) <- 1:nrow(df_limpio)
+      rownames(df_num) <- 1:nrow(df_num)
+      df_scaled <- scale(df_num)
+      
+      return(list(
+        valido = TRUE,
+        base   = df_limpio,
+        num    = df_num,
+        scaled = df_scaled
+      ))
     })
     
-    # --- 3. ESCALADO Y DISTANCIA ---
-    datos_scaled <- reactive({ 
-      df_n <- datos_num()
-      req(ncol(df_n) >= 2)
-      sd_cols <- sapply(df_n, sd, na.rm = TRUE)
-      req(all(sd_cols > 0)) 
-      scale(df_n) 
+    # --- 2. RENDERIZADO DEL BANNER DE ERROR EN LA UI ---
+    output$mensaje_error_ui <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) {
+        return(prep$ui_error)
+      }
+      return(NULL) # Si todo está correcto, no dibuja nada en pantalla
     })
     
+    # --- 3. ENLACES REACTIVOS SEGUROS (CON REQ) ---
+    datos_base   <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
+    datos_num    <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$num })
+    datos_scaled <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$scaled })
+    
+    # --- 4. MATRIZ DE DISTANCIA Y MODELADO ---
     matriz_distancia <- reactive({
       req(datos_scaled(), input$metodo)
       d <- dist(datos_scaled(), method = "euclidean")
       if (input$metodo %in% c("centroid", "median")) d^2 else d
     })
     
-    # --- 4. MODELO Y CLÚSTERES ---
     modelo_hc <- reactive({ 
       req(matriz_distancia(), input$metodo)
       hclust(matriz_distancia(), method = input$metodo) 
@@ -340,10 +389,9 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     
     # --- 6. OUTPUT: TABLAS ---
     output$tabla_resumen <- DT::renderDT({
-      df_completo <- datos_base()
-      req(df_completo)
+      req(datos_preprocesados()$valido)
       DT::datatable(
-        df_completo, 
+        datos_base(), 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
         class = 'cell-border stripe hover compact'
       ) %>%
@@ -381,6 +429,7 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     output$interp_pca_cl <- renderText({
+      req(datos_preprocesados()$valido)
       req(input$k)
       paste0(
         "Nota analítica: Esta interpretación se fundamenta en la proyección sobre el plano principal del PCA.\n",
@@ -391,7 +440,6 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       )
     })
     
-    # --- 8. OUTPUT: DENDROGRAMA ---
     # --- 8. OUTPUT: DENDROGRAMA ---
     output$dendrograma <- renderPlot({
       req(modelo_hc(), input$k)
@@ -423,9 +471,9 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     output$interp_dendro <- renderText({
+      req(datos_preprocesados()$valido)
       req(input$k, input$metodo)
       
-      # Selección dinámica de la frase resumen según el método activo de Lance-Williams
       frase_metodo <- switch(input$metodo,
                              "single"   = "El enlace Simple busca vecinos mínimos, provocando un efecto de encadenamiento continuo que tiende a aislar valores atípicos individuales en lugar de agrupar las especies de pingüinos de forma homogénea.",
                              "ward.D2"  = "El método de Ward maximiza la homogeneidad interna, estructurando el árbol en bifurcaciones altamente simétricas y equilibradas que segmentan con máxima precisión las diferencias físicas reales entre las especies.",
@@ -434,7 +482,6 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
                              "Método de enlace no especificado."
       )
       
-      # Estructura del diagnóstico textual completo enviado a la UI
       paste0(
         "Diagnóstico del Árbol (Algoritmo Jerárquico):\n",
         "El gráfico superior muestra cómo se fusionan las observaciones de abajo hacia arriba. ",
@@ -461,8 +508,8 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     output$interp_perfil <- renderText({ 
+      req(datos_preprocesados()$valido)
       req(input$k)
-      # INTERPRETACIÓN DE LOS BOXPLOTS
       paste0(
         "Análisis de Variables por Grupo (¿Quién es quién?):\n",
         "Los gráficos de caja permiten mapear la identidad física y características biológicas de cada clúster asignado.\n\n",
@@ -502,6 +549,7 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     output$interp_silueta <- renderText({ 
+      req(datos_preprocesados()$valido)
       req(input$k)
       paste0(
         "Métricas de Validación de Silueta:\n",
@@ -514,10 +562,10 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       )
     })
     
-    # --- EXTRAS ---
     output$ui_var_cat <- renderUI({
-      df <- datos_base()
-      req(df)
+      prep <- datos_preprocesados()
+      req(prep$valido)
+      df <- prep$base
       nom_cats <- names(df)[sapply(df, function(x) is.factor(x) || is.character(x) || (is.numeric(x) && length(unique(x)) <= 5))]
       selectInput(session$ns("var_cat"), "Variable Real (Color):", choices = c("Ninguna", nom_cats), selected = "Ninguna")
     })
@@ -540,7 +588,6 @@ Jerarquicos_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
     tags$head(
       tags$style(HTML("
         /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
@@ -640,7 +687,7 @@ Jerarquicos_Auto_Server <- function(id) {
       list(
         texto = "¿Qué es un dendrograma?",
         opciones = c("Una representación gráfica en forma de árbol que ilustra el proceso de fusiones o divisiones de los clusters", "Una matriz que contiene los vectores de medias o centroides del mapa", "Un gráfico que muestra únicamente las cargas factoriales rotadas", "La línea de regresión que minimiza el error cuadrático medio"),
-        correcta = "Una representation gráfica en forma de árbol que ilustra el proceso de fusiones o divisiones de los clusters"
+        correcta = "Una representación gráfica en forma de árbol que ilustra el proceso de fusiones o divisiones de los clusters"
       ),
       list(
         texto = "¿Cuál es el objetivo principal de los algoritmos de agrupamiento jerárquicos?",
@@ -658,14 +705,14 @@ Jerarquicos_Auto_Server <- function(id) {
         correcta = "El aglomerativo empieza con cada punto como un cluster individual y los une; el divisivo empieza con un único cluster global y lo divide"
       ),
       list(
-        texto = "¿Cómo define el método de enlace simple (Single Linkage) la distancia entre dos clusters?",
-        opciones = c("Como la distancia mínima entre un punto de un cluster y un punto del otro cluster", "Como la distancia máxima entre los puntos más alejados de ambos clusters", "Como la distancia promedio entre todos los pares de puntos posibles", "Como la separación entre los vectores de medias o centroides de cada grupo"),
-        correcta = "Como la distancia mínima entre un punto de un cluster y un punto del otro cluster"
+        texto = "¿Cuál es el paso previo fundamental antes de calcular las distancias si las variables (como peso en gramos y longitud del pico en mm) están en diferentes escalas?",
+        opciones = c("Estandarizar o escalar las variables", "Eliminar la variable de peso por tener valores grandes", "Dividir todos los valores por cero", "No es necesario hacer nada, el algoritmo ignora las escalas"),
+        correcta = "Estandarizar o escalar las variables"
       ),
       list(
-        texto = "¿Qué caracteriza al método de enlace completo (Complete Linkage)?",
-        opciones = c("Mide la distancia entre los dos puntos más alejados (distancia máxima) de ambos clusters", "Calcula la inercia interna aplicando la regla de Kaiser factorial", "Utiliza la distancia mínima entre vecinos para ignorar por completo el ruido", "Une los clusters basándose únicamente en el número total de observaciones"),
-        correcta = "Mide la distancia entre los dos puntos más alejados (distancia máxima) de ambos clusters"
+        texto = "¿Qué problema puede surgir si NO estandarizamos los datos de los pingüinos antes del clustering?",
+        opciones = c("La masa corporal (en gramos) dominará por completo el cálculo de las distancias debido a su magnitud numérica", "El algoritmo se volverá supervisado", "Las variables numéricas se transformarán en factores cualitativos", "El dendrograma se invertirá automáticamente"),
+        correcta = "La masa corporal (en gramos) dominará por completo el cálculo de las distancias debido a su magnitud numérica"
       ),
       list(
         texto = "¿Cuál es la propiedad fundamental del método de Ward?",
@@ -683,14 +730,14 @@ Jerarquicos_Auto_Server <- function(id) {
         correcta = "Realizando un corte horizontal en el nivel de altura donde las líneas verticales sean más largas"
       ),
       list(
-        texto = "¿Qué es la distancia cophenética en el clustering jerárquico?",
-        opciones = c("La altura del dendrograma en la que dos observaciones se unen por primera vez en un mismo cluster", "La distancia euclídea original medida en la matriz de datos escalada", "La inercia remanente tras aplicar una rotación ortogonal Varimax", "El número de ramas en las que se divide el nodo raíz principal"),
-        correcta = "La altura del dendrograma en la que dos observaciones se unen por primera vez en un mismo cluster"
+        texto = "¿Qué significa que dos pingüinos individuales estén unidos en el nivel más bajo del dendrograma?",
+        opciones = c("Que son los dos pingüinos más idénticos y parecidos físicamente de todo el estudio", "Que pertenecen a islas diferentes y lejanas", "Que tienen la máxima diferencia geométrica posible", "Que el algoritmo los ha detectado como valores perdidos"),
+        correcta = "Que son los dos pingüinos más idénticos y parecidos físicamente de todo el estudio"
       ),
       list(
-        texto = "¿Qué mide el coeficiente de correlación cophenética?",
-        opciones = c("El grado de fidelidad con el que el dendrograma preserva las distancias originales entre las observaciones", "La correlación lineal entre las dos primeras componentes de un PCA", "La adecuación de la muestra mediante el criterio KMO", "La probabilidad de que un punto sea clasificado como ruido espacial"),
-        correcta = "El grado de fidelidad con el que el dendrograma preserva las distancias originales entre las observaciones"
+        texto = "Si un pingüino se une al mapa a una altura extremadamente alta y aislada del resto de grupos, ¿cómo se interpreta?",
+        opciones = c("Es un candidato a ser un valor atípico (outlier) con características físicas muy extrañas", "Es el pingüino promedio perfecto de la muestra", "Significa que su peso es exactamente igual a cero", "Es un error de software que invalida todo el árbol"),
+        correcta = "Es un candidato a ser un valor atípico (outlier) con características físicas muy extrañas"
       ),
       list(
         texto = "¿Por qué puede ser una desventaja el clustering jerárquico aglomerativo en conjuntos de datos muy grandes?",
@@ -698,22 +745,21 @@ Jerarquicos_Auto_Server <- function(id) {
         correcta = "Porque su coste computacional en memoria y tiempo es elevado debido al cálculo de la matriz de distancias"
       ),
       list(
-        texto = "¿Qué efecto visual suele provocar el método de enlace simple (Single Linkage) en el dendrograma?",
-        opciones = c("Efecto de encadenamiento (chaining), donde los puntos se unen uno a uno formando clusters alargados", "Clusters perfectamente esféricos del mismo tamaño y varianza", "Un corte simétrico ideal basado en la regla de Kaiser", "La eliminación por completo de las observaciones de la frontera"),
-        correcta = "Efecto de encadenamiento (chaining), donde los puntos se unen uno a uno formando clusters alargados"
+        texto = "Si aplicas clustering al dataset 'penguins' y el dendrograma muestra una primera división muy clara en dos grandes ramas independientes, ¿qué nos está indicando de forma sencilla?",
+        opciones = c("Que el dataset contiene errores de medición", "Que las características físicas separan fuertemente a los pingüinos en dos grupos morfológicos principales", "Que todos los pingüinos pesan exactamente lo mismo", "Que el algoritmo ha fallado al no encontrar tres ramas desde el inicio"),
+        correcta = "Que las características físicas separan fuertemente a los pingüinos en dos grupos morfológicos principales"
       ),
       list(
-        texto = "Una vez que dos observaciones se han fusionado en un cluster en el método jerárquico aglomerativo, ¿se pueden separar en pasos posteriores?",
-        opciones = c("No, las decisiones de fusión son definitivas e irreversibles a lo largo del algoritmo", "Sí, si la distancia euclídea del centroide se altera en la siguiente iteración", "Sí, el método de Ward permite reasignar puntos de forma dinámica", "Depende del número de iteraciones máximas configuradas en la UI"),
-        correcta = "No, las decisiones de fusión son definitivas e irreversibles a lo largo del algoritmo"
+        texto = "Al hacer un corte horizontal en el dendrograma de los pingüinos, obtienes 3 clusters bien definidos. Sabiendo que en los datos reales hay 3 especies (Adelie, Chinstrap y Gentoo), ¿qué significa este resultado?",
+        opciones = c("Que las mediciones físicas (pico, aleta, peso) son buenos descriptores para distinguir las tres especies", "Que el algoritmo obligatoriamente mezcla todas las especies al azar", "Que el tamaño de la muestra es demasiado pequeño", "Que hay que volver a realizar el análisis usando solo variables de texto"),
+        correcta = "Que las mediciones físicas (pico, aleta, peso) son buenos descriptores para distinguir las tres especies"
       ),
       list(
-        texto = "¿Cuál es el método de enlace que calcula la distancia entre clusters utilizando el promedio de todas las distancias entre sus componentes?",
-        opciones = c("Enlace promedio (Average Linkage o UPGMA)", "Enlace completo (Complete Linkage)", "Método de particionamiento de K-means", "Enlace por densidad de radio Épsilon"),
-        correcta = "Enlace promedio (Average Linkage o UPGMA)"
+        texto = "Si el método de Ward une muy rápido y a baja altura a un grupo grande de pingüinos Adelie, ¿qué propiedad sencilla deduces de ese grupo?",
+        opciones = c("Que son pingüinos con características corporales muy homogéneas y similares entre sí", "Que tienen un alto grado de dispersión y varianza interna", "Que son los ejemplares más grandes de todo el dataset", "Que el algoritmo no ha podido calcular sus distancias correctamente"),
+        correcta = "Que son pingüinos con características corporales muy homogéneas y similares entre sí"
       )
     )
-    
     preguntas_usuario <- reactiveVal(list())
     
     observeEvent(input$add, {

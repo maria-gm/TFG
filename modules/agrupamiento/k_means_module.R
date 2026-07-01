@@ -173,12 +173,12 @@ K_means_Analisis_UI <- function(id) {
   
   tagList(
     # Título personalizado idéntico al de los módulos anteriores
-    h3("Análisis", 
+    h3("Análisis de Clústeres por K-means", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
       #--------------------------------------------------
-      # PANEL LATERAL (A LA IZQUIERDA - IDÉNTICO AL JERÁRQUICO)
+      # PANEL LATERAL
       #--------------------------------------------------
       column(4,
              wellPanel(
@@ -209,9 +209,12 @@ K_means_Analisis_UI <- function(id) {
       ),
       
       #--------------------------------------------------
-      # PANEL PRINCIPAL (A LA DERECHA)
+      # PANEL PRINCIPAL
       #--------------------------------------------------
       column(8,
+             # Contenedor dinámico para el banner de error rojo (Aparece arriba de las pestañas si la validación falla)
+             uiOutput(ns("mensaje_error_ui")),
+             
              tabsetPanel(
                id = ns("tabs_kmeans"),
                
@@ -225,7 +228,7 @@ K_means_Analisis_UI <- function(id) {
                         h4("Dataset original preparado", style = "color: #2c3e50; font-weight: 500;"),
                         DT::DTOutput(ns("tabla_datos")),
                         br(), hr(), br(),
-                        h4("Dataset estandarizado (Z-scores)", style = "color: #2c3e50; font-weight: 500;"),
+                        h4("Dataset estandarizado", style = "color: #2c3e50; font-weight: 500;"),
                         DT::DTOutput(ns("tabla_scale"))
                ),
                
@@ -262,38 +265,88 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   
   moduleServer(id, function(input, output, session) {
     
-    # 1. DATOS BASE (LIMPIEZA MAESTRA)
-    datos_base <- reactive({
+    # --- 1. ÚNICA VALIDACIÓN Y PREPROCESADO GLOBAL ---
+    datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
-      req(df)
-      df[complete.cases(df), , drop = FALSE]
-    })
-    
-    # 2. IDENTIFICACIÓN DE NUMÉRICOS
-    datos_num <- reactive({
-      df <- datos_base()
-      df_num <- df[, sapply(df, is.numeric), drop = FALSE]
+      
+      # Generador del banner de error rojo HTML (Idéntico visualmente al de tus capturas)
+      crear_banner_error <- function(mensaje) {
+        div(
+          class = "alert alert-danger",
+          style = "background-color: #f2dede; color: #a94442; border-color: #ebccd1; padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; font-family: inherit;",
+          tags$b(icon("triangle-exclamation"), " No es posible realizar el análisis."),
+          br(),
+          tags$span(style = "font-style: italic; color: #555555;", "Información: El análisis se ejecuta exclusivamente sobre las columnas de tipo numérico."),
+          br(), br(),
+          tags$b(mensaje)
+        )
+      }
+      
+      # Validaciones estructurales del dataset
+      if (is.null(df)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("No se han detectado datos cargados. Por favor, suba un archivo o seleccione un ejemplo.")))
+      }
+      if (nrow(df) < 10) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 10 observaciones válidas para estructurar agrupaciones estables por K-means.")))
+      }
+      
+      # Filtro de casos completos (Remoción de NAs)
+      df_limpio <- df[complete.cases(df), , drop = FALSE]
+      if (nrow(df_limpio) < 10) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("El dataset no contiene suficientes filas completas (mínimo 10) tras eliminar registros con valores perdidos (NA).")))
+      }
+      
+      # Aislamiento y filtro de columnas cuantitativas
+      df_num <- df_limpio[, sapply(df_limpio, is.numeric), drop = FALSE]
       columnas_reales <- sapply(df_num, function(x) length(unique(x)) > 15)
       
-      if(sum(columnas_reales) == 0) return(df_num)
-      df_num[, columnas_reales, drop = FALSE]
+      if(sum(columnas_reales) < 2) {
+        if (ncol(df_num) < 2) {
+          return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos dos variables numéricas en el conjunto de datos.")))
+        }
+      } else {
+        df_num <- df_num[, columnas_reales, drop = FALSE]
+      }
+      
+      # Control de varianza cero (Evitar error al estandarizar)
+      sd_cols <- sapply(df_num, sd, na.rm = TRUE)
+      if (any(sd_cols == 0)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Una o más variables cuantitativas seleccionadas tienen varianza cero (constantes) y no pueden estandarizarse.")))
+      }
+      
+      # Formateo de índices y cálculo de la matriz tipificada
+      rownames(df_limpio) <- 1:nrow(df_limpio)
+      rownames(df_num) <- 1:nrow(df_num)
+      df_scaled <- scale(df_num)
+      
+      return(list(
+        valido = TRUE,
+        base   = df_limpio,
+        num    = df_num,
+        scaled = df_scaled
+      ))
     })
     
-    # 3. ESCALADO
-    datos_scaled <- reactive({
-      req(ncol(datos_num()) >= 2)
-      d_num <- datos_num()
-      d_num <- d_num[, sapply(d_num, sd) > 0, drop = FALSE]
-      scale(d_num)
+    # --- 2. RENDERIZADO DEL BANNER DE ERROR EN LA UI ---
+    output$mensaje_error_ui <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) {
+        return(prep$ui_error)
+      }
+      return(NULL) # Oculto por completo si los datos pasan los filtros
     })
     
-    # 4. PCA
+    # --- 3. ENLACES REACTIVOS SEGUROS (CON REQ) ---
+    datos_base   <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
+    datos_num    <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$num })
+    datos_scaled <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$scaled })
+    
+    # --- 4. MODELADO INTERNO (PCA Y K-MEANS) ---
     pca_res <- reactive({
       req(datos_scaled())
       prcomp(datos_scaled())
     })
     
-    # 5. EJECUCIÓN K-MEANS
     res_kmeans <- reactive({
       req(input$k, datos_scaled())
       set.seed(42)
@@ -304,21 +357,8 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       }
     })
     
-    # 6. SELECTOR DINÁMICO
-    output$var_categorica_ui <- renderUI({
-      df <- datos_base()
-      nom_cats <- names(df)[sapply(df, function(x) {
-        is.factor(x) || is.character(x) || (is.numeric(x) && length(unique(x)) <= 5)
-      })]
-      
-      selectInput(session$ns("var_cat"), "Variable Real (Color):", 
-                  choices = c("Ninguna", nom_cats),
-                  selected = "Ninguna")
-    })
-    
-    # 7. UNIÓN DE RESULTADOS
     df_final <- reactive({
-      req(pca_res(), res_kmeans())
+      req(pca_res(), res_kmeans(), datos_base())
       
       df_viz <- as.data.frame(pca_res()$x[, 1:2])
       df_viz$cluster <- factor(res_kmeans()$cluster)
@@ -332,10 +372,11 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       df_viz
     })
     
-    # --- OUTPUTS: TABLAS (ORIGINAL ENTERO VS NUMÉRICO PURO) ---
+    # --- 5. OUTPUT: TABLAS ---
     output$tabla_datos <- DT::renderDT({
+      req(datos_preprocesados()$valido)
       DT::datatable(
-        datos_base(), # Dataset original completo con categóricas
+        datos_base(), 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
         class = 'cell-border stripe hover compact'
       ) %>% 
@@ -345,13 +386,13 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     output$tabla_scale <- DT::renderDT({
       req(datos_scaled())
       DT::datatable(
-        round(as.data.frame(datos_scaled()), 3), # Matriz pura de números tipificados
+        round(as.data.frame(datos_scaled()), 3), 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
         class = 'cell-border stripe hover compact'
       )
     })
     
-    # --- OUTPUTS: DIAGNÓSTICO ---
+    # --- 6. OUTPUT: DIAGNÓSTICO ---
     output$elbow_plot <- renderPlot({
       req(datos_scaled())
       factoextra::fviz_nbclust(datos_scaled(), kmeans, method = "wss") + 
@@ -376,10 +417,9 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       )
     })
     
-    # --- OUTPUTS: VISUALIZACIÓN Y CONTROL ---
+    # --- 7. OUTPUT: VISUALIZACIÓN ---
     output$cluster_plot <- renderPlot({
-      validate(need(df_final(), "Sincronizando datos..."))
-      
+      req(df_final())
       df <- df_final()
       p <- ggplot(df, aes(x = PC1, y = PC2))
       
@@ -412,23 +452,32 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       )
     })
     
-    # --- GESTOR DE DESCARGAS (IGUAL AL DE CLUSTERING JERÁRQUICO) ---
+    # --- 8. EXTRAS Y ENLACES DE CONTROL ---
+    output$var_categorica_ui <- renderUI({
+      prep <- datos_preprocesados()
+      req(prep$valido)
+      df <- prep$base
+      nom_cats <- names(df)[sapply(df, function(x) {
+        is.factor(x) || is.character(x) || (is.numeric(x) && length(unique(x)) <= 5)
+      })]
+      
+      selectInput(session$ns("var_cat"), "Variable Real (Color):", 
+                  choices = c("Ninguna", nom_cats),
+                  selected = "Ninguna")
+    })
+    
     output$dl_data <- downloadHandler(
-      filename = function() {
-        paste("Resultados_Clustering_Kmeans.csv", sep = "")
-      },
+      filename = function() { paste("Resultados_Clustering_Kmeans.csv", sep = "") },
       content = function(file) {
         req(datos_base(), res_kmeans())
         df_export <- datos_base()
-        # Añade la columna de clústeres calculados antes de exportar
         df_export$Cluster_Asignado <- res_kmeans()$cluster
         write.csv(df_export, file, row.names = TRUE)
       }
     )
     
   }) 
-} 
-
+}
 #-------------------------------
 # AUTOEVALUACIÓN
 #-------------------------------
@@ -532,154 +581,90 @@ K_means_Auto_Server <- function(id) {
       )
     })
     preguntas_base <- list(
-      list( 
-        texto = "¿Cuál es el objetivo principal del K-means?",
-        opciones = c(
-          "Agrupar observaciones minimizando la varianza dentro de cada cluster", 
-          "Calcular la matriz de cargas factoriales", 
-          "Predecir una variable continua dependiente", 
-          "Encontrar las componentes de máxima varianza"), correcta = "Agrupar observaciones minimizando la varianza dentro de cada cluster" ),
       list(
-        texto = "¿Qué representa la 'K' en el algoritmo K-means?", 
-        opciones = c(
-          "El número de iteraciones máximas",  
-          "El número predefinido de clusters que se desean obtener", 
-          "La distancia máxima permitida entre clusters", 
-          "El coeficiente de correlación de los datos"
-        ),
+        texto = "¿Cuál es el objetivo principal del K-means?",
+        opciones = c("Agrupar observaciones minimizando la varianza dentro de cada cluster", "Calcular la matriz de cargas factoriales", "Predecir una variable continua dependiente", "Encontrar las componentes de máxima varianza"),
+        correcta = "Agrupar observaciones minimizando la varianza dentro de cada cluster"
+      ),
+      list(
+        texto = "¿Qué representa la K en el algoritmo K-means?",
+        opciones = c("El número de iteraciones máximas", "El número predefinido de clusters que se desean obtener", "La distancia máxima permitida entre clusters", "El coeficiente de correlación de los datos"),
         correcta = "El número predefinido de clusters que se desean obtener"
       ),
       list(
         texto = "¿Cómo se visualizan habitualmente los resultados de K-means con muchas variables?",
-        opciones = c(
-          "Mediante un dendrograma jerárquico", 
-          "Proyectando los clusters en el plano de las dos primeras componentes principales (PCA)", 
-          "Utilizando únicamente tablas de contingencia", 
-          "Mediante una matriz identidad de confusión"
-        ),
+        opciones = c("Mediante un dendrograma jerárquico", "Proyectando los clusters en el plano de las dos primeras componentes principales (PCA)", "Utilizando únicamente tablas de contingencia", "Mediante una matriz identidad de confusión"),
         correcta = "Proyectando los clusters en el plano de las dos primeras componentes principales (PCA)"
       ),
       list(
-        texto = "¿Cómo se suele obtener el número 'K' óptimo de clusters?",
-        opciones = c(
-          "Usando el método del codo (Elbow method) o la anchura de silueta", 
-          "Calculando el P-valor de una prueba ANOVA", 
-          "Extrayendo únicamente los autovalores mayores que 1", 
-          "Probando todas las combinaciones posibles hasta infinito"
-        ),
+        texto = "¿Cómo se suele obtener el número K óptimo de clusters?",
+        opciones = c("Usando el método del codo (Elbow method) o la anchura de silueta", "Calculando el P-valor de una prueba ANOVA", "Extrayendo únicamente los autovalores mayores que 1", "Probando todas las combinaciones posibles hasta infinito"),
         correcta = "Usando el método del codo (Elbow method) o la anchura de silueta"
       ),
       list(
         texto = "¿Qué propiedad cumplen los puntos asignados a un mismo cluster en K-means?",
-        opciones = c(
-          "Están más cerca del centroide de su propio cluster que de cualquier otro centroide", 
-          "Presentan una correlación exactamente lineal con el origen", 
-          "Tienen todos la misma varianza e idénticos valores originales", 
-          "Son linealmente independientes de los centroides"
-        ),
+        opciones = c("Están más cerca del centroide de su propio cluster que de cualquier otro centroide", "Presentan una correlación exactamente lineal con el origen", "Tienen todos la misma varianza e idénticos valores originales", "Son linealmente independientes de los centroides"),
         correcta = "Están más cerca del centroide de su propio cluster que de cualquier otro centroide"
       ),
       list(
-        texto = "En un algoritmo de clustering basado en densidad como DBSCAN existe un punto núcleo 'p'. ¿Cómo se diferencian K-means y DBSCAN respecto a la noción de vecindad de un punto?",
-        opciones = c(
-          "K-means asume clusters de formas arbitrarias basados en densidad y DBSCAN formas esféricas", 
-          "K-means asigna puntos al centroide más cercano (partición global) y DBSCAN se basa en vecindades locales de radio Épsilon", 
-          "No hay ninguna diferencia, ambos calculan centroides obligatoriamente", 
-          "K-means requiere que todos los puntos del cluster se encuentren dentro del radio Épsilon de 'p'"
-        ),
-        correcta = "K-means asigna puntos al centroide más cercano (partición global) y DBSCAN se basa en vecindades locales de radio Épsilon"
-      ),
-      list(
-        texto = "¿A qué tipo de familias de algoritmos pertenece K-means?",
-        opciones = c(
-          "Algoritmos jerárquicos divisivos", 
-          "Algoritmos de particionamiento no jerárquico", 
-          "Algoritmos de aprendizaje supervisado", 
-          "Modelos probabilísticos factoriales"
-        ),
-        correcta = "Algoritmos de particionamiento no jerárquico"
-      ),
-      list(
         texto = "¿Qué es el centroide en el contexto de K-means?",
-        opciones = c(
-          "El punto más alejado del conjunto de datos", 
-          "El vector de medias de las variables para las observaciones asignadas a ese cluster", 
-          "El error estándar residual acumulado", 
-          "El primer autovector calculado mediante SVD"
-        ),
+        opciones = c("El punto más alejado del conjunto de datos", "El vector de medias de las variables para las observaciones asignadas a ese cluster", "El error estándar residual acumulado", "El primer autovector calculado mediante SVD"),
         correcta = "El vector de medias de las variables para las observaciones asignadas a ese cluster"
       ),
       list(
         texto = "¿Qué problema puede surgir debido a la inicialización aleatoria de los centroides en K-means?",
-        opciones = c(
-          "Que el algoritmo nunca llegue a converger", 
-          "Que los resultados dependan de la semilla inicial y se caiga en un mínimo local", 
-          "Que las variables se estandaricen automáticamente de forma errónea", 
-          "Que el número K cambie dinámicamente a mitad del proceso"
-        ),
+        opciones = c("Que el algoritmo nunca llegue a converger", "Que los resultados dependan de la semilla inicial y se caiga en un mínimo local", "Que las variables se estandaricen automáticamente de forma errónea", "Que el número K cambie dinámicamente a mitad del proceso"),
         correcta = "Que los resultados dependan de la semilla inicial y se caiga en un mínimo local"
       ),
       list(
         texto = "¿Por qué es fundamental estandarizar las variables antes de aplicar K-means?",
-        opciones = c(
-          "Para evitar que las variables con magnitudes o escalas más grandes dominen el cálculo de las distancias", 
-          "Para transformar todas las variables en categóricas", 
-          "Porque el algoritmo solo funciona con datos distribuidos de forma normal perfecta", 
-          "Para reducir la dimensionalidad eliminando variables"
-        ),
+        opciones = c("Para evitar que las variables con magnitudes o escalas más grandes dominen el cálculo de las distancias", "Para transformar todas las variables en categóricas", "Porque el algoritmo solo funciona con datos distribuidos de forma normal perfecta", "Para reducir la dimensionalidad eliminando variables"),
         correcta = "Para evitar que las variables con magnitudes o escalas más grandes dominen el cálculo de las distancias"
       ),
       list(
-        texto = "¿Qué métrica de distancia utiliza de forma estándar el algoritmo clásico de K-means?",
-        opciones = c(
-          "Distancia de Manhattan", 
-          "Distancia Euclídea", 
-          "Distancia de Mahalanobis", 
-          "Distancia de Jaccard"
-        ),
-        correcta = "Distancia Euclídea"
-      ),
-      list(
         texto = "¿Cómo se comporta K-means ante la presencia de valores atípicos (outliers)?",
-        opciones = c(
-          "Es muy sensible, ya que los outliers pueden distorsionar fuertemente la posición de los centroides", 
-          "Es completamente inmune y los ignora de manera automática", 
-          "Los agrupa a todos en un cluster especial llamado 'K-medio'", 
-          "Los transforma en la media general de los datos"
-        ),
+        opciones = c("Es muy sensible, ya que los outliers pueden distorsionar fuertemente la posición de los centroides", "Es completamente inmune y los ignora de manera automática", "Los agrupa a todos en un cluster especial llamado K-medio", "Los transforma en la media general de los datos"),
         correcta = "Es muy sensible, ya que los outliers pueden distorsionar fuertemente la posición de los centroides"
       ),
       list(
         texto = "¿Cuándo se detiene (converge) el proceso iterativo de K-means?",
-        opciones = c(
-          "Cuando se alcanza el número de factores solicitado por Kaiser", 
-          "Cuando las asignaciones de los puntos a los clusters ya no cambian o se llega al límite de iteraciones", 
-          "Cuando la varianza total explicada llega exactamente al 100%", 
-          "Cuando la distancia entre todos los centroides es igual a cero"
-        ),
+        opciones = c("Cuando se alcanza el número de factores solicitado por Kaiser", "Cuando las asignaciones de los puntos a los clusters ya no cambian o se llega al límite de iteraciones", "Cuando la varianza total explicada llega exactamente al 100%", "Cuando la distancia entre todos los centroides es igual a cero"),
         correcta = "Cuando las asignaciones de los puntos a los clusters ya no cambian o se llega al límite de iteraciones"
       ),
       list(
         texto = "¿Para qué tipo de formas de clusters funciona mejor K-means?",
-        opciones = c(
-          "Clusters con formas alargadas o de luna contorneada", 
-          "Clusters compactos y de forma aproximadamente esférica", 
-          "Estructuras de datos puramente jerárquicas anidadas", 
-          "Agrupaciones basadas estrictamente en densidades locales lineales"
-        ),
+        opciones = c("Clusters con formas alargadas o de luna contorneada", "Clusters compactos y de forma aproximadamente esférica", "Estructuras de datos puramente jerárquicas anidadas", "Agrupaciones basadas estrictamente en densidades locales lineales"),
         correcta = "Clusters compactos y de forma aproximadamente esférica"
       ),
       list(
-        texto = "¿Qué mide la 'Inercia' (Within-cluster sum-of-squares) devuelta por K-means?",
-        opciones = c(
-          "La suma de las distancias al cuadrado de cada punto al centroide de su cluster asignado", 
-          "La distancia de separación que existe entre los centroides de los clusters", 
-          "El número total de observaciones mal clasificadas en el dataset", 
-          "La correlación global promedio entre todas las variables del estudio"
-        ),
+        texto = "¿Qué mide la Inercia (Within-cluster sum-of-squares) devuelta por K-means?",
+        opciones = c("La suma de las distancias al cuadrado de cada punto al centroide de su cluster asignado", "La distancia de separación que existe entre los centroides de los clusters", "El número total de observaciones mal clasificadas en el dataset", "La correlación global promedio entre todas las variables del estudio"),
         correcta = "La suma de las distancias al cuadrado de cada punto al centroide de su cluster asignado"
+      ),
+ 
+      list(
+        texto = "Tras cruzar los 3 clusters obtenidos mediante K-means con la variable real 'species' de los pingüinos, observas que Adelie y Chinstrap se mezclan en un mismo cluster. ¿A qué se debe esto?",
+        opciones = c("A que ambas especies comparten características físicas similares en tamaño y proporciones, haciendo que sus nubes de puntos se solapen", "A un error de convergencia del algoritmo que requiere aumentar drásticamente el número de iteraciones", "A que K-means obliga a que todos los clusters tengan exactamente el mismo número de observaciones por especie", "A que los pingüinos Chinstrap son un subtipo genético directo de los pingüinos Gentoo"),
+        correcta = "A que ambas especies comparten características físicas similares en tamaño y proporciones, haciendo que sus nubes de puntos se solapen"
+      ),
+      list(
+        texto = "Al interpretar los centroides finales de un K-means (K=2) en el dataset 'penguins', el Cluster 1 muestra medias muy altas de longitud de aleta y masa corporal en comparación con el Cluster 2. ¿Qué conclusión biológica es correcta?",
+        opciones = c("El Cluster 1 ha agrupado mayoritariamente a los pingüinos de la especie Gentoo, que son notablemente más grandes", "El Cluster 1 representa exclusivamente a los pingüinos hembra de cualquier especie", "El algoritmo ha separado a los pingüinos que viven en zonas cálidas de los que viven en zonas frías", "El Cluster 2 está compuesto únicamente por individuos jóvenes con picos hiperdesarrollados"),
+        correcta = "El Cluster 1 ha agrupado mayoritariamente a los pingüinos de la especie Gentoo, que son notablemente más grandes"
+      ),
+      list(
+        texto = "Al graficar el resultado de K-means en el dataset 'penguins', ¿qué significa cada punto del gráfico?",
+        opciones = c(
+          "Cada punto representa a un pingüino individual del dataset", 
+          "Cada punto representa la media total de una especie diferente", 
+          "Cada punto representa una isla geográfica del archipiélago Palmer", 
+          "Cada punto representa una variable médica como el sexo o la edad"
+        ),
+        correcta = "Cada punto representa a un pingüino individual del dataset"
       )
+      
     )
+    
     
     
     preguntas_usuario <- reactiveVal(list())

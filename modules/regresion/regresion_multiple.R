@@ -216,12 +216,11 @@ Regresion_multiple_Analisis_UI <- function(id){
       column(4,
              wellPanel(
                h4("Configuración del Modelo"),
-               p("Seleccione las variables métricas para estructurar el ajuste por Mínimos Cuadrados Ordinarios (MCO)."),
+               p("Seleccione las variables métricas para configurar el ajuste por Mínimos Cuadrados Ordinarios (MCO)."),
                hr(),
                uiOutput(ns("ui_var_dep")),
                uiOutput(ns("ui_var_indep")),
                hr(),
-               helpText("Nota: El análisis se ejecuta automáticamente al cambiar cualquier parámetro."),
                helpText("Nota: Se eliminan filas con valores faltantes automáticamente.")
              )
       ),
@@ -230,6 +229,9 @@ Regresion_multiple_Analisis_UI <- function(id){
       # PANEL PRINCIPAL (A LA DERECHA)
       #--------------------------------------------------
       column(8,
+             # El banner se ubica AQUÍ (Arriba de las pestañas, tal como en Clústeres Jerárquicos)
+             uiOutput(ns("mensaje_error_ui")),
+             
              tabsetPanel(
                id = ns("tabs_reg"),
                
@@ -250,7 +252,7 @@ Regresion_multiple_Analisis_UI <- function(id){
                         br(),
                         plotOutput(ns("corr_plot")),
                         br(), hr(), br(),
-                        h4("Factor de Inflación de la Varianza (VIF)", style = "color: #2c3e50; font-weight: 500;"),
+                        h4("Factor de Inflación de la Varianza (VIF)", style = "color: #2c3e50; font-weight: 500;"), 
                         DT::DTOutput(ns("vif_table")),
                         br(),
                         h4("Interpretación del Diagnóstico", style = "color: #2c3e50; font-weight: 500;"),
@@ -269,9 +271,8 @@ Regresion_multiple_Analisis_UI <- function(id){
                         h4("Métricas de Bondad de Ajuste", style = "color: #2c3e50; font-weight: 500;"), 
                         DT::DTOutput(ns("tabla_metricas")),
                         br(),
-                        h4("Coeficientes del Modelo"), DT::DTOutput(ns("tabla_coeficientes")),
-                        br(),
-                        h4("Gráfico de Impacto de los Coeficientes"), plotOutput(ns("coef_plot_mco")), # AÑADIDO
+                        h4("Gráfico de Impacto de los Coeficientes", style = "color: #2c3e50; font-weight: 500;"), 
+                        plotOutput(ns("coef_plot_mco")),
                         br(),
                         h4("Interpretación de Resultados", style = "color: #2c3e50; font-weight: 500;"),
                         verbatimTextOutput(ns("interp_resultados_reg"))
@@ -293,18 +294,59 @@ Regresion_multiple_Analisis_UI <- function(id){
 Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   moduleServer(id, function(input, output, session) {
     
-    # --- 1. PROCESAMIENTO DE DATOS ---
-    datos_base <- reactive({
+    # --- 1. PROCESAMIENTO GLOBAL Y VALIDACIONES ---
+    datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
-      req(df)
+      
+      # Clonación exacta del estilo rosa/atenuado de las capturas
+      crear_banner_error <- function(mensaje) {
+        div(
+          style = "background-color: #fdf2f2; color: #9b1c1c; border: 1px solid #fde8e8; padding: 20px; margin-bottom: 25px; border-radius: 6px;",
+          tags$span(style = "font-weight: bold; font-size: 16px;", tags$i(class = "fa fa-exclamation-triangle"), " No es posible realizar el análisis."),
+          br(),
+          tags$span(style = "font-style: italic; color: #4b5563; font-size: 14px;", "Información: El análisis se ejecuta exclusivamente sobre variables numéricas válidas."),
+          br(), br(),
+          tags$span(style = "font-weight: 500;", mensaje)
+        )
+      }
+      
+      if (is.null(df)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("No se han detectado datos en el sistema.")))
+      }
+      
       df[] <- lapply(df, function(x) {
         if(is.factor(x) || is.character(x)) {
           as_n <- suppressWarnings(as.numeric(as.character(x)))
-          if(sum(!is.na(as_n)) > (length(x)*0.8)) as_n else x
+          if(sum(!is.na(as_n)) > (length(x) * 0.8)) as_n else x
         } else x
       })
-      df[complete.cases(df[, sapply(df, is.numeric)]), ]
+      
+      df_limpio <- df[complete.cases(df[, sapply(df, is.numeric), drop = FALSE]), , drop = FALSE]
+      if (nrow(df_limpio) < 15) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 15 observaciones válidas para estructurar un modelo consistente.")))
+      }
+      
+      df_num <- df_limpio[, sapply(df_limpio, is.numeric), drop = FALSE]
+      if (ncol(df_num) < 2) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos dos variables numéricas en el dataset.")))
+      }
+      
+      if (any(sapply(df_num, sd, na.rm = TRUE) == 0)) {
+        return(list(valido = FALSE, ui_error = crear_banner_error("Una o más variables numéricas tienen varianza cero (valores constantes).")))
+      }
+      
+      return(list(valido = TRUE, base = df_limpio, num = df_num))
     })
+    
+    # Renderizado del Banner sobre el conjunto de pestañas
+    output$mensaje_error_ui <- renderUI({
+      prep <- datos_preprocesados()
+      if (!prep$valido) return(prep$ui_error)
+      return(NULL)
+    })
+    
+    # Conexiones protegidas reactivas
+    datos_base <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
     
     datos_preparados <- reactive({
       req(input$var_dep, input$var_indep)
@@ -314,6 +356,7 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
     
     # --- 2. SELECTORES ---
     output$ui_var_dep <- renderUI({
+      req(datos_preprocesados()$valido)
       nums <- names(datos_base())[sapply(datos_base(), is.numeric)]
       selectInput(session$ns("var_dep"), "Variable Dependiente (Y):", choices = nums)
     })
@@ -328,24 +371,21 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
         choices = nums, 
         multiple = TRUE, 
         selected = nums[1:min(2, length(nums))],
-        options = list(
-          'plugins' = list('remove_button'),
-          'create' = TRUE,
-          'persist' = FALSE
-        )
+        options = list('plugins' = list('remove_button'), 'create' = FALSE, 'persist' = FALSE)
       )
     })
     
-    # --- 3. MODELO LINEAL COMPLETAMENTE REACTIVO (MCO) ---
+    # --- 3. MODELO LINEAL ---
     modelo_fit <- reactive({
       req(input$var_dep, input$var_indep)
       df <- datos_base()
       formula_str <- paste(input$var_dep, "~", paste(input$var_indep, collapse = "+"))
-      lm(as.formula(formula_str), data = df[, c(input$var_dep, input$var_indep)])
+      lm(as.formula(formula_str), data = df[, c(input$var_dep, input$var_indep), drop = FALSE])
     })
     
-    # --- 4. OUTPUTS TABLAS ---
+    # --- 4. OUTPUTS DE TABLAS ---
     output$tabla_original <- DT::renderDT({
+      req(datos_preprocesados()$valido)
       DT::datatable(
         datos_base(), 
         options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE, autoWidth = TRUE),
@@ -393,15 +433,12 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
         DT::formatRound(columns = "Valor", digits = 4)
     })
     
-    # --- 5. DIAGNÓSTICO: COLINEALIDAD (MANTENIENDO EL HEATMAP CLÁSICO DE TU MEMORIA) ---
+    # --- 5. DIAGNÓSTICOS Y GRÁFICOS ---
     output$corr_plot <- renderPlot({
       req(input$var_dep, input$var_indep)
-      
-      # Calculamos la correlación de las variables elegidas en tiempo real
-      df_corr <- datos_base()[, c(input$var_dep, input$var_indep)]
+      df_corr <- datos_base()[, c(input$var_dep, input$var_indep), drop = FALSE]
       res_corr <- cor(df_corr, use = "complete.obs")
       
-      # Heatmap clásico idéntico a la Figura 2 de tu TFG
       heatmap(res_corr, 
               col = colorRampPalette(c("#E4672E", "white", "#6D9EC1"))(20),
               symm = TRUE, 
@@ -413,13 +450,10 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
       vif_values <- car::vif(modelo_fit())
       df_vif <- data.frame(Variable = names(vif_values), VIF = as.numeric(vif_values))
       
-      # Tabla compacta con scroll lateral sin paginación verde
       DT::datatable(df_vif, options = list(paging = FALSE, scrollX = TRUE), class = 'cell-border compact') %>%
         DT::formatRound(columns = "VIF", digits = 2)
     })
     
-    
-    # --- 6. VISUALIZACIÓN (REACTIVA) ---
     output$pred_plot <- renderPlot({
       req(modelo_fit(), input$var_dep)
       df <- datos_base()
@@ -435,25 +469,28 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
              x = paste("Realidad (Y:", input$var_dep, ")"),
              y = "Predicción estimada por el modelo MCO")
     })
+    
     output$coef_plot_mco <- renderPlot({
       req(modelo_fit())
       df_c <- broom::tidy(modelo_fit())
-      
-      # Quitamos el intercepto para poder comparar la magnitud real de las variables independientes
       df_c <- df_c[df_c$term != "(Intercept)", ]
       
-      # Construimos el gráfico de parámetros con intervalos de confianza del 95%
       ggplot(df_c, aes(x = reorder(term, estimate), y = estimate)) +
-        geom_hline(yintercept = 0, linetype = "dashed", color = "red", size = 1) + # Línea crítica del cero
+        geom_hline(yintercept = 0, linetype = "dashed", color = "red", size = 1) +
         geom_errorbar(aes(ymin = estimate - 1.96 * std.error, ymax = estimate + 1.96 * std.error), 
                       width = 0.2, color = "#2c3e50", size = 0.8) +
         geom_point(color = "#1a446c", size = 4) +
-        coord_flip() + # Volteamos el gráfico para leer los nombres horizontalmente
+        coord_flip() +
         theme_minimal() +
         labs(title = "Gráfico de Parámetros (Impacto Marginal Parcial)",
              subtitle = "Puntos representan el coeficiente Beta; líneas indican el intervalo de confianza al 95%",
              x = "Variables Independientes (X)",
              y = "Magnitud del Efecto Estimado")
+    })
+    
+    # --- 6. INTERPRETACIONES ---
+    output$interp_diagnostico_reg <- renderText({
+      "Análisis de colinealidad mediante el factor de inflación de la varianza (VIF) y la matriz de correlaciones simultáneas."
     })
     
     output$interp_resultados_reg <- renderText({
@@ -471,12 +508,11 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
         "El gráfico de dispersión contrasta el valor empírico frente a la estimación. La línea discontinua roja representa la predicción perfecta (1:1).\n\n",
         "Ejemplo práctico (Dataset 'penguins'): Cuanto más estrecha y concentrada sea la nube de puntos en torno a la diagonal de referencia, ",
         "mayor será el R-cuadrado del modelo, demostrando la fidelidad explicativa de las características físicas de los pingüinos analizados."
-        )
+      )
     })
     
-  }) # Cierre de moduleServer
-} # Cierre de Regresion_multiple_Analisis_Server
-
+  }) 
+}
 # -------------------------------
 # AUTOEVALUACION
 # -------------------------------

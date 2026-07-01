@@ -21,7 +21,7 @@ source("modules/clasificacion/arboles.R")
 
 
 # =====================================================
-# INTERFAZ DE USUARIO (UI) GENERAL
+# UI GENERAL
 # =====================================================
 ui <- page_sidebar(
   theme = bslib::bs_theme(version = 5, bootswatch = "flatly"),
@@ -49,7 +49,7 @@ ui <- page_sidebar(
   ),
   
   
-  # CONFIGURACIÓN DEL MENÚ LATERAL (SOLO BOTONES)
+  # Panel lateral
   sidebar = sidebar(
     id = "menu_lateral_principal",
     title = div(class = "sidebar-title", "Índice"),
@@ -57,7 +57,6 @@ ui <- page_sidebar(
     open = "open",
     collapsible=TRUE,
     
-    # Enlaces limpios sin meter las UI de los módulos aquí dentro
     actionLink("go_menu", "Inicio", class = "nav-link active"),
     actionLink("go_reduccion", "Reducción de Dimensión", class = "nav-link"),
     actionLink("go_agrupamiento", "Agrupamiento", class = "nav-link"),
@@ -65,7 +64,7 @@ ui <- page_sidebar(
     actionLink("go_clasificacion", "Clasificación", class = "nav-link")
   ),
   
-  # CUERPO PRINCIPAL (DERECHA)
+  # Cuerpo principal
   tags$div(
     style = "display: flex; flex-direction: column; min-height: 85vh;",
     
@@ -76,7 +75,7 @@ ui <- page_sidebar(
       p("Explora, analiza y visualiza datos mediante técnicas estadísticas avanzadas", style = "opacity: 0.9; font-size: 1.05rem; margin: 0;")
     ),
     
-    # 2. Contenedor de las pestañas reales (Se renderizan una sola vez aquí en el centro)
+    # 2. Contenedor de las pestañas reales 
     navset_hidden(
       id = "tabs_navegacion",
       nav_panel_hidden("menu_tab", Menu_UI("menu_inicio_mod")),
@@ -86,7 +85,7 @@ ui <- page_sidebar(
       nav_panel_hidden("clasificacion_tab", Clasificacion_UI("clasificacion_mod"))
     ),
     
-    # 3. Pie de página institucional (Footer)
+    # Pie de página institucional 
     tags$footer(
       style = "margin-top: auto; padding: 20px 0; background-color: #ffffff; border-top: 1px solid #e2e8f0; width: 100%; border-radius: 4px;",
       fluidRow(
@@ -112,11 +111,11 @@ ui <- page_sidebar(
 )
 
 # =====================================================
-# SERVIDOR (SERVER) GENERAL
+# SERVIDOR  GENERAL
 # =====================================================
 server <- function(input, output, session) {
   
-  # Gestión de navegación nativa limpia mediante nav_select
+  # Gestión de navegación mediante nav_select
   observeEvent(input$go_menu, {
     nav_select("tabs_navegacion", "menu_tab")
     shinyjs::runjs("$('.sidebar .nav-link').removeClass('active'); $('#go_menu').addClass('active');")
@@ -126,7 +125,6 @@ server <- function(input, output, session) {
     nav_select("tabs_navegacion", "reduccion_tab")
     shinyjs::runjs("$('.sidebar .nav-link').removeClass('active'); $('#go_reduccion').addClass('active');")
     
-    # NUEVA LÍNEA: Fuerza al selector interno a regresar a la portada común con gráficos
     session$userData$reset_reduccion <- runif(1) 
   })
   
@@ -134,14 +132,12 @@ server <- function(input, output, session) {
     nav_select("tabs_navegacion", "agrupamiento_tab")
     shinyjs::runjs("$('.sidebar .nav-link').removeClass('active'); $('#go_agrupamiento').addClass('active');")
     
-    # NUEVA LÍNEA: Reinicia el módulo de clustering a su portada común limpia
     session$userData$reset_agrupamiento <- runif(1) 
   })
   observeEvent(input$go_regresion, {
     nav_select("tabs_navegacion", "regresion_tab")
     shinyjs::runjs("$('.sidebar .nav-link').removeClass('active'); $('#go_regresion').addClass('active');")
     
-    # NUEVA LÍNEA: Resetea el módulo de regresión multivariante a su landing page de gráficos
     session$userData$reset_regresion <- runif(1) 
   })
   
@@ -157,8 +153,6 @@ server <- function(input, output, session) {
     session$userData$reset_clasificacion <- runif(1) 
   })
   
-  # Objeto reactivo para la carga de archivos compartida
-  # El menú devuelve el dataset reactivo compartido
   datos_usuario <- Menu_Server("menu_inicio_mod")
   
   Reduccion_Server(
