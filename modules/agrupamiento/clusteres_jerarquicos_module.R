@@ -686,80 +686,156 @@ Jerarquicos_Auto_Server <- function(id) {
     preguntas_base <- list(
       list(
         texto = "¿Qué es un dendrograma?",
-        opciones = c("Una representación gráfica en forma de árbol que ilustra el proceso de fusiones o divisiones de los clusters", "Una matriz que contiene los vectores de medias o centroides del mapa", "Un gráfico que muestra únicamente las cargas factoriales rotadas", "La línea de regresión que minimiza el error cuadrático medio"),
+        opciones = c(
+          "Una matriz que contiene los vectores de medias o centroides del mapa",
+          "Una representación gráfica en forma de árbol que ilustra el proceso de fusiones o divisiones de los clusters",
+          "Un gráfico que muestra únicamente las cargas factoriales rotadas",
+          "La línea de regresión que minimiza el error cuadrático medio"
+        ),
         correcta = "Una representación gráfica en forma de árbol que ilustra el proceso de fusiones o divisiones de los clusters"
       ),
       list(
         texto = "¿Cuál es el objetivo principal de los algoritmos de agrupamiento jerárquicos?",
-        opciones = c("Construir una jerarquía o estructura de clusters anidados sin necesidad de fijar el número K a priori", "Calcular la combinación lineal de máxima varianza explicada", "Clasificar nuevas observaciones mediante fronteras de densidad locales", "Encontrar una matriz identidad que anule la multicolinealidad"),
+        opciones = c(
+          "Calcular la combinación lineal de máxima varianza explicada",
+          "Encontrar una matriz identidad que anule la multicolinealidad",
+          "Construir una jerarquía o estructura de clusters anidados sin necesidad de fijar el número K a priori",
+          "Clasificar nuevas observaciones mediante fronteras de densidad locales"
+        ),
         correcta = "Construir una jerarquía o estructura de clusters anidados sin necesidad de fijar el número K a priori"
       ),
       list(
         texto = "¿Qué distancia se utiliza comúnmente para medir la separación geométrica entre dos puntos individuales?",
-        opciones = c("Distancia Euclídea", "Distancia Cophenética del árbol", "Distancia de enlace completo (Complete Linkage)", "Distancia de Mahalanobis corregida"),
+        opciones = c(
+          "Distancia Cophenética del árbol",
+          "Distancia de enlace completo (Complete Linkage)",
+          "Distancia Euclídea",
+          "Distancia de Mahalanobis corregida"
+        ),
         correcta = "Distancia Euclídea"
       ),
       list(
         texto = "¿En qué se diferencia el enfoque aglomerativo (bottom-up) del divisivo (top-down)?",
-        opciones = c("El aglomerativo empieza con cada punto como un cluster individual y los une; el divisivo empieza con un único cluster global y lo divide", "El aglomerativo requiere centroides fijos y el divisivo utiliza radio Épsilon de densidad", "No hay diferencia real, ambos enfoques calculan exactamente el mismo dendrograma final", "Uno es un método supervisado y el otro no supervisado bayesiano"),
+        opciones = c(
+          "El aglomerativo empieza con cada punto como un cluster individual y los une; el divisivo empieza con un único cluster global y lo divide",
+          "El aglomerativo requiere centroides fijos y el divisivo utiliza radio Épsilon de densidad",
+          "No hay diferencia real, ambos enfoques calculan exactamente el mismo dendrograma final",
+          "Uno es un método supervisado y el otro no supervisado bayesiano"
+        ),
         correcta = "El aglomerativo empieza con cada punto como un cluster individual y los une; el divisivo empieza con un único cluster global y lo divide"
       ),
       list(
         texto = "¿Cuál es el paso previo fundamental antes de calcular las distancias si las variables (como peso en gramos y longitud del pico en mm) están en diferentes escalas?",
-        opciones = c("Estandarizar o escalar las variables", "Eliminar la variable de peso por tener valores grandes", "Dividir todos los valores por cero", "No es necesario hacer nada, el algoritmo ignora las escalas"),
+        opciones = c(
+          "Eliminar la variable de peso por tener valores grandes",
+          "Estandarizar o escalar las variables",
+          "Dividir todos los valores por cero",
+          "No es necesario hacer nada, el algoritmo ignora las escalas"
+        ),
         correcta = "Estandarizar o escalar las variables"
       ),
       list(
         texto = "¿Qué problema puede surgir si NO estandarizamos los datos de los pingüinos antes del clustering?",
-        opciones = c("La masa corporal (en gramos) dominará por completo el cálculo de las distancias debido a su magnitud numérica", "El algoritmo se volverá supervisado", "Las variables numéricas se transformarán en factores cualitativos", "El dendrograma se invertirá automáticamente"),
+        opciones = c(
+          "El algoritmo se volverá supervisado",
+          "Las variables numéricas se transformarán en factores cualitativos",
+          "La masa corporal (en gramos) dominará por completo el cálculo de las distancias debido a su magnitud numérica",
+          "El dendrograma se invertirá automáticamente"
+        ),
         correcta = "La masa corporal (en gramos) dominará por completo el cálculo de las distancias debido a su magnitud numérica"
       ),
       list(
         texto = "¿Cuál es la propiedad fundamental del método de Ward?",
-        opciones = c("Minimiza el incremento de la varianza total interna (suma de cuadrados dentro de los clusters) en cada fusión", "Une clusters basándose estrictamente en la densidad local de radio Épsilon", "Ignora los valores atípicos de la matriz original de forma automática", "Genera agrupaciones de formas alargadas y concéntricas"),
+        opciones = c(
+          "Minimiza el incremento de la varianza total interna (suma de cuadrados dentro de los clusters) en cada fusión",
+          "Une clusters basándose estrictamente en la densidad local de radio Épsilon",
+          "Ignora los valores atípicos de la matriz original de forma automática",
+          "Genera agrupaciones de formas alargadas y concéntricas"
+        ),
         correcta = "Minimiza el incremento de la varianza total interna (suma de cuadrados dentro de los clusters) en cada fusión"
       ),
       list(
         texto = "¿Qué indica la altura de las uniones verticales en un dendrograma?",
-        opciones = c("La distancia o grado de disimilitud a la que se fusionan los clusters", "El número exacto de variables analizadas en el estudio multivariante", "El porcentaje de varianza capturado por la componente principal", "La cantidad de observaciones que componen el dataset usuario"),
+        opciones = c(
+          "El número exacto de variables analizadas en el estudio multivariante",
+          "La distancia o grado de disimilitud a la que se fusionan los clusters",
+          "El porcentaje de varianza capturado por la componente principal",
+          "La cantidad de observaciones que componen el dataset usuario"
+        ),
         correcta = "La distancia o grado de disimilitud a la que se fusionan los clusters"
       ),
       list(
         texto = "¿Cómo decide el analista el número final de clusters al observar un dendrograma?",
-        opciones = c("Realizando un corte horizontal en el nivel de altura donde las líneas verticales sean más largas", "Buscando el punto de inflexión exacto mediante el p-valor de Bartlett", "Seleccionando de forma obligatoria los autovalores superiores a uno", "El algoritmo corta automáticamente el árbol al llegar al 50% de inercia"),
+        opciones = c(
+          "Buscando el punto de inflexión exacto mediante el p-valor de Bartlett",
+          "Seleccionando de forma obligatoria los autovalores superiores a uno",
+          "El algoritmo corta automáticamente el árbol al llegar al 50% de inercia",
+          "Realizando un corte horizontal en el nivel de altura donde las líneas verticales sean más largas"
+        ),
         correcta = "Realizando un corte horizontal en el nivel de altura donde las líneas verticales sean más largas"
       ),
       list(
         texto = "¿Qué significa que dos pingüinos individuales estén unidos en el nivel más bajo del dendrograma?",
-        opciones = c("Que son los dos pingüinos más idénticos y parecidos físicamente de todo el estudio", "Que pertenecen a islas diferentes y lejanas", "Que tienen la máxima diferencia geométrica posible", "Que el algoritmo los ha detectado como valores perdidos"),
+        opciones = c(
+          "Que pertenecen a islas diferentes y lejanas",
+          "Que son los dos pingüinos más idénticos y parecidos físicamente de todo el estudio",
+          "Que tienen la máxima diferencia geométrica posible",
+          "Que el algoritmo los ha detectado como valores perdidos"
+        ),
         correcta = "Que son los dos pingüinos más idénticos y parecidos físicamente de todo el estudio"
       ),
       list(
         texto = "Si un pingüino se une al mapa a una altura extremadamente alta y aislada del resto de grupos, ¿cómo se interpreta?",
-        opciones = c("Es un candidato a ser un valor atípico (outlier) con características físicas muy extrañas", "Es el pingüino promedio perfecto de la muestra", "Significa que su peso es exactamente igual a cero", "Es un error de software que invalida todo el árbol"),
+        opciones = c(
+          "Es el pingüino promedio perfecto de la muestra",
+          "Significa que su peso es exactamente igual a cero",
+          "Es un candidato a ser un valor atípico (outlier) con características físicas muy extrañas",
+          "Es un error de software que invalida todo el árbol"
+        ),
         correcta = "Es un candidato a ser un valor atípico (outlier) con características físicas muy extrañas"
       ),
       list(
         texto = "¿Por qué puede ser una desventaja el clustering jerárquico aglomerativo en conjuntos de datos muy grandes?",
-        opciones = c("Porque su coste computacional en memoria y tiempo es elevado debido al cálculo de la matriz de distancias", "Porque requiere recalcular los centroides aleatorios en cada iteración", "Porque es un método supervisado que exige etiquetas previas", "Porque obliga a eliminar variables correlacionadas de forma drástica"),
+        opciones = c(
+          "Porque requiere recalcular los centroides aleatorios en cada iteración",
+          "Porque su coste computacional en memoria y tiempo es elevado debido al cálculo de la matriz de distancias",
+          "Porque es un método supervisado que exige etiquetas previas",
+          "Porque obliga a eliminar variables correlacionadas de forma drástica"
+        ),
         correcta = "Porque su coste computacional en memoria y tiempo es elevado debido al cálculo de la matriz de distancias"
       ),
       list(
         texto = "Si aplicas clustering al dataset 'penguins' y el dendrograma muestra una primera división muy clara en dos grandes ramas independientes, ¿qué nos está indicando de forma sencilla?",
-        opciones = c("Que el dataset contiene errores de medición", "Que las características físicas separan fuertemente a los pingüinos en dos grupos morfológicos principales", "Que todos los pingüinos pesan exactamente lo mismo", "Que el algoritmo ha fallado al no encontrar tres ramas desde el inicio"),
+        opciones = c(
+          "Que las características físicas separan fuertemente a los pingüinos en dos grupos morfológicos principales",
+          "Que el dataset contiene errores de medición",
+          "Que todos los pingüinos pesan exactamente lo mismo",
+          "Que el algoritmo ha fallado al no encontrar tres ramas desde el inicio"
+        ),
         correcta = "Que las características físicas separan fuertemente a los pingüinos en dos grupos morfológicos principales"
       ),
       list(
         texto = "Al hacer un corte horizontal en el dendrograma de los pingüinos, obtienes 3 clusters bien definidos. Sabiendo que en los datos reales hay 3 especies (Adelie, Chinstrap y Gentoo), ¿qué significa este resultado?",
-        opciones = c("Que las mediciones físicas (pico, aleta, peso) son buenos descriptores para distinguir las tres especies", "Que el algoritmo obligatoriamente mezcla todas las especies al azar", "Que el tamaño de la muestra es demasiado pequeño", "Que hay que volver a realizar el análisis usando solo variables de texto"),
+        opciones = c(
+          "Que el algoritmo obligatoriamente mezcla todas las especies al azar",
+          "Que las mediciones físicas (pico, aleta, peso) son buenos descriptores para distinguir las tres especies",
+          "Que el tamaño de la muestra es demasiado pequeño",
+          "Que hay que volver a realizar el análisis usando solo variables de texto"
+        ),
         correcta = "Que las mediciones físicas (pico, aleta, peso) son buenos descriptores para distinguir las tres especies"
       ),
       list(
         texto = "Si el método de Ward une muy rápido y a baja altura a un grupo grande de pingüinos Adelie, ¿qué propiedad sencilla deduces de ese grupo?",
-        opciones = c("Que son pingüinos con características corporales muy homogéneas y similares entre sí", "Que tienen un alto grado de dispersión y varianza interna", "Que son los ejemplares más grandes de todo el dataset", "Que el algoritmo no ha podido calcular sus distancias correctamente"),
+        opciones = c(
+          "Que tienen un alto grado de dispersión y varianza interna",
+          "Que son los ejemplares más grandes de todo el dataset",
+          "Que el algoritmo no ha podido calcular sus distancias correctamente",
+          "Que son pingüinos con características corporales muy homogéneas y similares entre sí"
+        ),
         correcta = "Que son pingüinos con características corporales muy homogéneas y similares entre sí"
       )
     )
+    
     preguntas_usuario <- reactiveVal(list())
     
     observeEvent(input$add, {

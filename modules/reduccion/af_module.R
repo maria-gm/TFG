@@ -905,23 +905,158 @@ AF_Auto_Server <- function(id) {
     })
     
     preguntas_base <- list(
-      list(texto = "¿Qué representa la matriz A?", opciones = c("Matriz de datos originales", "Matriz de cargas factoriales", "Matriz de covarianzas", "Matriz identidad"), correcta = "Matriz de cargas factoriales"),
-      list(texto = "¿Cuál es el objetivo principal del análisis factorial?", opciones = c("Reducir dimensionalidad explicando la covarianza entre variables", "Clasificar observaciones", "Calcular medias", "Eliminar variables"), correcta = "Reducir dimensionalidad explicando la covarianza entre variables"),
-      list(texto = "¿Qué son los factores comunes?", opciones = c("Variables observadas", "Factores no observados que explican la correlación", "Errores aleatorios", "Variables dependientes"), correcta = "Factores no observados que explican la correlación"),
-      list(texto = "¿Por qué se rota la matriz factorial?", opciones = c("Para aumentar la interpretabilidad", "Para reducir variables", "Para calcular medias", "Para eliminar factores"), correcta = "Para aumentar la interpretabilidad"),
-      list(texto = "¿Qué significa la comunalidad de una variable?", opciones = c("Varianza total de la variable", "Proporción de varianza explicada por los factores", "Media de la variable", "Error de medición"), correcta = "Proporción de varianza explicada por los factores"),
-      list(texto = "¿Qué indica una carga factorial alta?", opciones = c("Baja relación con el factor", "Alta relación entre variable y factor", "Error alto", "Independencia"), correcta = "Alta relación entre variable y factor"),
-      list(texto = "¿Qué criterio se usa para decidir el número de factores?", opciones = c("Regla de Kaiser (eigenvalores > 1)", "Media de variables", "Tamaño de la muestra", "Varianza mínima"), correcta = "Regla de Kaiser (eigenvalores > 1)"),
-      list(texto = "¿Qué mide el índice KMO?", opciones = c("Adecuación muestral para análisis factorial", "Número de factores", "Distancia entre individuos", "Sesgo de rotación"), correcta = "Adecuación muestral para análisis factorial"),
-      list(texto = "¿Qué evalúa la prueba de Bartlett?", opciones = c("Si la matriz de correlación es identidad", "Normalidad", "Varianza total", "Independencia de factores"), correcta = "Si la matriz de correlación es identidad"),
-      list(texto = "¿Qué tipo de rotación usar si factores están correlacionados?", opciones = c("Ortogonal", "Oblicua", "Ninguna", "PCA"), correcta = "Oblicua"),
-      list(texto = "¿Qué compone la varianza total?", opciones = c("Comunalidad + varianza única", "Solo comunalidad", "Solo error", "Solo factores"), correcta = "Comunalidad + varianza única"),
-      list(texto = "¿Qué asumen los errores en AF?", opciones = c("Están correlacionados", "No están correlacionados entre sí ni con factores", "Son factores comunes", "Son variables observadas"), correcta = "No están correlacionados entre sí ni con factores"),
-      list(texto = "Si la variable 'Magnesium' presenta una comunalidad de 0.22 tras la extracción factorial en los datos de 'wines', ¿cómo debe interpretarse analíticamente este resultado?", opciones = c("Los factores comunes solo logran explicar un 22% de su varianza, quedando el 78% como varianza única o error", "El magnesio es la variable predictora más importante del modelo", "La variable debe eliminarse porque tiene valores negativos", "El factor extraído es idéntico a la variable magnesio"), correcta = "Los factores comunes solo logran explicar un 22% de su varianza, quedando el 78% como varianza única o error"),
-      list(texto = "Si realizas una rotación 'Varimax' y observas que 'Alcohol' y 'Color Intensity' se desplazan casi por completo al Factor 2, liberando de carga al Factor 1, ¿qué objetivo estadístico has alcanzado?", opciones = c("Estructura simple: facilitar la separación e interpretación de los factores", "Aumentar artificialmente el número de variables originales", "Eliminar los errores aleatorios de las barricas", "Cambiar los coeficientes de correlación original"), correcta = "Estructura simple: facilitar la separación e interpretación de los factores"),
-      list(texto = "¿Cúantos factores deberías retener en el dataset wines", opciones = c("Ninguno,se descartar todo el análisis por baja varianza","Los 3 primeros",  "Hay que retener los 13 factores obligatoriamente", "Se utilizar únicamente el primer factor"), correcta = "Los 3 primeros")
-      
-                )
+      list(
+        texto = "¿Qué representa la matriz A?",
+        opciones = c(
+          "Matriz de covarianzas", 
+          "Matriz de cargas factoriales", 
+          "Matriz de datos originales", 
+          "Matriz identidad"
+        ),
+        correcta = "Matriz de cargas factoriales"
+      ),
+      list(
+        texto = "¿Cuál es el objetivo principal del análisis factorial?",
+        opciones = c(
+          "Clasificar observaciones", 
+          "Calcular medias", 
+          "Reducir dimensionalidad explicando la covarianza entre variables", 
+          "Eliminar variables"
+        ),
+        correcta = "Reducir dimensionalidad explicando la covarianza entre variables"
+      ),
+      list(
+        texto = "¿Qué son los factores comunes?",
+        opciones = c(
+          "Factores no observados que explican la correlación", 
+          "Variables observadas", 
+          "Errores aleatorios", 
+          "Variables dependientes"
+        ),
+        correcta = "Factores no observados que explican la correlación"
+      ),
+      list(
+        texto = "¿Por qué se rota la matriz factorial?",
+        opciones = c(
+          "Para reducir variables", 
+          "Para calcular medias", 
+          "Para eliminar factores", 
+          "Para aumentar la interpretabilidad"
+        ),
+        correcta = "Para aumentar la interpretabilidad"
+      ),
+      list(
+        texto = "¿Qué significa la comunalidad de una variable?",
+        opciones = c(
+          "Proporción de varianza explicada por los factores", 
+          "Varianza total de la variable", 
+          "Media de la variable", 
+          "Error de medición"
+        ),
+        correcta = "Proporción de varianza explicada por los factores"
+      ),
+      list(
+        texto = "¿Qué indica una carga factorial alta?",
+        opciones = c(
+          "Baja relación con el factor", 
+          "Error alto", 
+          "Alta relación entre variable y factor", 
+          "Independencia"
+        ),
+        correcta = "Alta relación entre variable y factor"
+      ),
+      list(
+        texto = "¿Qué criterio se usa para decidir el número de factores?",
+        opciones = c(
+          "Media de variables", 
+          "Tamaño de la muestra", 
+          "Regla de Kaiser (eigenvalores > 1)", 
+          "Varianza mínima"
+        ),
+        correcta = "Regla de Kaiser (eigenvalores > 1)"
+      ),
+      list(
+        texto = "¿Qué mide el índice KMO?",
+        opciones = c(
+          "Número de factores", 
+          "Adecuación muestral para análisis factorial", 
+          "Distancia entre individuos", 
+          "Sesgo de rotación"
+        ),
+        correcta = "Adecuación muestral para análisis factorial"
+      ),
+      list(
+        texto = "¿Qué evalúa la prueba de Bartlett?",
+        opciones = c(
+          "Normalidad", 
+          "Varianza total", 
+          "Independencia de factores", 
+          "Si la matriz de correlación es identidad"
+        ),
+        correcta = "Si la matriz de correlación es identidad"
+      ),
+      list(
+        texto = "¿Qué tipo de rotación usar si factores están correlacionados?",
+        opciones = c(
+          "Oblicua", 
+          "Ortogonal", 
+          "Ninguna", 
+          "PCA"
+        ),
+        correcta = "Oblicua"
+      ),
+      list(
+        texto = "¿Qué compone la varianza total?",
+        opciones = c(
+          "Solo comunalidad", 
+          "Comunalidad + varianza única", 
+          "Solo error", 
+          "Solo factores"
+        ),
+        correcta = "Comunalidad + varianza única"
+      ),
+      list(
+        texto = "¿Qué asumen los errores en AF?",
+        opciones = c(
+          "Están correlacionados", 
+          "Son factores comunes", 
+          "No están correlacionados entre sí ni con factores", 
+          "Son variables observadas"
+        ),
+        correcta = "No están correlacionados entre sí ni con factores"
+      ),
+      list(
+        texto = "Si la variable 'Magnesium' presenta una comunalidad de 0.22 tras la extracción factorial en los datos de 'wines', ¿cómo debe interpretarse analíticamente este resultado?",
+        opciones = c(
+          "Los factores comunes solo logran explicar un 22% de su varianza, quedando el 78% como varianza única o error", 
+          "El magnesio es la variable predictora más importante del modelo", 
+          "La variable debe eliminarse porque tiene valores negativos", 
+          "El factor extraído es idéntico a la variable magnesio"
+        ),
+        correcta = "Los factores comunes solo logran explicar un 22% de su varianza, quedando el 78% como varianza única o error"
+      ),
+      list(
+        texto = "Si realizas una rotación 'Varimax' y observas que 'Alcohol' y 'Color Intensity' se desplazan casi por completo al Factor 2, liberando de carga al Factor 1, ¿qué objetivo estadístico has alcanzado?",
+        opciones = c(
+          "Aumentar artificialmente el número de variables originales", 
+          "Estructura simple: facilitar la separación e interpretación de los factores", 
+          "Eliminar los errores aleatorios de las barricas", 
+          "Cambiar los coeficientes de correlación original"
+        ),
+        correcta = "Estructura simple: facilitar la separación e interpretación de los factores"
+      ),
+      list(
+        texto = "¿Cúantos factores deberías retener en el dataset wines",
+        opciones = c(
+          "Ninguno,se descartar todo el análisis por baja varianza", 
+          "Hay que retener los 13 factores obligatoriamente", 
+          "Los 3 primeros", 
+          "Se utilizar únicamente el primer factor"
+        ),
+        correcta = "Los 3 primeros"
+      )
+    )
+    
     
     preguntas_usuario <- reactiveVal(list())
     

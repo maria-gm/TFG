@@ -776,173 +776,160 @@ LDA_Auto_Server <- function(id) {
         label = if (mostrar_respuestas()) "🙈 Ocultar respuestas" else "👁️ Ver respuestas"
       )
     })
-    
     preguntas_base <- list(
       list(
         texto = "¿Qué es el Análisis Discriminante Lineal (LDA)?",
         opciones = c(
-          "Una técnica de clasificación que separa grupos mediante combinaciones lineales de variables predictoras",
-          "Un método de reducción de dimensionalidad sin clasificación",
           "Una técnica para calcular correlaciones",
-          "Un algoritmo de agrupamiento no supervisado"
+          "Un método de reducción de dimensionalidad sin clasificación",
+          "Un algoritmo de agrupamiento no supervisado",
+          "Una técnica de clasificación que separa grupos mediante combinaciones lineales de variables predictoras"
         ),
         correcta = "Una técnica de clasificación que separa grupos mediante combinaciones lineales de variables predictoras"
       ),
-      
       list(
         texto = "¿Cuál es el objetivo principal del LDA?",
         opciones = c(
-          "Maximizar la separación entre las categorías de la variable objetivo",
-          "Reducir el número de observaciones",
+          "Calcular medias muestrales",
           "Eliminar variables redundantes",
-          "Calcular medias muestrales"
+          "Maximizar la separación entre las categorías de la variable objetivo",
+          "Reducir el número de observaciones"
         ),
         correcta = "Maximizar la separación entre las categorías de la variable objetivo"
       ),
-      
       list(
         texto = "¿Qué modela directamente el LDA?",
         opciones = c(
-          "La distribución de los predictores condicionada a cada clase",
           "La correlación entre variables",
+          "La distancia entre observaciones",
           "La media global de los datos",
-          "La distancia entre observaciones"
+          "La distribución de los predictores condicionada a cada clase"
         ),
         correcta = "La distribución de los predictores condicionada a cada clase"
       ),
-      
       list(
         texto = "¿Qué teorema utiliza el LDA para calcular probabilidades posteriores?",
         opciones = c(
-          "Teorema de Bayes",
           "Teorema Central del Límite",
           "Teorema de Pitágoras",
+          "Teorema de Bayes",
           "Teorema de Gauss-Markov"
         ),
         correcta = "Teorema de Bayes"
       ),
-      
       list(
         texto = "¿Cuál es uno de los supuestos fundamentales del LDA?",
         opciones = c(
-          "Las variables predictoras siguen una distribución normal dentro de cada clase",
           "Todas las variables son categóricas",
           "No existen valores atípicos",
-          "La variable objetivo es continua"
+          "La variable objetivo es continua",
+          "Las variables predictoras siguen una distribución normal dentro de cada clase"
         ),
         correcta = "Las variables predictoras siguen una distribución normal dentro de cada clase"
       ),
-      
       list(
         texto = "¿Qué significa la homocedasticidad en LDA?",
         opciones = c(
-          "Que todas las clases comparten la misma matriz de covarianzas",
           "Que todas las variables tienen la misma media",
+          "Que no existe correlación entre variables",
           "Que las clases tienen el mismo tamaño",
-          "Que no existe correlación entre variables"
+          "Que todas las clases comparten la misma matriz de covarianzas"
         ),
         correcta = "Que todas las clases comparten la misma matriz de covarianzas"
       ),
-      
       list(
         texto = "¿Qué representan las funciones discriminantes LD1, LD2, etc.?",
         opciones = c(
-          "Combinaciones lineales de las variables que maximizan la separación entre grupos",
-          "Las variables originales del dataset",
           "Las probabilidades de clasificación",
+          "Las variables originales del dataset",
+          "Combinaciones lineales de las variables que maximizan la separación entre grupos",
           "Los errores del modelo"
         ),
         correcta = "Combinaciones lineales de las variables que maximizan la separación entre grupos"
       ),
-      
       list(
         texto = "¿Qué indica una elevada exactitud global (accuracy) en LDA?",
         opciones = c(
-          "Que el modelo clasifica correctamente una alta proporción de observaciones",
           "Que existen muchas variables predictoras",
-          "Que el modelo tiene pocas observaciones",
-          "Que no existen errores de clasificación"
+          "Que no existen errores de clasificación",
+          "Que el modelo clasifica correctamente una alta proporción de observaciones",
+          "Que el modelo tiene pocas observaciones"
         ),
         correcta = "Que el modelo clasifica correctamente una alta proporción de observaciones"
       ),
-      
       list(
         texto = "¿Qué muestra la matriz de confusión?",
         opciones = c(
           "La comparación entre las clases reales y las predichas",
-          "Las correlaciones entre variables",
           "Las medias de cada grupo",
+          "Las correlaciones entre variables",
           "Los coeficientes de LD1"
         ),
         correcta = "La comparación entre las clases reales y las predichas"
       ),
-      
       list(
         texto = "¿Qué representan los valores fuera de la diagonal principal de la matriz de confusión?",
         opciones = c(
-          "Observaciones clasificadas incorrectamente",
-          "Clasificaciones perfectas",
           "Variables altamente correlacionadas",
-          "Centroides de los grupos"
+          "Centroides de los grupos",
+          "Observaciones clasificadas incorrectamente",
+          "Clasificaciones perfectas"
         ),
         correcta = "Observaciones clasificadas incorrectamente"
       ),
-      
       list(
         texto = "Según la interpretación mostrada en la aplicación, ¿qué indica un bajo solapamiento entre las elipses de confianza en el espacio discriminante?",
         opciones = c(
-          "Que los grupos están bien separados y los predictores discriminan adecuadamente",
-          "Que existe sobreajuste",
           "Que las variables son independientes",
-          "Que faltan observaciones"
+          "Que existe sobreajuste",
+          "Que faltan observaciones",
+          "Que los grupos están bien separados y los predictores discriminan adecuadamente"
         ),
         correcta = "Que los grupos están bien separados y los predictores discriminan adecuadamente"
       ),
-      
       list(
         texto = "¿Qué representan los centroides en el gráfico del espacio discriminante?",
         opciones = c(
-          "El centro geométrico de cada grupo o clase",
-          "Las observaciones mal clasificadas",
+          "Los errores del modelo",
           "Las variables más importantes",
-          "Los errores del modelo"
+          "Las observaciones mal clasificadas",
+          "El centro geométrico de cada grupo o clase"
         ),
         correcta = "El centro geométrico de cada grupo o clase"
       ),
-      
       list(
         texto = "¿Qué información proporcionan los coeficientes de las funciones discriminantes?",
         opciones = c(
-          "La importancia relativa de cada predictor en la discriminación de los grupos",
+          "La precisión del modelo",
           "La frecuencia de cada categoría",
-          "La cantidad de observaciones",
-          "La precisión del modelo"
+          "La importancia relativa de cada predictor en la discriminación de los grupos",
+          "La cantidad de observaciones"
         ),
         correcta = "La importancia relativa de cada predictor en la discriminación de los grupos"
       ),
-      
       list(
         texto = "Según la interpretación de la aplicación, ¿qué variable suele considerarse la más influyente?",
         opciones = c(
-          "La que presenta el coeficiente absoluto más alto en LD1",
-          "La que tiene más valores perdidos",
           "La variable objetivo",
-          "La primera variable del dataset"
+          "La primera variable del dataset",
+          "La que tiene más valores perdidos",
+          "La que presenta el coeficiente absoluto más alto en LD1"
         ),
         correcta = "La que presenta el coeficiente absoluto más alto en LD1"
       ),
-      
       list(
-        texto = "¿Por qué el dataset Wines suele ser adecuado para aplicar LDA?",
+        texto = "¿Por qué el dataset Wine es adecuado para aplicar LDA?",
         opciones = c(
-          "Porque sus variables químicas permiten una buena separación lineal entre cultivares",
-          "Porque solo contiene variables categóricas",
-          "Porque no requiere normalidad",
-          "Porque tiene una única clase"
+          "Porque sus variables químicas permiten separar linealmente los diferentes tipos de vino",
+          "Porque todas sus variables predictoras son categóricas",
+          "Porque el conjunto de datos contiene una sola clase",
+          "Porque los datos no necesitan cumplir el supuesto de normalidad"
         ),
-        correcta = "Porque sus variables químicas permiten una buena separación lineal entre cultivares"
+        correcta = "Porque sus variables químicas permiten separar linealmente los diferentes tipos de vino"
       )
     )
+    
+ 
     preguntas_usuario <- reactiveVal(list())
     
     observeEvent(input$add, {

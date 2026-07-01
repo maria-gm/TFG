@@ -625,42 +625,37 @@ Regresion_multiple_Auto_Server <- function(id) {
         label = if (mostrar_respuestas()) "🙈 Ocultar respuestas" else "👁️ Ver respuestas"
       )
     })
-    
     preguntas_base <- list(
-      
       list(
         texto = "¿Cuál es el objetivo principal de la regresión lineal múltiple?",
         opciones = c(
           "Clasificar observaciones",
-          "Predecir una variable respuesta continua a partir de varias variables explicativas",
           "Reducir la dimensionalidad",
+          "Predecir una variable respuesta continua a partir de varias variables explicativas",
           "Agrupar individuos similares"
         ),
         correcta = "Predecir una variable respuesta continua a partir de varias variables explicativas"
       ),
-      
       list(
-        texto = "¿Qué representa un coeficiente de regresión positivo?",
+        texto = "En un modelo de regresión con el dataset Boston Housing, la variable 'rm' (número de habitaciones) muestra una estimación Beta de 3.8099 y un p-valor de 0.0000. ¿Cómo se interpreta este resultado?",
         opciones = c(
-          "Al aumentar esa variable, disminuye la respuesta",
-          "No existe relación entre ambas variables",
-          "Al aumentar esa variable, aumenta la respuesta esperada",
-          "El modelo deja de ser válido"
+          "Que por cada habitación adicional el precio medio de la vivienda tiende a subir en 3.81 unidades (miles de dólares), siendo una variable altamente significativa",
+          "Que el número de habitaciones disminuye el valor de los hogares en Boston",
+          "Que la variable 'rm' no aporta información útil y debe descartarse de inmediato",
+          "Que existe un error de multicolinealidad provocado exclusivamente por las habitaciones"
         ),
-        correcta = "Al aumentar esa variable, aumenta la respuesta esperada"
+        correcta = "Que por cada habitación adicional el precio medio de la vivienda tiende a subir en 3.81 unidades (miles de dólares), siendo una variable altamente significativa"
       ),
-      
       list(
-        texto = "¿Qué mide el coeficiente de determinación (R²)?",
+        texto = "En un análisis de regresión para predecir el precio de la vivienda en Boston, el R-cuadrado Ajustado registra un valor de 0.7338. ¿Qué significa exactamente este dato?",
         opciones = c(
-          "La proporción de variabilidad explicada por el modelo",
-          "El error máximo cometido",
-          "El número de variables significativas",
-          "La correlación entre los residuos"
+          "Que el modelo comete un error promedio de 73.38 dólares en cada predicción inmobiliaria",
+          "Que el 73.38% de la variabilidad del precio de las viviendas queda explicada por el modelo, habiendo penalizado la inclusión de predictores irrelevantes",
+          "Que el modelo solo realiza predicciones correctas para el 73.38% de los datos y falla en el resto",
+          "Que la probabilidad de que el modelo sea erróneo en la población general es exactamente de 0.7338"
         ),
-        correcta = "La proporción de variabilidad explicada por el modelo"
+        correcta = "Que el 73.38% de la variabilidad del precio de las viviendas queda explicada por el modelo, habiendo penalizado la inclusión de predictores irrelevantes"
       ),
-      
       list(
         texto = "¿Qué indica un p-valor pequeño asociado a un coeficiente?",
         opciones = c(
@@ -671,62 +666,56 @@ Regresion_multiple_Auto_Server <- function(id) {
         ),
         correcta = "Que la variable aporta información al modelo"
       ),
-      
       list(
-        texto = "¿Qué supuesto establece que los residuos deben tener varianza constante?",
+        texto = "Al evaluar globalmente un modelo para el precio de la vivienda con el dataset Boston Housing, se obtiene un p-valor global de 0.0000 y un Estadístico F global de 108.0767. ¿Qué conclusión se extrae de estas métricas?",
         opciones = c(
-          "Linealidad",
-          "Independencia",
-          "Homocedasticidad",
-          "Normalidad"
+          "Que el modelo en su conjunto es estadísticamente significativo para predecir el precio de la vivienda",
+          "Que todas las variables independientes tienen exactamente el mismo impacto en el modelo",
+          "Que existe un problema insalvable de falta de datos o variables vacías",
+          "Que los residuos del modelo siguen una distribución perfectamente uniforme alrededor del precio"
         ),
-        correcta = "Homocedasticidad"
+        correcta = "Que el modelo en su conjunto es estadísticamente significativo para predecir el precio de la vivienda"
       ),
-      
       list(
-        texto = "Si dos variables explicativas están muy correlacionadas entre sí, aparece:",
+        texto = "Empleando como variable dependiente medv y las demás como predictoras, las líneas horizontales del gráfico de coeficientes representan los intervalos de confianza al 95%. Si observas las variables 'age' e 'indus', estas líneas cruzan la línea vertical discontinua del cero. ¿Qué significa esto visualmente?",
         opciones = c(
-          "Heterocedasticidad",
-          "Multicolinealidad",
-          "Autocorrelación",
-          "No ocurre ningún problema"
+          "Que los coeficientes de estas variables son infinitamente grandes",
+          "Que existe un sesgo de heterocedasticidad en la medición de ambas características",
+          "Que no se puede rechazar que su efecto real sea cero, confirmando visualmente que no son estadísticamente significativas",
+          "Que son los dos predictores que más aumentan el precio estimado de los inmuebles"
         ),
-        correcta = "Multicolinealidad"
+        correcta = "Que no se puede rechazar que su efecto real sea cero, confirmando visualmente que no son estadísticamente significativas"
       ),
-      
       list(
-        texto = "¿Qué suele utilizarse para detectar multicolinealidad?",
+        texto = "Empleando como variable dependiente medv y las demás como predictoras, si la variable 'crim' (tasa de criminalidad per cápita) presents un coeficiente negativo y significativo, ¿qué conclusión práctica se extrae?",
         opciones = c(
-          "Coeficiente VIF",
-          "Coeficiente de Gini",
-          "Curva ROC",
-          "Índice de Silhouette"
+          "Que los barrios con mayor tasa de criminalidad tienden a registrar precios de vivienda más bajos, manteniendo el resto constante",
+          "Que un incremento en el precio de la vivienda provoca que aumente la delincuencia en la zona",
+          "Que la delincuencia no guarda ninguna relación estadística con el valor de los inmuebles",
+          "Que el modelo ha fallado porque los coeficientes de delincuencia siempre deben ser positivos"
         ),
-        correcta = "Coeficiente VIF"
+        correcta = "Que los barrios con mayor tasa de criminalidad tienden a registrar precios de vivienda más bajos, manteniendo el resto constante"
       ),
-      
       list(
-        texto = "Un modelo presenta un R² = 0.82. ¿Cómo se interpreta?",
+        texto = "Analizando un modelo de regresión múltiple para el precio de la vivienda con los datos de Boston Housing, ¿cuál de las siguientes afirmaciones sobre las variables 'age' e 'indus' es estadísticamente correcta si presentan p-valores de 0.9582 y 0.7383 respectivamente?",
         opciones = c(
-          "El modelo acierta el 82% de las observaciones",
-          "El 82% de la variabilidad de la respuesta queda explicada por el modelo",
-          "Existe un 18% de error de clasificación",
-          "Los coeficientes son todos significativos"
+          "Ambas variables distorsionan la estimación del intercepto",
+          "Son las dos variables que mayor impacto predictivo aportan sobre el valor medio de la vivienda",
+          "Ambas variables presentan p-valores muy altos, lo que indica que no son estadísticamente significativas en presencia de las demás",
+          "Sus coeficientes demuestran que la antigüedad de la casa duplica el valor del suelo comercial"
         ),
-        correcta = "El 82% de la variabilidad de la respuesta queda explicada por el modelo"
+        correcta = "Ambas variables presentan p-valores muy altos, lo que indica que no son estadísticamente significativas en presencia de las demás"
       ),
-      
       list(
-        texto = "Al representar los residuos frente a los valores ajustados aparece un patrón en forma de embudo. ¿Qué problema sugiere?",
+        texto = "Considera como variable dependiente medv y las demás como predictoras con los datos de Boston Housing. En el gráfico de impacto de coeficientes, la variable 'nox' (concentración de óxidos de nitrógeno) se sitúa muy a la izquierda, reflejando una magnitud estimada cercana a -17.76. ¿Qué interpretación tiene esto?",
         opciones = c(
-          "Normalidad",
-          "Homocedasticidad",
-          "Heterocedasticidad",
-          "Sobreajuste"
+          "Muestra de forma clara que 'nox' es la variable con el impacto marginal negativo más fuerte sobre la predicción del precio al aumentar una unidad su concentración",
+          "Significa que es la variable con menor importancia y menor relevancia matemática del modelo",
+          "Indica que su intervalo de confianza al 95% es inestable y contiene errores numéricos",
+          "Demuestra que la variable tiene una correlación lineal positiva directa con el precio de los hogares"
         ),
-        correcta = "Heterocedasticidad"
+        correcta = "Muestra de forma clara que 'nox' es la variable con el impacto marginal negativo más fuerte sobre la predicción del precio al aumentar una unidad su concentración"
       ),
-      
       list(
         texto = "Un investigador incorpora una nueva variable y el R² aumenta ligeramente, pero el R² ajustado disminuye. ¿Qué indica esto?",
         opciones = c(
@@ -737,64 +726,50 @@ Regresion_multiple_Auto_Server <- function(id) {
         ),
         correcta = "La nueva variable probablemente no aporta información útil"
       ),
-      
       list(
-        texto = "¿Qué representa el intercepto del modelo?",
+        texto = "Empleando como variable dependiente medv y las demás como predictoras con los datos de Boston Housing, ¿cuál es la variable predictora que registra el impacto negativo más significativo (con un estadístico t de -10.3471) sobre el valor de las viviendas?",
         opciones = c(
-          "El valor esperado de la respuesta cuando todas las variables explicativas valen cero",
-          "El valor máximo de la respuesta",
-          "La pendiente de mayor magnitud",
-          "El error medio del modelo"
+          "tax (impuestos)",
+          "crim (tasa de criminalidad)",
+          "ptratio (proporción alumno-profesor)",
+          "lstat (porcentaje de población de bajo estatus socioeconómico)"
         ),
-        correcta = "El valor esperado de la respuesta cuando todas las variables explicativas valen cero"
+        correcta = "lstat (porcentaje de población de bajo estatus socioeconómico)"
       ),
-      
       list(
-        texto = "¿Cuál es el objetivo de analizar los residuos del modelo?",
+        texto = "¿Cuál de las siguientes afirmaciones describe mejor el problema de la multicolinealidad?",
         opciones = c(
-          "Comprobar si se cumplen los supuestos del modelo",
-          "Calcular el R²",
-          "Obtener nuevas variables",
-          "Seleccionar automáticamente predictores"
+          "Ocurre cuando los residuos del modelo tienen varianzas que cambian según el valor ajustado",
+          "Se presenta cuando dos o más variables predictoras están altamente correlacionadas entre sí",
+          "Indica que el modelo no ha sido capaz de predecir correctamente la variable respuesta",
+          "Significa que la variable dependiente sigue una escala cualitativa o binaria"
         ),
-        correcta = "Comprobar si se cumplen los supuestos del modelo"
+        correcta = "Se presenta cuando dos o más variables predictoras están altamente correlacionadas entre sí"
       ),
-      
       list(
-        texto = "Si una variable tiene un coeficiente negativo, significa que:",
+        texto = "Si la variable respuesta o dependiente cambia en su escala numérica (por ejemplo, de metros a kilómetros), ¿qué ocurre con el coeficiente de determinación (R²)?",
         opciones = c(
-          "Al aumentar esa variable, disminuye la respuesta esperada",
-          "Siempre debe eliminarse",
-          "No influye sobre la respuesta",
-          "Existe heterocedasticidad"
+          "El R² disminuye proporcionalmente al cambio de la unidad",
+          "El R² aumenta de forma exponencial debido al cambio de escala",
+          "El R² permanece exactamente igual, ya que es una medida adimensional de bondad de ajuste",
+          "El modelo se vuelve inválido e impide calcular el valor de R²"
         ),
-        correcta = "Al aumentar esa variable, disminuye la respuesta esperada"
+        correcta = "El R² permanece exactamente igual, ya que es una medida adimensional de bondad de ajuste"
       ),
-      
       list(
-        texto = "Tras ajustar un modelo, observas que todos los residuos se distribuyen aleatoriamente alrededor de cero sin patrones visibles. ¿Qué conclusión es la más razonable?",
+        texto = "¿Qué problema matemático de estimación directa suele generar una multicolinealidad severa en un modelo de regresión lineal múltiple?",
         opciones = c(
-          "El supuesto de linealidad parece cumplirse",
-          "Existe multicolinealidad",
-          "El modelo presenta sobreajuste",
-          "Debe utilizarse regresión logística"
-        ),
-        correcta = "El supuesto de linealidad parece cumplirse"
-      ),
-      
-      list(
-        texto = "¿Cuál de las siguientes acciones suele ayudar cuando existe una fuerte multicolinealidad?",
-        opciones = c(
-          "Aumentar artificialmente el número de observaciones",
-          "Eliminar o combinar variables muy correlacionadas, o aplicar técnicas de regularización",
-          "Eliminar todos los residuos negativos",
-          "Incrementar el nivel de significación"
-        ),
-        correcta = "Eliminar o combinar variables muy correlacionadas, o aplicar técnicas de regularización"
-      )
-      
-    )
-    
+          "Provoca que las estimaciones de los coeficientes Beta sean muy inestables y aumente drásticamente su error estándar",
+          "Hace que los p-valores globales del estadístico F siempre se aproximen a uno",
+          "Fuerza a que todos los residuos sigan una distribución asimétrica no lineal",
+          "Sustituye de forma automática los coeficientes numéricos continuos por variables categóricas"),
+        correcta = "Provoca que las estimaciones de los coeficientes Beta sean muy inestables y aumente drásticamente su error estándar"),
+      list(texto = "¿Cuál es la consecuencia directa de omitir una variable explicativa relevante que está correlacionada con las variables ya incluidas en el modelo?",
+           opciones = c(
+             "Los coeficientes estimados de las variables incluidas absorberán el efecto de la omitida, generando estimaciones sesgadas","El estadístico F global del modelo pasará a valer exactamente cero de inmediato",
+             "El R-cuadrado del modelo aumentará falsamente hasta alcanzar la perfección",
+             "La matriz de covarianzas se vuelve estrictamente diagonal e independiente"),
+           correcta = "Los coeficientes estimados de las variables incluidas absorberán el efecto de la omitida, generando estimaciones sesgadas"))
     preguntas_usuario <- reactiveVal(list())
     
     observeEvent(input$add, {

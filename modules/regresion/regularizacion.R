@@ -670,18 +670,16 @@ Regularizacion_Auto_Server <- function(id) {
     })
     
     preguntas_base <- list(
-      
       list(
         texto = "¿Cuál es el objetivo principal de los métodos de regularización?",
         opciones = c(
-          "Reducir el sobreajuste y mejorar la capacidad predictiva",
           "Clasificar observaciones",
           "Reducir el número de individuos",
+          "Reducir el sobreajuste y mejorar la capacidad predictiva",
           "Calcular componentes principales"
         ),
         correcta = "Reducir el sobreajuste y mejorar la capacidad predictiva"
       ),
-      
       list(
         texto = "¿En qué situación suelen ser especialmente útiles Ridge, LASSO y PCR?",
         opciones = c(
@@ -692,7 +690,6 @@ Regularizacion_Auto_Server <- function(id) {
         ),
         correcta = "Cuando existe multicolinealidad o un gran número de variables"
       ),
-      
       list(
         texto = "¿Qué característica distingue al método Ridge?",
         opciones = c(
@@ -703,40 +700,36 @@ Regularizacion_Auto_Server <- function(id) {
         ),
         correcta = "Penaliza los coeficientes acercándolos a cero, pero normalmente no los elimina"
       ),
-      
       list(
         texto = "¿Qué método puede realizar selección automática de variables?",
         opciones = c(
           "PCR",
           "Regresión múltiple clásica",
-          "LASSO",
-          "Ridge"
+          "Ridge",
+          "LASSO"
         ),
         correcta = "LASSO"
       ),
-      
       list(
         texto = "¿Qué ocurre con algunos coeficientes en LASSO cuando aumenta la penalización?",
         opciones = c(
-          "Se hacen exactamente cero",
           "Todos aumentan",
           "No cambian",
+          "Se hacen exactamente cero",
           "Se convierten en probabilidades"
         ),
         correcta = "Se hacen exactamente cero"
       ),
-      
       list(
         texto = "¿Sobre qué trabaja inicialmente PCR?",
         opciones = c(
-          "Sobre componentes principales obtenidas a partir de las variables originales",
           "Sobre los residuos del modelo",
           "Sobre la variable respuesta",
-          "Sobre una matriz de confusión"
+          "Sobre una matriz de confusión",
+          "Sobre componentes principales obtenidas a partir de las variables originales"
         ),
         correcta = "Sobre componentes principales obtenidas a partir de las variables originales"
       ),
-      
       list(
         texto = "¿Qué ventaja presenta PCR frente a la regresión múltiple cuando existen muchas variables correlacionadas?",
         opciones = c(
@@ -747,18 +740,16 @@ Regularizacion_Auto_Server <- function(id) {
         ),
         correcta = "Reduce la dimensionalidad antes de ajustar el modelo"
       ),
-      
       list(
         texto = "Supón que deseas conservar todas las variables, aunque algunas tengan poca importancia. ¿Qué método sería el más adecuado?",
         opciones = c(
           "LASSO",
           "PCR",
-          "Ridge",
-          "Regresión logística"
+          "Regresión logística",
+          "Ridge"
         ),
         correcta = "Ridge"
       ),
-      
       list(
         texto = "Un investigador quiere obtener un modelo sencillo utilizando únicamente las variables realmente importantes. ¿Qué método resulta más apropiado?",
         opciones = c(
@@ -769,73 +760,66 @@ Regularizacion_Auto_Server <- function(id) {
         ),
         correcta = "LASSO"
       ),
-      
       list(
-        texto = "¿Qué parámetro controla la intensidad de la penalización en Ridge y LASSO?",
+        texto = "Al aplicar LASSO al dataset Wine para predecir una propiedad continua, observas que variables como las cenizas adquieren un coeficiente de cero. ¿Qué significa esto?",
         opciones = c(
-          "λ (lambda)",
-          "R²",
-          "β₀",
-          "VIF"
+          "Que esa variable química fue excluida del modelo por no aportar información predictiva relevante",
+          "Que esa variable química es la más importante para la predicción",
+          "Que hubo un error matemático al calcular la penalización",
+          "Que el vino analizado no contiene cenizas"
         ),
-        correcta = "λ (lambda)"
+        correcta = "Que esa variable química fue excluida del modelo por no aportar información predictiva relevante"
       ),
-      
       list(
-        texto = "¿Qué suele ocurrir si el valor de λ aumenta mucho?",
+        texto = "Si aplicas PCR al dataset Wine debido a la alta correlación entre sus 13 variables químicas, ¿qué buscará el modelo en sus primeras componentes?",
         opciones = c(
-          "La penalización sobre los coeficientes aumenta",
-          "Los coeficientes crecen",
-          "El número de observaciones aumenta",
-          "El R² siempre mejora"
+          "Eliminar observaciones atípicas de los cultivos",
+          "Capturar la mayor cantidad de varianza matemática conjunta de las características químicas",
+          "Clasificar directamente los vinos sin realizar regresión",
+          "Predecir únicamente el nivel de alcohol"
         ),
-        correcta = "La penalización sobre los coeficientes aumenta"
+        correcta = "Capturar la mayor cantidad de varianza matemática conjunta de las características químicas"
       ),
-      
       list(
-        texto = "Tras aplicar LASSO observas que cinco coeficientes son exactamente cero. ¿Cómo se interpreta este resultado?",
+        texto = "¿Por qué es crucial estandarizar o escalar las variables químicas de un dataset como Wine antes de aplicar Ridge o LASSO?",
         opciones = c(
-          "Esas variables han sido descartadas por el modelo",
-          "Existe heterocedasticidad",
-          "Los datos contienen errores",
-          "El modelo no puede utilizarse"
+          "Para evitar que las variables con unidades de medida más grandes dominen injustamente la penalización",
+          "Para transformar la variable respuesta en una distribución categórica binaria",
+          "Porque los algoritmos de regularización no funcionan si los datos contienen números decimales",
+          "Para eliminar por completo todos los valores atípicos del conjunto de datos"
         ),
-        correcta = "Esas variables han sido descartadas por el modelo"
+        correcta = "Para evitar que las variables con unidades de medida más grandes dominen injustamente la penalización"
       ),
-      
       list(
         texto = "En PCR se seleccionan únicamente las componentes principales que...",
         opciones = c(
-          "Explican una parte importante de la variabilidad de los datos",
           "Presentan el menor autovalor",
           "Contienen menos observaciones",
-          "Corresponden a una única variable"
+          "Corresponden a una única variable",
+          "Explican una parte importante de la variabilidad de los datos"
         ),
         correcta = "Explican una parte importante de la variabilidad de los datos"
       ),
-      
       list(
         texto = "Dispones de 80 variables altamente correlacionadas entre sí y quieres construir un modelo predictivo estable. ¿Qué método sería especialmente adecuado?",
         opciones = c(
-          "PCR",
           "ANOVA",
           "Regresión logística",
+          "PCR",
           "Árboles de decisión"
         ),
         correcta = "PCR"
       ),
-      
       list(
         texto = "¿Cuál de las siguientes afirmaciones es correcta?",
         opciones = c(
-          "Ridge reduce los coeficientes pero normalmente no elimina variables, mientras que LASSO puede hacer ambas cosas.",
           "LASSO siempre obtiene mejores predicciones que Ridge.",
           "PCR únicamente puede utilizar dos componentes principales.",
-          "Los métodos de regularización sustituyen completamente a la regresión lineal."
+          "Los métodos de regularización sustituyen completamente a la regresión lineal.",
+          "Ridge reduce los coeficientes pero normalmente no elimina variables, mientras que LASSO puede hacer ambas cosas."
         ),
         correcta = "Ridge reduce los coeficientes pero normalmente no elimina variables, mientras que LASSO puede hacer ambas cosas."
       )
-      
     )
     
     preguntas_usuario <- reactiveVal(list())

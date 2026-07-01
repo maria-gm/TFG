@@ -580,92 +580,159 @@ K_means_Auto_Server <- function(id) {
         label = if (mostrar_respuestas()) "🙈 Ocultar respuestas" else "👁️ Ver respuestas"
       )
     })
+  
     preguntas_base <- list(
       list(
         texto = "¿Cuál es el objetivo principal del K-means?",
-        opciones = c("Agrupar observaciones minimizando la varianza dentro de cada cluster", "Calcular la matriz de cargas factoriales", "Predecir una variable continua dependiente", "Encontrar las componentes de máxima varianza"),
+        opciones = c(
+          "Calcular la matriz de cargas factoriales",
+          "Agrupar observaciones minimizando la varianza dentro de cada cluster",
+          "Predecir una variable continua dependiente",
+          "Encontrar las componentes de máxima varianza"
+        ),
         correcta = "Agrupar observaciones minimizando la varianza dentro de cada cluster"
       ),
       list(
         texto = "¿Qué representa la K en el algoritmo K-means?",
-        opciones = c("El número de iteraciones máximas", "El número predefinido de clusters que se desean obtener", "La distancia máxima permitida entre clusters", "El coeficiente de correlación de los datos"),
+        opciones = c(
+          "El número predefinido de clusters que se desean obtener",
+          "El número de iteraciones máximas",
+          "La distancia máxima permitida entre clusters",
+          "El coeficiente de correlación de los datos"
+        ),
         correcta = "El número predefinido de clusters que se desean obtener"
       ),
       list(
         texto = "¿Cómo se visualizan habitualmente los resultados de K-means con muchas variables?",
-        opciones = c("Mediante un dendrograma jerárquico", "Proyectando los clusters en el plano de las dos primeras componentes principales (PCA)", "Utilizando únicamente tablas de contingencia", "Mediante una matriz identidad de confusión"),
+        opciones = c(
+          "Mediante un dendrograma jerárquico",
+          "Utilizando únicamente tablas de contingencia",
+          "Proyectando los clusters en el plano de las dos primeras componentes principales (PCA)",
+          "Mediante una matriz identidad de confusión"
+        ),
         correcta = "Proyectando los clusters en el plano de las dos primeras componentes principales (PCA)"
       ),
       list(
         texto = "¿Cómo se suele obtener el número K óptimo de clusters?",
-        opciones = c("Usando el método del codo (Elbow method) o la anchura de silueta", "Calculando el P-valor de una prueba ANOVA", "Extrayendo únicamente los autovalores mayores que 1", "Probando todas las combinaciones posibles hasta infinito"),
+        opciones = c(
+          "Calculando el P-valor de una prueba ANOVA",
+          "Extrayendo únicamente los autovalores mayores que 1",
+          "Usando el método del codo (Elbow method) o la anchura de silueta",
+          "Probando todas las combinaciones posibles hasta infinito"
+        ),
         correcta = "Usando el método del codo (Elbow method) o la anchura de silueta"
       ),
       list(
         texto = "¿Qué propiedad cumplen los puntos asignados a un mismo cluster en K-means?",
-        opciones = c("Están más cerca del centroide de su propio cluster que de cualquier otro centroide", "Presentan una correlación exactamente lineal con el origen", "Tienen todos la misma varianza e idénticos valores originales", "Son linealmente independientes de los centroides"),
+        opciones = c(
+          "Presentan una correlación exactamente lineal con el origen",
+          "Tienen todos la misma varianza e idénticos valores originales",
+          "Son linealmente independientes de los centroides",
+          "Están más cerca del centroide de su propio cluster que de cualquier otro centroide"
+        ),
         correcta = "Están más cerca del centroide de su propio cluster que de cualquier otro centroide"
       ),
       list(
         texto = "¿Qué es el centroide en el contexto de K-means?",
-        opciones = c("El punto más alejado del conjunto de datos", "El vector de medias de las variables para las observaciones asignadas a ese cluster", "El error estándar residual acumulado", "El primer autovector calculado mediante SVD"),
+        opciones = c(
+          "El vector de medias de las variables para las observaciones asignadas a ese cluster",
+          "El punto más alejado del conjunto de datos",
+          "El error estándar residual acumulado",
+          "El primer autovector calculado mediante SVD"
+        ),
         correcta = "El vector de medias de las variables para las observaciones asignadas a ese cluster"
       ),
       list(
         texto = "¿Qué problema puede surgir debido a la inicialización aleatoria de los centroides en K-means?",
-        opciones = c("Que el algoritmo nunca llegue a converger", "Que los resultados dependan de la semilla inicial y se caiga en un mínimo local", "Que las variables se estandaricen automáticamente de forma errónea", "Que el número K cambie dinámicamente a mitad del proceso"),
+        opciones = c(
+          "Que el algoritmo nunca llegue a converger",
+          "Que las variables se estandaricen automáticamente de forma errónea",
+          "Que los resultados dependan de la semilla inicial y se caiga en un mínimo local",
+          "Que el número K cambie dinámicamente a mitad del proceso"
+        ),
         correcta = "Que los resultados dependan de la semilla inicial y se caiga en un mínimo local"
       ),
       list(
         texto = "¿Por qué es fundamental estandarizar las variables antes de aplicar K-means?",
-        opciones = c("Para evitar que las variables con magnitudes o escalas más grandes dominen el cálculo de las distancias", "Para transformar todas las variables en categóricas", "Porque el algoritmo solo funciona con datos distribuidos de forma normal perfecta", "Para reducir la dimensionalidad eliminando variables"),
+        opciones = c(
+          "Para transformar todas las variables en categóricas",
+          "Para evitar que las variables con magnitudes o escalas más grandes dominen el cálculo de las distancias",
+          "Porque el algoritmo solo funciona con datos distribuidos de forma normal perfecta",
+          "Para reducir la dimensionalidad eliminando variables"
+        ),
         correcta = "Para evitar que las variables con magnitudes o escalas más grandes dominen el cálculo de las distancias"
       ),
       list(
         texto = "¿Cómo se comporta K-means ante la presencia de valores atípicos (outliers)?",
-        opciones = c("Es muy sensible, ya que los outliers pueden distorsionar fuertemente la posición de los centroides", "Es completamente inmune y los ignora de manera automática", "Los agrupa a todos en un cluster especial llamado K-medio", "Los transforma en la media general de los datos"),
+        opciones = c(
+          "Es completamente inmune y los ignora de manera automática",
+          "Los agrupa a todos en un cluster especial llamado K-medio",
+          "Es muy sensible, ya que los outliers pueden distorsionar fuertemente la posición de los centroides",
+          "Los transforma en la media general de los datos"
+        ),
         correcta = "Es muy sensible, ya que los outliers pueden distorsionar fuertemente la posición de los centroides"
       ),
       list(
         texto = "¿Cuándo se detiene (converge) el proceso iterativo de K-means?",
-        opciones = c("Cuando se alcanza el número de factores solicitado por Kaiser", "Cuando las asignaciones de los puntos a los clusters ya no cambian o se llega al límite de iteraciones", "Cuando la varianza total explicada llega exactamente al 100%", "Cuando la distancia entre todos los centroides es igual a cero"),
+        opciones = c(
+          "Cuando las asignaciones de los puntos a los clusters ya no cambian o se llega al límite de iteraciones",
+          "Cuando se alcanza el número de factores solicitado por Kaiser",
+          "Cuando la varianza total explicada llega exactamente al 100%",
+          "Cuando la distancia entre todos los centroides es igual a cero"
+        ),
         correcta = "Cuando las asignaciones de los puntos a los clusters ya no cambian o se llega al límite de iteraciones"
       ),
       list(
         texto = "¿Para qué tipo de formas de clusters funciona mejor K-means?",
-        opciones = c("Clusters con formas alargadas o de luna contorneada", "Clusters compactos y de forma aproximadamente esférica", "Estructuras de datos puramente jerárquicas anidadas", "Agrupaciones basadas estrictamente en densidades locales lineales"),
+        opciones = c(
+          "Clusters con formas alargadas o de luna contorneada",
+          "Estructuras de datos puramente jerárquicas anidadas",
+          "Agrupaciones basadas estrictamente en densidades locales lineales",
+          "Clusters compactos y de forma aproximadamente esférica"
+        ),
         correcta = "Clusters compactos y de forma aproximadamente esférica"
       ),
       list(
-        texto = "¿Qué mide la Inercia (Within-cluster sum-of-squares) devuelta por K-means?",
-        opciones = c("La suma de las distancias al cuadrado de cada punto al centroide de su cluster asignado", "La distancia de separación que existe entre los centroides de los clusters", "El número total de observaciones mal clasificadas en el dataset", "La correlación global promedio entre todas las variables del estudio"),
+        texto = "¿Qué mide Inercia (Within-cluster sum-of-squares) devuelta por K-means?",
+        opciones = c(
+          "La distancia de separación que existe entre los centroides de los clusters",
+          "La suma de las distancias al cuadrado de cada punto al centroide de su cluster asignado",
+          "El número total de observaciones mal clasificadas en el dataset",
+          "La correlación global promedio entre todas las variables del estudio"
+        ),
         correcta = "La suma de las distancias al cuadrado de cada punto al centroide de su cluster asignado"
       ),
- 
       list(
         texto = "Tras cruzar los 3 clusters obtenidos mediante K-means con la variable real 'species' de los pingüinos, observas que Adelie y Chinstrap se mezclan en un mismo cluster. ¿A qué se debe esto?",
-        opciones = c("A que ambas especies comparten características físicas similares en tamaño y proporciones, haciendo que sus nubes de puntos se solapen", "A un error de convergencia del algoritmo que requiere aumentar drásticamente el número de iteraciones", "A que K-means obliga a que todos los clusters tengan exactamente el mismo número de observaciones por especie", "A que los pingüinos Chinstrap son un subtipo genético directo de los pingüinos Gentoo"),
+        opciones = c(
+          "A un error de convergencia del algoritmo que requiere aumentar drásticamente el número de iteraciones",
+          "A que K-means obliga a que todos los clusters tengan exactamente el mismo número de observaciones por especie",
+          "A que ambas especies comparten características físicas similares en tamaño y proporciones, haciendo que sus nubes de puntos se solapen",
+          "A que los pingüinos Chinstrap son un subtipo genético directo de los pingüinos Gentoo"
+        ),
         correcta = "A que ambas especies comparten características físicas similares en tamaño y proporciones, haciendo que sus nubes de puntos se solapen"
       ),
       list(
         texto = "Al interpretar los centroides finales de un K-means (K=2) en el dataset 'penguins', el Cluster 1 muestra medias muy altas de longitud de aleta y masa corporal en comparación con el Cluster 2. ¿Qué conclusión biológica es correcta?",
-        opciones = c("El Cluster 1 ha agrupado mayoritariamente a los pingüinos de la especie Gentoo, que son notablemente más grandes", "El Cluster 1 representa exclusivamente a los pingüinos hembra de cualquier especie", "El algoritmo ha separado a los pingüinos que viven en zonas cálidas de los que viven en zonas frías", "El Cluster 2 está compuesto únicamente por individuos jóvenes con picos hiperdesarrollados"),
+        opciones = c(
+          "El Cluster 1 ha agrupado mayoritariamente a los pingüinos de la especie Gentoo, que son notablemente más grandes",
+          "El Cluster 1 representa exclusivamente a los pingüinos hembra de cualquier especie",
+          "El algoritmo ha separado a los pingüinos que viven en zonas cálidas de los que viven en zonas frías",
+          "El Cluster 2 está compuesto únicamente por individuos jóvenes con picos hiperdesarrollados"
+        ),
         correcta = "El Cluster 1 ha agrupado mayoritariamente a los pingüinos de la especie Gentoo, que son notablemente más grandes"
       ),
       list(
         texto = "Al graficar el resultado de K-means en el dataset 'penguins', ¿qué significa cada punto del gráfico?",
         opciones = c(
-          "Cada punto representa a un pingüino individual del dataset", 
-          "Cada punto representa la media total de una especie diferente", 
-          "Cada punto representa una isla geográfica del archipiélago Palmer", 
+          "Cada punto representa la media total de una especie diferente",
+          "Cada punto representa a un pingüino individual del dataset",
+          "Cada punto representa una isla geográfica del archipiélago Palmer",
           "Cada punto representa una variable médica como el sexo o la edad"
         ),
         correcta = "Cada punto representa a un pingüino individual del dataset"
       )
-      
     )
-    
-    
     
     preguntas_usuario <- reactiveVal(list())
     

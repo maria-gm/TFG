@@ -671,36 +671,33 @@ Arboles_Auto_Server <- function(id) {
       list(
         texto = "¿Qué son los árboles de decisión?",
         opciones = c(
-          "Modelos predictivos que generan reglas jerárquicas para clasificar o predecir",
           "Técnicas de reducción de dimensionalidad",
           "Métodos para calcular correlaciones",
+          "Modelos predictivos que generan reglas jerárquicas para clasificar o predecir",
           "Modelos basados exclusivamente en regresión lineal"
         ),
         correcta = "Modelos predictivos que generan reglas jerárquicas para clasificar o predecir"
       ),
-      
       list(
         texto = "¿Cuándo se utilizan los árboles de decisión?",
         opciones = c(
-          "Cuando se desea clasificar individuos o realizar predicciones",
           "Únicamente para calcular medias",
+          "Cuando se desea clasificar individuos o realizar predicciones",
           "Solo para reducir variables",
           "Exclusivamente para análisis factorial"
         ),
         correcta = "Cuando se desea clasificar individuos o realizar predicciones"
       ),
-      
       list(
         texto = "¿Qué utilizan los árboles de decisión para clasificar a los individuos?",
         opciones = c(
-          "Reglas de decisión basadas en los atributos predictivos",
           "Únicamente la variable dependiente",
           "Correlaciones entre observaciones",
-          "Promedios de cada grupo"
+          "Promedios de cada grupo",
+          "Reglas de decisión basadas en los atributos predictivos"
         ),
         correcta = "Reglas de decisión basadas en los atributos predictivos"
       ),
-      
       list(
         texto = "¿Con qué tipo de variables pueden trabajar los árboles de decisión?",
         opciones = c(
@@ -711,62 +708,56 @@ Arboles_Auto_Server <- function(id) {
         ),
         correcta = "Variables categóricas y continuas"
       ),
-      
       list(
         texto = "¿Qué puede indicar que las métricas de ajuste del modelo sean extremadamente altas?",
         opciones = c(
-          "Posible sobreajuste del modelo",
           "Falta de información en los datos",
+          "Posible sobreajuste del modelo",
           "Error en la variable objetivo",
           "Ausencia de variables predictoras"
         ),
         correcta = "Posible sobreajuste del modelo"
       ),
-      
       list(
         texto = "En el dataset Breast Cancer utilizado en la aplicación, ¿qué variable suele aparecer como una de las más representativas para clasificar tumores?",
         opciones = c(
-          "Radius_mean",
           "ID",
           "Diagnóstico",
+          "Radius_mean",
           "Número de observación"
         ),
         correcta = "Radius_mean"
       ),
-      
       list(
         texto = "¿Qué representa el accuracy de un árbol de decisión?",
         opciones = c(
-          "La proporción de observaciones clasificadas correctamente",
           "El número total de variables del modelo",
+          "La proporción de observaciones clasificadas correctamente",
           "La profundidad máxima del árbol",
           "La cantidad de nodos terminales"
         ),
         correcta = "La proporción de observaciones clasificadas correctamente"
       ),
-      
       list(
         texto = "¿Qué es el sobreajuste (overfitting)?",
         opciones = c(
-          "Cuando el modelo aprende el ruido de los datos y pierde capacidad de generalización",
           "Cuando el árbol tiene pocos nodos",
           "Cuando se eliminan variables predictoras",
+          "Cuando el modelado aprende el ruido de los datos y pierde capacidad de generalización",
           "Cuando el accuracy es bajo"
         ),
         correcta = "Cuando el modelo aprende el ruido de los datos y pierde capacidad de generalización"
       ),
-      
       list(
         texto = "¿Qué mide la importancia de variables en un árbol de decisión?",
         opciones = c(
-          "La contribución de cada predictor a la reducción de impureza",
           "La media de cada variable",
+          "La contribución de cada predictor a la reducción de impureza",
           "La correlación entre observaciones",
           "La cantidad de datos faltantes"
         ),
         correcta = "La contribución de cada predictor a la reducción de impureza"
       ),
-      
       list(
         texto = "¿Qué representa una hoja en un árbol de decisión?",
         opciones = c(
@@ -777,40 +768,36 @@ Arboles_Auto_Server <- function(id) {
         ),
         correcta = "La clasificación o predicción final"
       ),
-      
       list(
         texto = "¿Qué criterio utiliza habitualmente el algoritmo CART para seleccionar divisiones?",
         opciones = c(
-          "Índice de Gini",
           "Coeficiente de correlación",
           "Media aritmética",
+          "Índice de Gini",
           "Distancia euclídea"
         ),
         correcta = "Índice de Gini"
       ),
-      
       list(
         texto = "¿Qué mide la entropía en un árbol de decisión?",
         opciones = c(
-          "El grado de incertidumbre o desorden de un nodo",
           "La profundidad del árbol",
           "El número de observaciones",
-          "La precisión global del modelo"
+          "La precisión global del modelo",
+          "El grado de incertidumbre o desorden de un nodo"
         ),
         correcta = "El grado de incertidumbre o desorden de un nodo"
       ),
-      
       list(
         texto = "Según la interpretación mostrada en la aplicación, ¿qué significa que una variable aparezca en primer lugar en el gráfico de importancia?",
         opciones = c(
-          "Que es la que más contribuye a las divisiones relevantes del árbol",
           "Que tiene más valores perdidos",
           "Que fue introducida primero en la base de datos",
-          "Que es la variable objetivo"
+          "Que es la variable objetivo",
+          "Que es la que más contribuye a las divisiones relevantes del árbol"
         ),
         correcta = "Que es la que más contribuye a las divisiones relevantes del árbol"
       ),
-      
       list(
         texto = "¿Qué representan las reglas de decisión mostradas en la pestaña de reglas?",
         opciones = c(
@@ -821,18 +808,18 @@ Arboles_Auto_Server <- function(id) {
         ),
         correcta = "Condiciones lógicas IF-THEN desde la raíz hasta una hoja"
       ),
-      
       list(
         texto = "¿Cuál es una de las principales ventajas de los árboles de decisión frente a modelos de caja negra?",
         opciones = c(
-          "Permiten interpretar fácilmente el proceso de decisión",
           "Siempre tienen mayor precisión",
           "No requieren datos",
+          "Permiten interpretar fácilmente el proceso de decisión",
           "Eliminan automáticamente el ruido"
         ),
         correcta = "Permiten interpretar fácilmente el proceso de decisión"
       )
     )
+    
     
     preguntas_usuario <- reactiveVal(list())
     
