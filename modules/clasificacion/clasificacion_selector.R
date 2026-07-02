@@ -88,7 +88,7 @@ Clasificacion_Server <- function(id, datos, datos_ejemplo = NULL){
           tags$div(
             style = "padding: 10px;",
             h3("La Familia de Técnicas de Clasificación", style = "font-weight: 700; color: #1a365d;"),
-            p("Algoritmos de aprendizaje supervisado diseñados para asignar etiquetas categóricas concretas a los elementos basándose en sus atributos multivariantes:", style = "color: #64748b;"),
+            p("Algoritmos de aprendizaje supervisado que clasifican elementos en categorías específicas a partir de sus características o variables.", style = "color: #64748b;"),
             br(),
             bslib::layout_column_wrap(
               width = 1/3, 
@@ -96,17 +96,17 @@ Clasificacion_Server <- function(id, datos, datos_ejemplo = NULL){
               bslib::card(
                 style = "border-top: 4px solid #3b82f6;",
                 bslib::card_header(tags$b("Regresión Logística")),
-                bslib::card_body(p("Predice la probabilidad de ocurrencia de un suceso"), plotOutput(ns("plot_mini_logistica"), height = "135px"))
+                bslib::card_body(p("Modela la probabilidad de que una observación pertenezca a una categoría (usualmente binaria) mediante una función sigmoide."), plotOutput(ns("plot_mini_logistica"), height = "135px"))
               ),
               bslib::card(
                 style = "border-top: 4px solid #3b82f6;",
                 bslib::card_header(tags$b("LDA (Análisis Discriminante Lineal)")),
-                bslib::card_body(p("Enfoque probabilístico bayesiano que asume distribución normal homocedástica para trazar fronteras lineales de separación óptimas."), plotOutput(ns("plot_mini_lda"), height = "135px"))
+                bslib::card_body(p("Método estadístico que asume datos con varianza constante para encontrar la función lineal óptima que maximiza la separación entre clases."), plotOutput(ns("plot_mini_lda"), height = "135px"))
               ),
               bslib::card(
                 style = "border-top: 4px solid #10b981;",
                 bslib::card_header(tags$b("Árboles de Decisión")),
-                bslib::card_body(p("Estructura estratificada no paramétrica que segmenta recursivamente el espacio muestral según criterios de pureza como el índice Gini."), plotOutput(ns("plot_mini_arboles"), height = "135px"))
+                bslib::card_body(p("Modelo basado en reglas condicionales que divide los datos de forma sucesiva buscando la máxima homogeneidad en cada grupo."), plotOutput(ns("plot_mini_arboles"), height = "135px"))
               )
             )
           )

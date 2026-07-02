@@ -74,7 +74,7 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
           tags$div(
             style = "padding: 10px;",
             h3("La Familia de Reducción de Dimensionalidad", style = "font-weight: 700; color: #1a365d;"),
-            p("Compara visualmente los enfoques matemáticos de las técnicas disponibles en este módulo:", style = "color: #64748b;"),
+            p("Técnicas que disminuyen el número de variables en un conjunto de datos, conservando la información esencial para mejorar la capacidad de generalización. ", style = "color: #64748b;"),
             br(),
             bslib::layout_column_wrap(
               width = 1/3,

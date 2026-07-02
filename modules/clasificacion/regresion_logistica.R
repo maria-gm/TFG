@@ -1,13 +1,11 @@
-# =========================================================
-# REGRESIÓN LOGÍSTICA BINARIA - EDICIÓN MEMORIA PREMIUM
-# =========================================================
-# =========================================================
-# REGRESIÓN LOGÍSTICA BINARIA - EDICIÓN MEMORIA PREMIUM
-# =========================================================
+# ==========================
+# REGRESIÓN LOGÍSTICA 
+# ==========================
+
 Regresion_logistica_Teoria_UI <- function(id) {
-  ns <- NS(id)  # <-- Corregido aquí: cambiado ':=' por '<-' o '='
+  ns <- NS(id)  
   
-  # Estilos CSS personalizados e idénticos al formato de la memoria
+  # Estilos CSS personalizados 
   custom_css <- "
     .theory-card {
       border: 1px solid #e2e8f0;
@@ -41,7 +39,6 @@ Regresion_logistica_Teoria_UI <- function(id) {
       margin-bottom: 20px;
     }
   "
-  
   tagList(
     withMathJax(),
     tags$head(tags$style(HTML(custom_css))),
@@ -65,7 +62,7 @@ Regresion_logistica_Teoria_UI <- function(id) {
       ),
       
       # =====================================
-      # BLOQUES INTRODUCTORIOS (ESTILO image_3552b6)
+      # BLOQUES INTRODUCTORIOS 
       # =====================================
       bslib::layout_column_wrap(
         width = 1/3,

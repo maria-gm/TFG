@@ -808,7 +808,6 @@ AF_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
     tags$head(
       tags$style(HTML("
         /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
