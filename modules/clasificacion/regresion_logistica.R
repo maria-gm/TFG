@@ -5,7 +5,7 @@
 Regresion_logistica_Teoria_UI <- function(id) {
   ns <- NS(id)  
   
-  # Estilos CSS personalizados 
+  # Estilos CSS  
   custom_css <- "
     .theory-card {
       border: 1px solid #e2e8f0;
@@ -47,7 +47,7 @@ Regresion_logistica_Teoria_UI <- function(id) {
       style = "padding: 30px; background-color: #fcfdfe;",
       
       # =====================================
-      # CABECERA ESTILO LDA
+      # CABECERA  
       # =====================================
       tags$div(
         style = "margin-bottom: 25px;",
@@ -62,14 +62,14 @@ Regresion_logistica_Teoria_UI <- function(id) {
       ),
       
       # =====================================
-      # BLOQUES INTRODUCTORIOS 
+      # BLOQUES  
       # =====================================
       bslib::layout_column_wrap(
         width = 1/3,
         heights_equal = "row",
         style = "margin-bottom: 35px;",
         
-        # Bloque 1: Planteamiento Probabilístico
+        # Bloque 1: Planteamiento 
         bslib::card(
           style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
@@ -169,7 +169,7 @@ Regresion_logistica_Teoria_UI <- function(id) {
           tags$div(class = "equation-container", HTML("$$\\text{Sensibilidad} = \\frac{\\text{VP}}{\\text{VP} + \\text{FN}}, \\quad \\text{Especificidad} = \\frac{\\text{VN}}{\\text{VN} + \\text{FP}}$$")),
           p(HTML("siendo <i>VP</i> el número de verdaderos positivos, <i>VN</i> el número de verdaderos negativos, <i>FP</i> el número de falsos positivos y <i>FN</i> el número de falsos negativos.")),
           
-          # Tabla Matriz de Confusión Compacta
+          # Tabla Matriz de Confusión 
           tags$div(
             style = "margin: 20px auto; max-width: 550px;",
             tags$table(
@@ -204,7 +204,7 @@ Regresion_logistica_Teoria_UI <- function(id) {
       ),
       
       # =====================================
-      # APARTADO 3.5.4: MÉTRICAS
+      # MÉTRICAS
       # =====================================
       h4(icon("chart-simple"), "3.5.4 Métricas de evaluación", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
@@ -241,22 +241,22 @@ Regresion_logistica_Teoria_UI <- function(id) {
 }
 Regresion_logistica_Teoria_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    # Módulo de servidor lógicamente vacío para visualizaciones estáticas teóricas
   })
 }
+
 # -------------------------------
 # ANALISIS
 # -------------------------------
 Regresion_logistica_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
-    # Título personalizado corporativo unificado con el de RLM
+    # Título 
     h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
       #--------------------------------------------------
-      # PANEL LATERAL (A LA IZQUIERDA)
+      # PANEL LATERAL 
       #--------------------------------------------------
       column(4,
              wellPanel(
@@ -275,7 +275,7 @@ Regresion_logistica_Analisis_UI <- function(id){
       # PANEL PRINCIPAL (A LA DERECHA)
       #--------------------------------------------------
       column(8,
-             # Banner de Alerta Único para todo el módulo expuesto al inicio del panel
+             # Banner de error
              uiOutput(ns("alerta_logistica")),
              br(),
              
@@ -303,7 +303,7 @@ Regresion_logistica_Analisis_UI <- function(id){
                         h4("Odds Ratios (Interpretación Explicativa Real)", style = "color: #2c3e50; font-weight: 500;"), 
                         DT::DTOutput(ns("tabla_odds")),
                         br(),
-                        h4("Métricas de Información y Error", style = "color: #2c3e50; font-weight: 500;"), 
+                        h4("Métricas de evaluación", style = "color: #2c3e50; font-weight: 500;"), 
                         DT::DTOutput(ns("tabla_metricas")),
                         br(),
                         h4("Interpretación de Resultados", style = "color: #2c3e50; font-weight: 500;"), 
@@ -345,12 +345,11 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
   moduleServer(id, function(input, output, session){
     
     # ==========================================================================
-    # FUNCIONES LOCALES DE VALIDACIÓN (Encapsuladas en el Server)
+    # FUNCIONES DE VALIDACIÓN 
     # ==========================================================================
     validar_datos_logistica <- function(df) {
       if (is.null(df) || nrow(df) == 0) return("No se han cargado datos.")
       
-      # Buscar si hay alguna variable con exactamente 2 niveles únicos
       vars_binarias <- names(df)[sapply(df, function(x) length(unique(x[!is.na(x)])) == 2)]
       
       if (length(vars_binarias) == 0 && !("Class" %in% names(df))) {
@@ -376,7 +375,7 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
     }
     
     # ==========================================================================
-    # LOGICA REACTIVA DE VALIDACIÓN COMPARTIDA
+    # LOGICA DE VALIDACIÓN
     # ==========================================================================
     evaluacion_logistica <- reactive({
       df <- if(!is.null(datos()) && is.data.frame(datos())) datos() else datos_ejemplo
@@ -387,7 +386,7 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
       return(list(valido = TRUE, datos = df))
     })
     
-    # Renderizado del Banner en UI
+    # Renderizado del error 
     output$alerta_logistica <- renderUI({
       eval <- evaluacion_logistica()
       if (!eval$valido) mensaje_error_analisis(eval$mensaje) else NULL
@@ -419,13 +418,13 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
       df <- datos_base()
       cols <- setdiff(names(df), c(input$var_dep, "Id"))
       
-      # Filtrar las columnas que sean numéricas para evitar polinomios o factores
+      # Filtrar las columnas que sean numéricas 
       cols_numericas <- cols[sapply(df[, cols, drop = FALSE], is.numeric)]
       
-      # Si por alguna razón no detecta numéricas, permitir las normales para no romper la app
+      # Si  no detecta numéricas, permitir cols  para no romper la app
       if(length(cols_numericas) == 0) cols_numericas <- cols
       
-      # Selección por defecto: Las dos primeras variables numéricas
+      # Selección por defecto de las dos primeras variables numéricas
       seleccion_defecto <- cols_numericas[1:min(2, length(cols_numericas))]
       
       selectizeInput(session$ns("var_indep"), "Variables Predictoras (X):", 
@@ -434,17 +433,17 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
                      options = list(plugins = list('remove_button'), persist = FALSE))
     })
     
-    # --- 3. PREPARACIÓN LOGÍSTICA ---
+    # --- 3. PREPARACIÓN  ---
     datos_log <- reactive({
       req(evaluacion_logistica()$valido)
       req(input$var_dep, input$var_indep)
       df <- datos_base()
       
-      # Forzar variable dependiente a Factor binario 0/1
+      # Forzar variable dependiente a Factor binario 
       df[[input$var_dep]] <- as.factor(df[[input$var_dep]])
       levels(df[[input$var_dep]]) <- c(0, 1) 
       
-      # Limpieza y conversión forzada a numéricas ordinarias para las variables independientes X
+      # Limpieza y conversión  a numéricas ordinarles para las variables independientes 
       for(col in input$var_indep) {
         if(is.factor(df[[col]]) || is.character(df[[col]])) {
           df[[col]] <- as.numeric(as.character(df[[col]]))
@@ -454,7 +453,7 @@ Regresion_logistica_Analisis_Server <- function(id, datos, datos_ejemplo = NULL)
       df
     })
     
-    # --- 4. MODELO COMPLETAMENTE REACTIVO ---
+    # --- 4. MODELO  ---
     modelo_log <- reactive({
       req(evaluacion_logistica()$valido)
       req(input$var_dep, input$var_indep)
@@ -636,7 +635,6 @@ Regresion_logistica_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
     tags$head(
       tags$style(HTML("
         /* Ataca directamente a todas las variaciones de radio buttons de Shiny */

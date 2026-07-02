@@ -13,7 +13,6 @@ Reduccion_UI <- function(id){
       selected = "GENERAL"
     ),
     br(),
-    # Este contenedor inyectará de forma dinámica la interfaz correcta
     uiOutput(ns("interfaz_dinamica_ui"))
   )
 }
@@ -68,7 +67,7 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
     output$interfaz_dinamica_ui <- renderUI({
       req(input$tecnica)
       
-      # CASO A: Si selecciona la visión general, NO se generan pestañas
+      # CASO A: Si selecciona la visión general, no se generan pestañas
       if (input$tecnica == "GENERAL") {
         return(
           tags$div(
@@ -108,7 +107,7 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
         )
       }
       
-      # CASO B: Si se selecciona una técnica, pintamos el contenedor estructurado con las pestañas
+      # CASO B: Si se selecciona una técnica, el contenedor esta estructurado con las pestañas
       tabsetPanel(
         tabPanel("Teoría", uiOutput(ns("teoria_ui"))),
         tabPanel("Análisis", uiOutput(ns("analisis_ui"))),
@@ -117,7 +116,7 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     # =====================================================
-    # CONTROLADOR DE EVENTOS Y ENRUTAMIENTO DE SUB-MÓDULOS
+    #  SUB-MÓDULOS
     # =====================================================
     observeEvent(input$tecnica, {
       req(input$tecnica)
@@ -161,7 +160,7 @@ Reduccion_Server <- function(id, datos, datos_ejemplo = NULL){
       }
     }, ignoreInit = FALSE)
     
-    # Reset al pulsar el menú lateral izquierdo principal de la app
+    # Reset al pulsar el menú lateral de la app
     observeEvent(session$userData$reset_reduccion, {
       updateSelectInput(session, "tecnica", selected = "GENERAL")
     }, ignoreInit = TRUE)

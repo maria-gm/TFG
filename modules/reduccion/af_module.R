@@ -109,7 +109,7 @@ AF_Teoria_UI <- function(id) {
       br(),
       
       # =================================================
-      # MÉTODOS EXTRACCIÓN (TFG RESUMIDO)
+      # MÉTODOS EXTRACCIÓN 
       # =================================================
       bslib::card(
         style = "border: 1px solid #cbd5e1; background: #f8fafc;",
@@ -275,7 +275,7 @@ AF_Analisis_UI <- function(id){
             value = "datos",
             
             br(),
-            uiOutput(ns("alerta_datos_af")), # Alerta local inyectada sin romper la UI
+            uiOutput(ns("alerta_datos_af")), # Alerta local 
             
             p("Información: El análisis se ejecuta exclusivamente sobre las columnas de tipo numérico.", 
               style = "color: #7f8c8d; font-style: italic; margin-bottom: 25px;"),
@@ -297,7 +297,7 @@ AF_Analisis_UI <- function(id){
             value = "diagnostico",
             
             br(),
-            uiOutput(ns("alerta_diag_af")), # Alerta local inyectada sin romper la UI
+            uiOutput(ns("alerta_diag_af")), # Alerta local 
             
             wellPanel(
               p("Evaluación de la adecuación muestral para el Análisis Factorial.")
@@ -325,7 +325,7 @@ AF_Analisis_UI <- function(id){
             value = "componentes",
             
             br(),
-            uiOutput(ns("alerta_scree_af")), # Alerta local inyectada sin romper la UI
+            uiOutput(ns("alerta_scree_af")), # Alerta local
             
             wellPanel(
               p("Scree plot y varianza común explicada.")
@@ -346,7 +346,7 @@ AF_Analisis_UI <- function(id){
           ),
           
           #================================================
-          # CARGAS FACTORIALES (LOADINGS)
+          # CARGAS FACTORIALES 
           #================================================
           tabPanel(
             "Cargas Factoriales",
@@ -391,14 +391,14 @@ AF_Analisis_UI <- function(id){
           ),
           
           #================================================
-          # PUNTUACIONES (SCORES)
+          # PUNTUACIONES 
           #================================================
           tabPanel(
             "Puntuaciones Factoriales",
             value = "individuos",
             
             br(),
-            uiOutput(ns("alerta_scores_af")), # Alerta local inyectada sin romper la UI
+            uiOutput(ns("alerta_scores_af")), # Alerta local 
             
             h4("Puntuaciones de los individuos", style = "color: #2c3e50; font-weight: 500;"),
             plotOutput(ns("scores_plot_af"), height = "600px"),
@@ -459,7 +459,7 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       return(list(valido = TRUE, base_limpia = df_clean))
     })
     
-    # Renderizado único del banner superior de error
+    # Renderizado del banner de error
     output$mensaje_error_ui <- renderUI({
       prep <- datos_preprocesados()
       if (!prep$valido) return(prep$ui_error)
@@ -585,7 +585,7 @@ AF_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     #--------------------------------------------------
-    # DIAGNÓSTICO Y DEMÁS RENDERERS REQUERIDOS (Sin alteraciones estructurales)
+    # DIAGNÓSTICO 
     #--------------------------------------------------
     output$dataset_std_af <- DT::renderDT({
       req(datos_std())

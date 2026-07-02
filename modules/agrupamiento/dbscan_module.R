@@ -1,8 +1,6 @@
 # =====================================================
 # DBSCAN - MODULO
 # =====================================================
-
-
 # -------------------------------
 # TEORIA
 # -------------------------------
@@ -10,7 +8,7 @@ DBSCAN_Teoria_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Única llamada necesaria para activar MathJax en toda la página
+    # Activar MathJax 
     withMathJax(),
     
     tags$div(
@@ -33,11 +31,11 @@ DBSCAN_Teoria_UI <- function(id) {
       # TARJETAS PRINCIPALES
       # =====================================
       bslib::layout_column_wrap(
-        width = 1/3, # Tres columnas perfectamente niveladas
+        width = 1/3, # Tres columnas 
         heights_equal = "row",
         
         # ---------------------------------
-        # 1. PARÁMETROS CRÍTICOS
+        # 1. PARÁMETROS 
         # ---------------------------------
         bslib::card(
           bslib::card_header(
@@ -99,7 +97,7 @@ DBSCAN_Teoria_UI <- function(id) {
       br(),
       
       # =================================================
-      # ESQUEMA VISUAL DE CONCEPTOS DENSIDAD 
+      # CONCEPTOS  
       # =================================================
      
       bslib::card(
@@ -117,7 +115,6 @@ DBSCAN_Teoria_UI <- function(id) {
               tags$h5("Alcanzabilidad por Densidad", style = "color: #15803d; font-weight: bold; margin-bottom: 5px;"),
               tags$p("(Relación unidireccional y transitiva mediante saltos de densidad)", style = "font-size: 0.85rem; color: #64748b; margin-bottom: 15px;"),
               
-              # Cadena horizontal limpia
               tags$div(
                 style = "display: flex; justify-content: center; align-items: center; gap: 10px; margin: 35px 0;",
                 tags$span(style = "width: 15px; height: 15px; background: #94a3b8; border-radius: 50%;"),
@@ -144,7 +141,6 @@ DBSCAN_Teoria_UI <- function(id) {
               tags$h5("Conectividad por Densidad", style = "color: #15803d; font-weight: bold; margin-bottom: 5px;"),
               tags$p("(Relación simétrica: existe un punto central que alcanza a ambos)", style = "font-size: 0.85rem; color: #64748b; margin-bottom: 15px;"),
               
-              # Estructura horizontal corregida: p <- o -> q
               tags$div(
                 style = "display: flex; justify-content: center; align-items: center; gap: 12px; margin: 35px 0;",
                 tags$span("\\(p\\)", style = "width: 32px; height: 32px; background: #ea580c; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem;"),
@@ -162,7 +158,6 @@ DBSCAN_Teoria_UI <- function(id) {
             )
           ),
           
-          # Nota informativa inferior
           tags$div(
             style = "margin-top: 15px; border-left: 4px solid #0284c7; background: #f0f9ff; padding: 10px; border-radius: 0 6px 6px 0; font-size: 0.88rem;",
             tags$b(icon("info"), "Nota teórica:"), 
@@ -172,9 +167,8 @@ DBSCAN_Teoria_UI <- function(id) {
         )
       ),
       
-      
       # =====================================
-      # DINÁMICA DEL ALGORITMO Y FORMALIZACIÓN
+      # ALGORITMO 
       # =====================================
       bslib::card(
         style = "border: 1px solid #cbd5e1; background: #f8fafc;",
@@ -214,7 +208,6 @@ DBSCAN_Teoria_UI <- function(id) {
   ) 
 } 
 
-         
 DBSCAN_Teoria_Server <- function(id){
   
   moduleServer(id, function(input, output, session){
@@ -231,13 +224,13 @@ DBSCAN_Teoria_Server <- function(id){
 DBSCAN_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
-    # Título personalizado idéntico al de los módulos anteriores
+    # Título 
     h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
       #--------------------------------------------------
-      # PANEL LATERAL (A LA IZQUIERDA)
+      # PANEL LATERAL
       #--------------------------------------------------
       column(4,
              wellPanel(
@@ -252,7 +245,7 @@ DBSCAN_Analisis_UI <- function(id){
                helpText("2. Mira el gráfico k-dist y busca el 'codo' para el eps"),
                numericInput(ns("eps"), "eps (Radio de vecindad)", value = 0.5, min = 0.01, step = 0.05),
                
-               # Se muestra condicionalmente en la pestaña de visualización
+               # Se muestra  en la pestaña de visualización
                conditionalPanel(
                  condition = sprintf("input['%s'] == '3. Clústeres Detectados'", ns("tabs_dbscan")),
                  uiOutput(ns("ui_var_cat"))
@@ -261,7 +254,6 @@ DBSCAN_Analisis_UI <- function(id){
                hr(),
                downloadButton(ns("dl_db"), "Descargar Resultados (CSV)", class = "btn-success", style = "width: 100%;"),
                br(), br(),
-               # Nota de consistencia idéntica a los demás módulos
                helpText("Nota: Se eliminan filas con valores faltantes automáticamente.")
              )
       ),
@@ -310,11 +302,11 @@ DBSCAN_Analisis_UI <- function(id){
 DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
   moduleServer(id, function(input, output, session){
     
-    # --- 1. ÚNICA VALIDACIÓN Y PREPROCESADO GLOBAL ---
+    # --- 1.  VALIDACIÓN Y PREPROCESADO  ---
     datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
       
-      # Generador del banner de error rojo HTML nativo
+      # Generador del banner de error rojo 
       crear_banner_error <- function(mensaje) {
         div(
           class = "alert alert-danger",
@@ -327,7 +319,7 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
         )
       }
       
-      # Validaciones estructurales del dataset
+      # Validaciones  del dataset
       if (is.null(df)) {
         return(list(valido = FALSE, ui_error = crear_banner_error("No se han detectado datos cargados. Por favor, suba un archivo o seleccione un ejemplo.")))
       }
@@ -335,13 +327,13 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
         return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 10 observaciones válidas para estructurar agrupaciones estables basadas en densidad.")))
       }
       
-      # Filtro de casos completos (Remoción de NAs)
+      # Filtro de casos completos para eliminar NA
       df_limpio <- df[complete.cases(df), , drop = FALSE]
       if (nrow(df_limpio) < 10) {
         return(list(valido = FALSE, ui_error = crear_banner_error("El dataset no contiene suficientes filas completas (mínimo 10) tras eliminar registros con valores perdidos (NA).")))
       }
       
-      # Aislamiento y filtro de columnas cuantitativas
+      # filtro de columnas cuantitativas
       df_num <- df_limpio[, sapply(df_limpio, is.numeric), drop = FALSE]
       cols_validas <- sapply(df_num, function(x) length(unique(x)) > 15)
       
@@ -353,13 +345,13 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
         df_num <- df_num[, cols_validas, drop = FALSE]
       }
       
-      # Control de varianza cero (Evitar desbordamiento en escala)
+      # Control de varianza cero 
       sd_cols <- sapply(df_num, sd, na.rm = TRUE)
       if (any(sd_cols == 0)) {
         return(list(valido = FALSE, ui_error = crear_banner_error("Una o más variables cuantitativas seleccionadas tienen varianza cero (valores constantes) y no pueden ser normalizadas.")))
       }
       
-      # Reindexación homogénea y cálculo de Z-scores
+      # Estandarización
       rownames(df_limpio) <- 1:nrow(df_limpio)
       rownames(df_num) <- 1:nrow(df_num)
       df_scaled <- scale(df_num)
@@ -378,15 +370,15 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       if (!prep$valido) {
         return(prep$ui_error)
       }
-      return(NULL) # Oculto completamente si pasa los controles de calidad
+      return(NULL) 
     })
     
-    # --- 3. ENLACES REACTIVOS SEGUROS (CON REQ) ---
+    # --- 3. ENLACES REACTIVOS  ---
     datos_base  <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
     datos_num   <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$num })
     datos_scale <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$scaled })
     
-    # --- 4. MODELADO INTERNO (PCA Y DBSCAN) ---
+    # --- 4. MODELADO INTERNO  ---
     pca_res <- reactive({ 
       req(datos_scale())
       prcomp(datos_scale()) 
@@ -442,7 +434,7 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       )
     })
     
-    # --- 7. OUTPUT: OPTIMIZACIÓN (k-dist) ---
+    # --- 7. OUTPUT: K-DIST ---
     output$kdist_plot <- renderPlot({
       req(datos_scale())
       dbscan::kNNdistplot(datos_scale(), k = input$minPts)
@@ -482,7 +474,7 @@ DBSCAN_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
              subtitle = "Nota: El Clúster 0 representa el RUIDO (Outliers detectados)")
     })
     
-    # --- 9. OUTPUT: TABLA RESUMEN COMPACTA ---
+    # --- 9. OUTPUT: TABLA RESUMEN ---
     output$resumen_db <- DT::renderDT({
       req(modelo_db())
       tab <- as.data.frame(table(Clúster = modelo_db()$cluster))
@@ -528,7 +520,6 @@ DBSCAN_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA DEFINTIVA PARA RESPUESTAS EN UNA LÍNEA ───
     tags$head(
       tags$style(HTML("
         /* Obliga a los contenedores de radio buttons a usar todo el ancho disponible */
@@ -589,7 +580,7 @@ DBSCAN_Auto_UI <- function(id) {
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de DBSCAN", # Corrigo texto PCA -> DBSCAN
+        title = "➕ Gestión: Añadir pregunta personalizada de DBSCAN", 
         icon = icon("gear"),
         
         fluidRow(
@@ -614,7 +605,6 @@ DBSCAN_Auto_UI <- function(id) {
 DBSCAN_Auto_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
-    # CORRECCIÓN 1: Habías duplicado e inicializado dos veces consecutivas este valor reactivo
     mostrar_respuestas <- reactiveVal(FALSE)
     
     observeEvent(input$ver, {
@@ -645,8 +635,6 @@ DBSCAN_Auto_Server <- function(id) {
       ),
       list(
         texto = "¿Dónde se encuentra un punto frontera (Border Point) en DBSCAN?",
-        # CORRECCIÓN 2: En la lista tenías escrito "of" en inglés dentro de la respuesta correcta ("vecindad of un punto..."), 
-        # pero en las opciones decía "de" ("vecindad de un punto..."). Al no coincidir el texto exacto, la corrección siempre daba "Incorrecto".
         opciones = c("En el centro geométrico exacto de la agrupación o cluster", "Dentro del radio de vecindad de un punto núcleo, pero sin tener suficientes vecinos propios", "Fuera de cualquier radio de densidad, considerándose un outlier absoluto", "En la intersección ortogonal entre dos componentes principales"),
         correcta = "Dentro del radio de vecindad de un punto núcleo, pero sin tener suficientes vecinos propios"
       ),
@@ -729,9 +717,6 @@ DBSCAN_Auto_Server <- function(id) {
     
     preguntas_ordenadas <- reactiveVal(NULL)
     
-    # CORRECCIÓN 3: Cambiado observe() por observeEvent(preguntas(), ...).
-    # Al usar observe() plano con isolate(), Shiny entraba en bucles infinitos de renderizado
-    # o no actualizaba correctamente el set inicial de preguntas al iniciar el módulo.
     observeEvent(preguntas(), {
       lista_actual <- preguntas()
       

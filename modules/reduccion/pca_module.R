@@ -252,7 +252,7 @@ PCA_Teoria_Server <- function(id){
 PCA_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
-    # Título corporativo unificado
+    # Título 
     h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
@@ -265,7 +265,7 @@ PCA_Analisis_UI <- function(id){
                h4("Configuración"),
                p("Seleccione las componentes principales que desea visualizar e interpretar."),
                hr(),
-               # Controles dinámicos inyectados limpiamente según la pestaña activa
+               # Controles dinámicos inyectados según la pestaña activa
                uiOutput(ns("panel_lateral")),
                hr(),
                helpText("Las cargas más altas indican mayor contribución a la componente."),
@@ -280,7 +280,6 @@ PCA_Analisis_UI <- function(id){
       # PANEL PRINCIPAL (DERECHA)
       #--------------------------------------------------
       column(width = 9,
-             # El banner unificado se renderiza AQUÍ (arriba de las pestañas)
              uiOutput(ns("mensaje_error_ui")),
              
              tabsetPanel(
@@ -393,7 +392,7 @@ PCA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       # Filtrar únicamente columnas numéricas
       df_num <- df[, sapply(df, is.numeric), drop = FALSE]
       
-      # CORRECCIÓN DE ERROR CRÍTICO: Omitir registros incompletos y asignar a variable correcta
+      # Omitir registros incompletos 
       df_clean <- na.omit(df_num)
       
       if (ncol(df_clean) < 2) {
@@ -406,14 +405,12 @@ PCA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       return(list(valido = TRUE, base_limpia = df_clean))
     })
     
-    # Renderizado único del banner superior de error
     output$mensaje_error_ui <- renderUI({
       prep <- datos_preprocesados()
       if (!prep$valido) return(prep$ui_error)
       return(NULL)
     })
     
-    # Enlaces reactivos seguros garantizados por req()
     datos_num <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base_limpia })
     
     datos_std <- reactive({ req(datos_num()); scale(datos_num()) })

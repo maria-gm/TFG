@@ -2,7 +2,6 @@
 #  Regresión múltiple- MODULO
 # =====================================================
 
-
 # -------------------------------
 # TEORIA
 # -------------------------------
@@ -11,7 +10,7 @@ Regresion_multiple_Teoria_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Activa MathJax en la página
+    # Activa MathJax 
     withMathJax(),
     
     tags$div(
@@ -38,7 +37,7 @@ Regresion_multiple_Teoria_UI <- function(id) {
         heights_equal = "row",
         
         # ---------------------------------
-        # CARD 1: FORMULACIÓN
+        #  1: FORMULACIÓN
         # ---------------------------------
         bslib::card(
           style = "border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02);",
@@ -76,7 +75,7 @@ Regresion_multiple_Teoria_UI <- function(id) {
         ),
         
         # ---------------------------------
-        # CARD 2: OBJETIVOS
+        #  2: OBJETIVOS
         # ---------------------------------
         bslib::card(
           style = "border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02);",
@@ -92,7 +91,7 @@ Regresion_multiple_Teoria_UI <- function(id) {
         ),
         
         # ---------------------------------
-        # CARD 3: SUPUESTOS DEL MODELO (Movido aquí)
+        # 3: SUPUESTOS DEL MODELO
         # ---------------------------------
         bslib::card(
           style = "border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02);",
@@ -191,7 +190,7 @@ Regresion_multiple_Teoria_UI <- function(id) {
       br(),
       
       # =====================================
-      # EL PROBLEMA DE LA COLINEALIDAD (Movido abajo)
+      # EL PROBLEMA DE LA COLINEALIDAD 
       # =====================================
       bslib::card(
         style = "border: 1px solid #cbd5e1; background: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.02);",
@@ -211,8 +210,6 @@ Regresion_multiple_Teoria_UI <- function(id) {
 Regresion_multiple_Teoria_Server <- function(id){
   moduleServer(id, function(input, output, session){ })
 }
-
-
 
 # -------------------------------
 # ANALISIS
@@ -311,11 +308,10 @@ Regresion_multiple_Analisis_UI <- function(id){
 Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   moduleServer(id, function(input, output, session) {
     
-    # --- 1. PROCESAMIENTO GLOBAL Y VALIDACIONES ---
+    # --- 1. PROCESAMIENTO  Y VALIDACIONES ---
     datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
       
-      # Clonación exacta del estilo rosa/atenuado de las capturas
       crear_banner_error <- function(mensaje) {
         div(
           style = "background-color: #fdf2f2; color: #9b1c1c; border: 1px solid #fde8e8; padding: 20px; margin-bottom: 25px; border-radius: 6px;",
@@ -355,14 +351,13 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
       return(list(valido = TRUE, base = df_limpio, num = df_num))
     })
     
-    # Renderizado del Banner sobre el conjunto de pestañas
+    # Renderizado del Banne de error
     output$mensaje_error_ui <- renderUI({
       prep <- datos_preprocesados()
       if (!prep$valido) return(prep$ui_error)
       return(NULL)
     })
     
-    # Conexiones protegidas reactivas
     datos_base <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
     
     datos_preparados <- reactive({
@@ -435,12 +430,33 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
     
     output$tabla_anova <- DT::renderDT({
       req(modelo_fit())
+      
       an_tab <- as.data.frame(anova(modelo_fit()))
       
-      DT::datatable(an_tab, options = list(paging = FALSE, scrollX = TRUE), class = 'cell-border compact') %>%
-        DT::formatRound(columns = sapply(an_tab, is.numeric), digits = 4)
+      an_tab <- cbind(
+        Término = rownames(an_tab),
+        an_tab,
+        row.names = NULL
+      )
+      
+      DT::datatable(
+        an_tab,
+        rownames = FALSE,
+        options = list(
+          paging = FALSE,
+          scrollX = TRUE,
+          autoWidth = TRUE,
+          columnDefs = list(
+            list(width = "180px", targets = 0)
+          )
+        ),
+        class = "cell-border compact stripe"
+      ) %>%
+        DT::formatRound(
+          columns = names(an_tab)[sapply(an_tab, is.numeric)],
+          digits = 4
+        )
     })
-    
     output$tabla_metricas <- DT::renderDT({
       req(modelo_fit())
       s <- broom::glance(modelo_fit())
@@ -511,9 +527,14 @@ Regresion_multiple_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) 
     
     # --- 6. INTERPRETACIONES ---
     output$interp_diagnostico_reg <- renderText({
-      "Análisis de colinealidad mediante el factor de inflación de la varianza (VIF) y la matriz de correlaciones simultáneas."
+      paste0(
+        "La matriz de correlaciones permite identificar relaciones lineales entre la variable dependiente y las variables explicativas, así como posibles asociaciones elevadas entre los predictores.\n\n",
+        
+        "El Factor de Inflación de la Varianza (VIF) evalúa la presencia de multicolinealidad entre las variables independientes. ",
+        "Valores próximos a 1 indican una baja colinealidad, mientras que valores elevados sugieren que una variable está fuertemente relacionada con el resto. ",
+        "Como criterio orientativo, valores superiores a 5 pueden indicar problemas de multicolinealidad que conviene revisar, ya que pueden afectar a la estabilidad e interpretación de los coeficientes estimados."
+      )
     })
-    
     output$interp_resultados_reg <- renderText({
       req(input$var_indep)
       paste0(
@@ -542,7 +563,6 @@ Regresion_multiple_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA DEFINTIVA PARA RESPUESTAS EN UNA LÍNEA ───
     tags$head(
       tags$style(HTML("
         /* Obliga a los contenedores de radio buttons a usar todo el ancho disponible */
@@ -603,7 +623,7 @@ Regresion_multiple_Auto_UI <- function(id) {
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de  la regresión múltiple", # Corrigo texto PCA -> DBSCAN
+        title = "➕ Gestión: Añadir pregunta personalizada de  la regresión múltiple", 
         icon = icon("gear"),
         
         fluidRow(
@@ -628,7 +648,6 @@ Regresion_multiple_Auto_UI <- function(id) {
 Regresion_multiple_Auto_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
-    # CORRECCIÓN 1: Habías duplicado e inicializado dos veces consecutivas este valor reactivo
     mostrar_respuestas <- reactiveVal(FALSE)
     
     observeEvent(input$ver, {
@@ -807,9 +826,6 @@ Regresion_multiple_Auto_Server <- function(id) {
     
     preguntas_ordenadas <- reactiveVal(NULL)
     
-    # CORRECCIÓN 3: Cambiado observe() por observeEvent(preguntas(), ...).
-    # Al usar observe() plano con isolate(), Shiny entraba en bucles infinitos de renderizado
-    # o no actualizaba correctamente el set inicial de preguntas al iniciar el módulo.
     observeEvent(preguntas(), {
       lista_actual <- preguntas()
       

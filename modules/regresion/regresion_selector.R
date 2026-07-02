@@ -12,7 +12,7 @@ Regresion_UI <- function(id){
       choices = c(
         "Visión General de la Familia" = "GENERAL",
         "Regresión múltiple" = "MULTIPLE",
-        "Métodos de regularización y reducción" = "REGULARIZACION" # <-- Nombre cambiado
+        "Métodos de regularización y reducción" = "REGULARIZACION" 
       ),
       selected = "GENERAL"
     ),
@@ -30,7 +30,7 @@ Regresion_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     # =====================================================
-    # RENDERIZACIÓN DE MINIGRÁFICOS CONCEPTUALES
+    # GRÁFICOS CONCEPTUALES
     # =====================================================
     output$plot_mini_multiple <- renderPlot({
       par(mar = c(2, 2, 1.5, 1))
@@ -44,43 +44,31 @@ Regresion_Server <- function(id, datos, datos_ejemplo = NULL){
       yhat <- predict(mod)
       segments(x, y, x, yhat, col = rgb(239/255, 68/255, 68/255, 0.4))
     })
-    
-    # Gráfico que incluye la traza o corte característico de PCR (Reducción por componentes)
-    output$plot_mini_regularizacion <- renderPlot({
-      # Aumentamos ligeramente el margen inferior (de 2.5 a 3.2) para que el eje X respire
+        output$plot_mini_regularizacion <- renderPlot({
       par(mar = c(3.2, 1.5, 2, 1.5), mgp = c(1.2, 0.3, 0))
       
-      # Usamos una secuencia con una caída más suave para que las curvas se aprecien mejor
       lambda_seq <- seq(0, 5, length.out = 100)
       
-      # Base del gráfico con límites un poco más amplios para evitar cortes de texto
       plot(1, type = "n", xlab = "", ylab = "", 
            xlim = c(-0.2, 5.2), ylim = c(-2.5, 3.5), axes = FALSE, 
            main = "Regularización vs. Reducción", col.main = "#b45309", cex.main = 0.85)
       
-      # Línea de referencia cero
       abline(h = 0, lty = "dotted", col = "#cbd5e1", lwd = 1.5)
       
-      # Contenedor estético gris claro
       box(col = "#e2e8f0")
       
-      # Curvas con coeficientes suavizados (exponentes menores para que no caigan de golpe)
       lines(lambda_seq, 2.8 * exp(-0.4 * lambda_seq), col = "#f59e0b", lwd = 2.5)   
       lines(lambda_seq, 1.2 * exp(-0.25 * lambda_seq), col = "#b45309", lwd = 2.5) 
       lines(lambda_seq, -1.8 * exp(-0.5 * lambda_seq), col = "#7c2d12", lwd = 2.5) 
       
-      # Línea vertical de PCR desplazada ligeramente a la derecha para equilibrar el espacio
       abline(v = 2.5, col = "#3b82f6", lty = "dashed", lwd = 2)
       
-      # --- AJUSTE DE TEXTOS PARA EVITAR QUE SE PISEN ---
-      # Texto PCR: centrado justo encima de su línea (adj = 0.5)
+
       text(2.5, 2.9, "Corte PCR\n(Nº Componentes)", col = "#1d4ed8", font = 2, cex = 0.65, adj = 0.5)
       
-      # Texto Ridge/Lasso: desplazado a la izquierda para que no toque las líneas
       text(0.1, 2.0, "Coeficientes\n(Ridge/Lasso)", col = "#b45309", font = 2, cex = 0.65, adj = 0)
       
-      # --- EJE X OPTIMIZADO ---
-      # Metemos los textos ligeramente hacia adentro (at = c(0.5, 4.5)) para que no los corte el borde de la caja
+
       axis(1, at = c(0.6, 4.4), labels = c("Modelo Complejo", "Modelo Simple"), 
            col = "transparent", col.axis = "#64748b", cex.axis = 0.75, padj = 0.2)
     })

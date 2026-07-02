@@ -2,7 +2,6 @@
 #   k_means - MODULO
 # =====================================================
 
-
 # -------------------------------
 # TEORIA
 # -------------------------------
@@ -11,7 +10,7 @@ K_means_Teoria_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Única llamada necesaria para activar MathJax en toda la página
+    #  activar MathJax 
     withMathJax(),
     
     tags$div(
@@ -34,7 +33,7 @@ K_means_Teoria_UI <- function(id) {
       # TARJETAS PRINCIPALES
       # =====================================
       bslib::layout_column_wrap(
-        width = 1/3, # Tres columnas perfectamente niveladas
+        width = 1/3, # Tres columnas 
         heights_equal = "row",
         
         # ---------------------------------
@@ -87,7 +86,7 @@ K_means_Teoria_UI <- function(id) {
             )
           )
         )
-      ), # Fin del layout_column_wrap
+      ), 
       
       br(),
       
@@ -172,7 +171,7 @@ K_means_Analisis_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Título personalizado idéntico al de los módulos anteriores
+    # Título
     h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
@@ -203,7 +202,7 @@ K_means_Analisis_UI <- function(id) {
                hr(),
                helpText("Nota: Se eliminan filas con valores faltantes automáticamente."),
                br(),
-               # Botón de descarga idéntico al del módulo jerárquico
+               # Botón de descarga
                downloadButton(ns("dl_data"), "Descargar Clústeres (CSV)", class = "btn-success", style = "width: 100%;")
              )
       ),
@@ -212,7 +211,7 @@ K_means_Analisis_UI <- function(id) {
       # PANEL PRINCIPAL
       #--------------------------------------------------
       column(8,
-             # Contenedor dinámico para el banner de error rojo (Aparece arriba de las pestañas si la validación falla)
+             # Contenedor dinámico para el banner de error rojo 
              uiOutput(ns("mensaje_error_ui")),
              
              tabsetPanel(
@@ -265,11 +264,11 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   
   moduleServer(id, function(input, output, session) {
     
-    # --- 1. ÚNICA VALIDACIÓN Y PREPROCESADO GLOBAL ---
+    # --- 1.  VALIDACIÓN Y PREPROCESADO GLOBAL ---
     datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
       
-      # Generador del banner de error rojo HTML (Idéntico visualmente al de tus capturas)
+      # Generador del banner de error rojo 
       crear_banner_error <- function(mensaje) {
         div(
           class = "alert alert-danger",
@@ -282,7 +281,7 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         )
       }
       
-      # Validaciones estructurales del dataset
+      # Validaciones del dataset
       if (is.null(df)) {
         return(list(valido = FALSE, ui_error = crear_banner_error("No se han detectado datos cargados. Por favor, suba un archivo o seleccione un ejemplo.")))
       }
@@ -290,13 +289,13 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 10 observaciones válidas para estructurar agrupaciones estables por K-means.")))
       }
       
-      # Filtro de casos completos (Remoción de NAs)
+      # Filtro de casos completos 
       df_limpio <- df[complete.cases(df), , drop = FALSE]
       if (nrow(df_limpio) < 10) {
         return(list(valido = FALSE, ui_error = crear_banner_error("El dataset no contiene suficientes filas completas (mínimo 10) tras eliminar registros con valores perdidos (NA).")))
       }
       
-      # Aislamiento y filtro de columnas cuantitativas
+      #  filtro de columnas cuantitativas
       df_num <- df_limpio[, sapply(df_limpio, is.numeric), drop = FALSE]
       columnas_reales <- sapply(df_num, function(x) length(unique(x)) > 15)
       
@@ -308,13 +307,13 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         df_num <- df_num[, columnas_reales, drop = FALSE]
       }
       
-      # Control de varianza cero (Evitar error al estandarizar)
+      # Control de varianza cero 
       sd_cols <- sapply(df_num, sd, na.rm = TRUE)
       if (any(sd_cols == 0)) {
         return(list(valido = FALSE, ui_error = crear_banner_error("Una o más variables cuantitativas seleccionadas tienen varianza cero (constantes) y no pueden estandarizarse.")))
       }
       
-      # Formateo de índices y cálculo de la matriz tipificada
+      #  cálculo de la matriz 
       rownames(df_limpio) <- 1:nrow(df_limpio)
       rownames(df_num) <- 1:nrow(df_num)
       df_scaled <- scale(df_num)
@@ -333,15 +332,14 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       if (!prep$valido) {
         return(prep$ui_error)
       }
-      return(NULL) # Oculto por completo si los datos pasan los filtros
+      return(NULL) 
     })
     
-    # --- 3. ENLACES REACTIVOS SEGUROS (CON REQ) ---
+    # --- 3. ENLACES REACTIVOS  ---
     datos_base   <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
     datos_num    <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$num })
     datos_scaled <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$scaled })
     
-    # --- 4. MODELADO INTERNO (PCA Y K-MEANS) ---
     pca_res <- reactive({
       req(datos_scaled())
       prcomp(datos_scaled())
@@ -372,7 +370,7 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       df_viz
     })
     
-    # --- 5. OUTPUT: TABLAS ---
+    # --- 4. OUTPUT: TABLAS ---
     output$tabla_datos <- DT::renderDT({
       req(datos_preprocesados()$valido)
       DT::datatable(
@@ -392,7 +390,7 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       )
     })
     
-    # --- 6. OUTPUT: DIAGNÓSTICO ---
+    # --- 5. OUTPUT: DIAGNÓSTICO ---
     output$elbow_plot <- renderPlot({
       req(datos_scaled())
       factoextra::fviz_nbclust(datos_scaled(), kmeans, method = "wss") + 
@@ -417,7 +415,7 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       )
     })
     
-    # --- 7. OUTPUT: VISUALIZACIÓN ---
+    # --- 6. OUTPUT: VISUALIZACIÓN ---
     output$cluster_plot <- renderPlot({
       req(df_final())
       df <- df_final()
@@ -452,7 +450,7 @@ K_means_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       )
     })
     
-    # --- 8. EXTRAS Y ENLACES DE CONTROL ---
+    # --- 7. ENLACES DE CONTROL ---
     output$var_categorica_ui <- renderUI({
       prep <- datos_preprocesados()
       req(prep$valido)
@@ -485,7 +483,6 @@ K_means_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
     tags$head(
       tags$style(HTML("
         /* Ataca directamente a todas las variaciones de radio buttons de Shiny */

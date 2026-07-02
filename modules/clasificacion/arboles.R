@@ -5,13 +5,10 @@
 # -------------------------------
 # TEORIA
 # -------------------------------
-# =========================================================
-# ÁRBOLES DE CLASIFICACIÓN - EDICIÓN MEMORIA PREMIUM
-# =========================================================
 Arboles_Teoria_UI <- function(id) {
   ns <- NS(id)
   
-  # Estilos CSS personalizados para homogeneizar con el diseño premium
+  # Estilos CSS 
   custom_css <- "
     .theory-card {
       border: 1px solid #e2e8f0;
@@ -41,7 +38,7 @@ Arboles_Teoria_UI <- function(id) {
       style = "padding: 30px; background-color: #fcfdfe;",
       
       # =====================================
-      # CABECERA ESTILO PREMIUM
+      # CABECERA 
       # =====================================
       tags$div(
         style = "margin-bottom: 25px;",
@@ -56,7 +53,7 @@ Arboles_Teoria_UI <- function(id) {
       ),
       
       # =====================================
-      # BLOQUES INTRODUCTORIOS (ESTILO image_3552b6)
+      # BLOQUES INTRODUCTORIOS 
       # =====================================
       bslib::layout_column_wrap(
         width = 1/3,
@@ -153,7 +150,7 @@ Arboles_Teoria_UI <- function(id) {
       ),
       
       # =====================================
-      # DINÁMICA DE CONSTRUCCIÓN
+      # CONSTRUCCIÓN
       # =====================================
       h4(icon("gears"), "Construcción Recursiva y Condiciones de Parada", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
@@ -176,7 +173,7 @@ Arboles_Teoria_UI <- function(id) {
       ),
       
       # =====================================
-      # PODA (PRUNING) - TEXTO EXACTO DE MEMORIA
+      # PODA (PRUNING) 
       # =====================================
       h4(icon("scissors"), "Técnicas de Poda (Pruning) contra el Sobreajuste", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
@@ -191,7 +188,7 @@ Arboles_Teoria_UI <- function(id) {
           
           hr(style = "border-top: 1px solid #cbd5e1; margin: 20px 0;"),
           
-          # Sección literal de obtención de complejidad (Fiel a image_3561de)
+          #  obtención de complejidad 
           p(HTML("El parámetro \\(\\alpha\\) no se fija de forma arbitraria, sino que se estima mediante procedimientos de validación. De manera que, para cada valor de \\(\\alpha\\), el algoritmo selecciona un subárbol \\(T_\\alpha\\). De entre todos los posibles subárboles, el óptimo es el que minimiza la función de coste-complejidad dentro del árbol máximo inicial \\(T_{\\text{max}}\\):")),
           tags$div(class = "equation-container", HTML("$$T_\\alpha = \\arg \\min_{(T \\subseteq T_{\\text{max}})} [R(T) + \\alpha|T|]$$")),
           p(HTML("En la práctica, se genera una secuencia de valores de \\(\\alpha\\) asociados a distintos subárboles obtenidos mediante poda por complejidad-coste y, posteriormente, se evalúa el rendimiento de cada uno de ellos sobre un conjunto de validación o mediante validación cruzada. El valor óptimo de \\(\\alpha\\) es aquel que minimiza el error de generalización (por ejemplo, tasa de error media en validación cruzada), logrando así el mejor equilibrio entre ajuste del modelo y simplicidad. Este procedimiento permite no solo evitar el sobreajuste sino garantizar una estructura con una capacidad óptima de generalización a nuevos datos."))
@@ -199,7 +196,7 @@ Arboles_Teoria_UI <- function(id) {
       ),
       
       # =====================================
-      # APARTADO 3.5.4: MÉTRICAS (Fiel a image_3546d8)
+      # MÉTRICAS 
       # =====================================
       h4(icon("chart-simple"), "3.5.4 Métricas de evaluación", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
@@ -250,7 +247,7 @@ Arboles_Analisis_UI <- function(id){
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
-      # PANEL LATERAL (IZQUIERDA)
+      # PANEL LATERAL 
       column(4,
              wellPanel(
                h4("Configuración Árbol de Decisión"),
@@ -398,14 +395,14 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     #--------------------------------------------------
-    # 2. UI SELECTORES
+    # 2. SELECTORES
     #--------------------------------------------------
     output$target_ui <- renderUI({
       req(datos_base())
       df <- datos_base()
       choices_vars <- names(df)
       
-      # Forzar la variable predeterminada a "Class" si existe en el dataset
+      # variable predeterminada "Class" , si existe en el dataset
       seleccionada <- if("Class" %in% choices_vars) "Class" else choices_vars[1]
       
       selectInput(ns("target_var"),
@@ -418,7 +415,7 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       req(input$target_var)
       opts <- setdiff(names(datos_base()), c(input$target_var, "Id"))
       
-      # Selección por defecto: Las dos primeras variables predictoras disponibles
+      # Selección por defecto de Las dos primeras variables predictoras disponibles
       seleccion_defecto <- opts[1:min(2, length(opts))]
       
       selectizeInput(ns("predictor_vars"),
@@ -446,7 +443,7 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     output$dataset_std <- DT::renderDT(datos_std())
     
     #--------------------------------------------------
-    # 4. MODELO (con COMPLEJIDAD cp)
+    # 4. MODELO 
     #--------------------------------------------------
     modelo_tree <- reactive({
       
@@ -506,7 +503,7 @@ Arboles_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     #--------------------------------------------------
-    # 7. MÉTRICAS (como tu modelo logístico)
+    # 7. MÉTRICAS 
     #--------------------------------------------------
     output$tabla_metricas <- DT::renderDT({
       
@@ -619,7 +616,6 @@ Arboles_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
     tags$head(
       tags$style(HTML("
         /* Ataca directamente a todas las variaciones de radio buttons de Shiny */

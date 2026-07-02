@@ -45,6 +45,14 @@ ui <- page_sidebar(
         opacity: 1; 
         background-color: #31314d !important; 
       }
+      .bslib-sidebar-layout > .collapse-toggle{
+    width:22px;
+    height:80px;
+    border-radius:0 8px 8px 0;
+    background:#2a69ac !important;
+    color:white !important;
+    opacity:1 !important;
+}
     "))
   ),
   

@@ -182,7 +182,7 @@ Jerarquicos_Teoria_UI <- function(id) {
               
               tags$b("Método de la media"),
               
-              p("$$D(P,Q)=\\frac{1}{n_Pn_Q}\\sum_{i\\in P}\\sum_{j\\in Q}d(i,j)$$"), # Se duplicaron barras en \sum
+              p("$$D(P,Q)=\\frac{1}{n_Pn_Q}\\sum_{i\\in P}\\sum_{j\\in Q}d(i,j)$$"), 
               
               p(
                 "Calcula la distancia media entre todos los pares de observaciones pertenecientes a ambos clústeres. ",
@@ -214,7 +214,7 @@ Jerarquicos_Teoria_UI <- function(id) {
               
               tags$b("Método de Ward"),
               
-              p("$$D(P,Q)=SSE(P\\cup Q)-SSE(P)-SSE(Q)$$"), # Añadido el $$ final y corregido \\cup
+              p("$$D(P,Q)=SSE(P\\cup Q)-SSE(P)-SSE(Q)$$"), 
               
               p(
                 "Minimiza en cada iteración el incremento de la suma de cuadrados intragrupo, obteniendo grupos pequeños y homogéneos aunque sensibles a valores atípicos. ",
@@ -246,7 +246,7 @@ Jerarquicos_Teoria_Server <- function(id){
 Jerarquicos_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
-    # Título personalizado idéntico a los módulos anteriores
+    # Título 
     h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
@@ -277,7 +277,7 @@ Jerarquicos_Analisis_UI <- function(id){
              )
       ),
       column(8,
-             # Contenedor dinámico para el banner de error rojo (Aparece arriba de las pestañas si la validación falla)
+             #  banner de error 
              uiOutput(ns("mensaje_error_ui")),
              
              tabsetPanel(id = ns("tabs"),
@@ -329,11 +329,11 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   
   moduleServer(id, function(input, output, session) {
     
-    # --- 1. ÚNICA VALIDACIÓN Y PREPROCESADO GLOBAL ---
+    # VALIDACIÓN Y PREPROCESADO GLOBAL ---
     datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
       
-      # Generador del banner de error rojo HTML (Idéntico a tus capturas del ACP/AF)
+      # Generador del banner de error rojo 
       crear_banner_error <- function(mensaje) {
         div(
           class = "alert alert-danger",
@@ -360,7 +360,7 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         return(list(valido = FALSE, ui_error = crear_banner_error("El dataset no contiene suficientes filas completas (mínimo 10) tras eliminar registros con valores perdidos (NA).")))
       }
       
-      # Aislamiento y filtro de columnas numéricas
+      # filtro de columnas numéricas
       df_num <- df_limpio[, sapply(df_limpio, is.numeric), drop = FALSE]
       cols_validas <- sapply(df_num, function(x) length(unique(x)) > 15)
       
@@ -372,7 +372,6 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         df_num <- df_num[, cols_validas, drop = FALSE]
       }
       
-      # Control de varianza cero
       sd_cols <- sapply(df_num, sd, na.rm = TRUE)
       if (any(sd_cols == 0)) {
         return(list(valido = FALSE, ui_error = crear_banner_error("Una o más variables cuantitativas seleccionadas tienen varianza cero (constantes) y no pueden estandarizarse.")))
@@ -400,7 +399,7 @@ Jerarquicos_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       return(NULL) # Si todo está correcto, no dibuja nada en pantalla
     })
     
-    # --- 3. ENLACES REACTIVOS SEGUROS (CON REQ) ---
+    # --- 3. ENLACES REACTIVOS 
     datos_base   <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
     datos_num    <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$num })
     datos_scaled <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$scaled })

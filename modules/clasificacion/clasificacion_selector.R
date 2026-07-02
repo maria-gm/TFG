@@ -45,19 +45,18 @@ Clasificacion_Server <- function(id, datos, datos_ejemplo = NULL){
       curve(1 / (1 + exp(-2 * x)), add = TRUE, col = "#10b981", lwd = 3)
       abline(h = 0.5, lty = 3, col = "#64748b")
     })
-    # 1. Gráfico de LDA (Dos campanas de Gauss con la frontera de decisión lineal óptima)
+    #  Gráfico de LDA 
     output$plot_mini_lda <- renderPlot({
       par(mar = c(2, 2, 1.5, 1))
       curve(dnorm(x, mean = -1.5, sd = 1), from = -5, to = 5, col = "#3b82f6", lwd = 2.5, axes = FALSE, xlab = "", ylab = "", main = "Separación Lineal Óptima", col.main = "#1a365d", cex.main = 0.9)
       box(col = "#e2e8f0")
       curve(dnorm(x, mean = 1.5, sd = 1), from = -5, to = 5, col = "#10b981", lwd = 2.5, add = TRUE)
-      # Frontera divisoria equidistante
       abline(v = 0, col = "#ef4444", lwd = 2, lty = 2)
       text(-2.5, 0.15, "Clase A", col = "#1e3a8a", font = 2, cex = 0.8)
       text(2.5, 0.15, "Clase B", col = "#047857", font = 2, cex = 0.8)
     })
     
-    # 2. Gráfico de Árboles (Estructura jerárquica de decisión Sí/No)
+    #  Gráfico de Árboles 
     output$plot_mini_arboles <- renderPlot({
       par(mar = c(1, 1, 1.5, 1))
       plot(1, type = "n", xlab = "", ylab = "", xlim = c(0, 10), ylim = c(0, 10), axes = FALSE, main = "Particiones de Espacio", col.main = "#047857", cex.main = 0.9)
@@ -78,7 +77,7 @@ Clasificacion_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     # =====================================================
-    # INTERFAZ MAESTRA ATÓMICA
+    # INTERFAZ 
     # =====================================================
     output$interfaz_maestra_dinamica <- renderUI({
       req(input$tecnica)
@@ -113,8 +112,6 @@ Clasificacion_Server <- function(id, datos, datos_ejemplo = NULL){
         )
       }
       
-      # Sincronización exacta con tus nombres de funciones reales (`LDA_teoria` y `Arboles_teoria`)
-
       if (input$tecnica == "LOGISTICA") {
         Regresion_logistica_Teoria_Server("regresion_logistica_teoria")
         Regresion_logistica_Analisis_Server("regresion_logistica_analisis", datos = reactive({ if(!is.null(datos_ok())) datos_ok() else datos_ejemplo$Regresion_logistica }), datos_ejemplo = datos_ejemplo)

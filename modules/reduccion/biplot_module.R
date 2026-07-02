@@ -118,7 +118,7 @@ BIPLOT_Analisis_UI <- function(id){
     
     fluidRow(
       #--------------------------------------------------
-      # PANEL LATERAL PERMANENTE
+      # PANEL LATERAL 
       #--------------------------------------------------
       column(
         width = 3,
@@ -146,7 +146,7 @@ BIPLOT_Analisis_UI <- function(id){
             selected = "2D"
           ),
           
-          # Contenedor dinámico exclusivo para los checkboxes
+          # Contenedor dinámico exclusivo para los checkbox
           uiOutput(ns("dinamico_panel_lateral")),
           
           hr(),
@@ -199,7 +199,7 @@ BIPLOT_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     ns <- session$ns
     
     # ==========================================================================
-    # FUNCIONES LOCALES DE VALIDACIÓN (Encapsuladas en el Server)
+    # FUNCIONES LOCALES DE VALIDACIÓN 
     # ==========================================================================
     validar_datos_multivar <- function(df, min_vars = 2, min_obs = 3) {
       if (is.null(df)) return("No se han cargado datos.")
@@ -230,10 +230,6 @@ BIPLOT_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       )
     }
     
-    # ==========================================================================
-    # LÓGICA REACTIVA DEL MÓDULO
-    # ==========================================================================
-    
     # 1. Evaluación de Calidad
     evaluacion_biplot <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
@@ -259,7 +255,7 @@ BIPLOT_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
       if (!eval$valido) mensaje_error_analisis(eval$mensaje) else NULL
     })
     
-    # 2. Renderizado del Selector de Variables en el Panel Lateral
+    # 2. Selector de Variables en el Panel Lateral
     output$dinamico_panel_lateral <- renderUI({
       req(evaluacion_biplot()$valido)
       columnas <- names(evaluacion_biplot()$datos)
@@ -324,7 +320,7 @@ BIPLOT_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     # 5. Renderizado de Tablas
     output$dataset_table <- DT::renderDT({
       req(evaluacion_biplot()$valido)
-      # Usamos el dataframe numérico y limpio global para que coincida 100% con el gráfico
+    
       df_mostrado <- evaluacion_biplot()$datos 
       
       DT::datatable(df_mostrado, 
@@ -337,7 +333,7 @@ BIPLOT_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
                     options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE))
     })
     
-    # 6. Renderizado del Gráfico Interactivo (Plotly) Corregido
+    # 6. Renderizado del Gráfico Interactivo (Plotly) 
     output$biplot_grafico <- renderPlotly({
       req(evaluacion_biplot()$valido)
       req(coords())
@@ -380,7 +376,7 @@ BIPLOT_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
     })
     
     #--------------------------------------------------
-    # INTERPRETACIÓN DINÁMICA DE TIPOS DE BIPLOT (BASADA EN WINES)
+    # INTERPRETACIÓN DINÁMICA DE TIPOS DE BIPLOT
     #--------------------------------------------------
     output$interp_biplot <- renderText({
       req(input$tipo_biplot)
@@ -395,7 +391,7 @@ BIPLOT_Analisis_Server <- function(id, datos, datos_ejemplo = NULL){
         "- La proximidad de un punto (individuo) a la dirección de un vector señala un valor alto en dicha propiedad.\n\n"
       )
       
-      # 2. Explicación teórica y aplicación práctica unificada por cada tipo de Biplot
+      # 2. Explicación teórica 
       msg_tipo <- switch(tipo,
                          "HJ" = paste0(
                            "Guía del modelo HJ Biplot (Galindo, 1986):\n",
@@ -593,7 +589,7 @@ BIPLOT_Auto_Server <- function(id) {
       preguntas_ordenadas(muestra_inicial)
     })
     
-    # Al presionar el botón, selecciona 10 preguntas NUEVAS del banco total y mezcla sus opciones
+    # Al presionar el botón, selecciona 10 preguntas nuevas del banco total y mezcla sus opciones
     observeEvent(input$shuffle, {
       lista_enriquecida <- lapply(seq_along(todas_preguntas()), function(idx) {
         p <- todas_preguntas()[[idx]]

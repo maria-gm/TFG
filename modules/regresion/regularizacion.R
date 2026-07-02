@@ -1,9 +1,7 @@
 # =========================================================
 # REGULARIZACIÓN - TEORÍA
 # =========================================================
-# =========================================================
-# REGULARIZACIÓN - TEORÍA
-# =========================================================
+
 Regularizacion_Teoria_UI <- function(id) {
   ns <- NS(id)
   
@@ -27,7 +25,7 @@ Regularizacion_Teoria_UI <- function(id) {
       ),
       
       #=========================================================
-      # DIFERENCIAS ENTRE ENFOQUES
+      # DIFERENCIAS 
       #=========================================================
       h4(
         icon("layer-group"),
@@ -94,7 +92,7 @@ Regularizacion_Teoria_UI <- function(id) {
       br(),
       
       #=========================================================
-      # MÉTODOS (GRID DE 3 COLUMNAS CORREGIDO)
+      # MÉTODOS 
       #=========================================================
       h4(
         icon("list-check"),
@@ -205,7 +203,7 @@ $$")
         ),
         
         #=========================================================
-        # PCR (CON FÓRMULA DE RETROTRANSFORMACIÓN AÑADIDA)
+        # PCR 
         #=========================================================
         bslib::card(
           style = "border:1px solid #e2e8f0;
@@ -258,7 +256,6 @@ $$")
               "El hiperparámetro \\(M\\le p\\) determina el número de componentes retenidas. Al ser ortogonales entre sí, la multicolinealidad desaparece antes de realizar el ajuste."
             ),
             
-            # --- NUEVA SECCIÓN: FORMULA DE LA IMAGEN ---
             p(
               style = "margin-top:15px; border-top: 1px dashed #f59e0b; padding-top:12px;",
               "Finalmente, los coeficientes en el espacio original se obtienen como combinación lineal:"
@@ -278,7 +275,7 @@ $$")
             )
           )
         )
-      ), # Fin del layout_column_wrap de 3 columnas
+      ), 
       
       br(),
       br(),
@@ -358,7 +355,6 @@ $$")
 }
 Regularizacion_Teoria_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    # Módulo dedicado exclusivamente al renderizado estructurado del marco conceptual
   })
 }
 
@@ -368,13 +364,13 @@ Regularizacion_Teoria_Server <- function(id) {
 Regularizacion_Analisis_UI <- function(id){
   ns <- NS(id)
   tagList(
-    # Título corporativo unificado
+    # Título 
     h3("Análisis", 
        style = "color: #1a446c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px;"),
     
     fluidRow(
       #--------------------------------------------------
-      # PANEL LATERAL (FIJO)
+      # PANEL LATERAL FIJO
       #--------------------------------------------------
       column(4,
              wellPanel(
@@ -410,7 +406,7 @@ Regularizacion_Analisis_UI <- function(id){
       # PANEL PRINCIPAL
       #--------------------------------------------------
       column(8,
-             # Banner de error (Aparece arriba de las pestañas, idéntico a las capturas)
+             # Banner de error 
              uiOutput(ns("mensaje_error_ui")),
              
              tabsetPanel(
@@ -478,7 +474,7 @@ Regularizacion_Analisis_UI <- function(id){
 Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
   moduleServer(id, function(input, output, session) {
     
-    # --- 1. PROCESAMIENTO GLOBAL Y VALIDACIONES ---
+    # --- 1. PROCESAMIENTO  Y VALIDACIONES ---
     datos_preprocesados <- reactive({
       df <- if(!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
       
@@ -497,7 +493,7 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         return(list(valido = FALSE, ui_error = crear_banner_error("No se han detectado datos cargados.")))
       }
       
-      # Filtro de registros completos en numéricas
+      # Filtro de registros completos 
       df_limpio <- df[complete.cases(df[, sapply(df, is.numeric), drop = FALSE]), , drop = FALSE]
       if (nrow(df_limpio) < 15) {
         return(list(valido = FALSE, ui_error = crear_banner_error("Se requieren al menos 15 registros completos tras eliminar valores perdidos (NA).")))
@@ -516,14 +512,13 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       return(list(valido = TRUE, base = df_limpio, num = df_num))
     })
     
-    # Renderizado del Banner sobre las pestañas
+    # Renderizado del Banne
     output$mensaje_error_ui <- renderUI({
       prep <- datos_preprocesados()
       if (!prep$valido) return(prep$ui_error)
       return(NULL)
     })
     
-    # Conexiones seguras
     datos_base <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$base })
     datos_num  <- reactive({ req(datos_preprocesados()$valido); datos_preprocesados()$num })
     
@@ -547,7 +542,7 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
                      options = list('plugins' = list('remove_button')))
     })
     
-    # --- 3. MODELOS DE VALIDACIÓN CRUZADA (AUTOMÁTICOS) ---
+    # --- 3. MODELOS DE VALIDACIÓN CRUZADA ---
     cv_fit_objeto <- reactive({
       req(input$var_dep, input$var_indep, input$metodo)
       df <- datos_base()
@@ -564,7 +559,7 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       }
     })
     
-    # PCA Auxiliar para la tabla de varianza explicada del PCR
+    # tabla de varianza explicada del PCR
     pca_aux <- reactive({
       req(input$var_indep)
       prcomp(datos_base()[, input$var_indep, drop = FALSE], scale. = TRUE)
@@ -592,7 +587,7 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       }
     })
     
-    # --- 4. MODELO MANUAL AJUSTADO AL DESLIZADOR LATERAL ---
+    # --- 4. MODELO  AJUSTADO  ---
     modelo_manual_fit <- reactive({
       req(input$var_dep, input$var_indep, input$metodo)
       df <- datos_base()
@@ -610,7 +605,7 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       }
     })
     
-    # --- 5. TABLAS DE DATOS NATIVAS CON SCROLL ---
+    # --- 5. TABLAS DE DATOS  ---
     output$tabla_original <- DT::renderDT({
       DT::datatable(datos_base(), options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE), class = 'cell-border stripe compact') %>% 
         DT::formatRound(columns = names(datos_num()), digits = 3)
@@ -621,7 +616,7 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       DT::datatable(round(datos_preparados(), 3), options = list(paging = FALSE, scrollY = "400px", scrollX = TRUE), class = 'cell-border stripe compact')
     })
     
-    # --- 6. PESTAÑA 2: GRÁFICOS DE OPTIMIZACIÓN Y TABLAS RESCATADAS DE PCR ---
+    # --- 6. PESTAÑA 2: GRÁFICOS DE OPTIMIZACIÓN Y TABLAS  DE PCR ---
     output$cv_plot <- renderPlot({
       req(cv_fit_objeto(), input$metodo)
       cv_obj <- cv_fit_objeto()
@@ -632,7 +627,7 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       }
     })
     
-    # Rescatado e integrado de tu script original: Tabla de varianza de componentes
+    # Tabla de varianza de componentes
     output$tabla_varianza <- DT::renderDT({
       req(pca_aux())
       pca <- pca_aux()
@@ -645,7 +640,7 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
         DT::formatRound(columns = 2:3, digits = 4)
     })
     
-    # Rescatado e integrado de tu script original: Summary formal del PCR
+    #  Summary  del PCR
     output$summary_pcr <- renderPrint({
       req(cv_fit_objeto(), input$metodo == "pcr")
       summary(cv_fit_objeto())
@@ -653,19 +648,26 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     
     output$interp_cv <- renderText({
       req(input$metodo)
+      
       if(input$metodo == "pcr") {
-        paste0("Para el PCR, la validación cruzada calcula el error de predicción RMSEP.\n",
-               "El codo o punto más bajo del gráfico indica cuántas componentes retienen la información real eliminando el ruido.\n\n",
-               "Ejemplo práctico (wines/Boston): Verás que el error disminuye drásticamente al añadir la primera y segunda componente, ",
-               "estabilizándose rápidamente. Esto demuestra que con pocas componentes capturamos la variabilidad informativa de la matriz.")
+        paste0(
+          "Para el PCR, la validación cruzada calcula el Error Cuadrático Medio de Predicción (RMSEP) para distintos números de componentes principales. ",
+          "El mínimo de la curva indica el número de componentes que mejor equilibra la capacidad predictiva y la reducción de la dimensionalidad.\n\n",
+          
+          "Ejemplo práctico (Dataset 'wine'): Las variables químicas del vino presentan una elevada correlación entre sí. ",
+          "Es habitual observar que las primeras componentes principales concentran la mayor parte de la información, por lo que un número reducido de componentes permite obtener un modelo predictivo con un error similar al que se obtendría utilizando todas las variables originales."
+        )
       } else {
-        paste0("Para Ridge/Lasso, el gráfico traza el Error Cuadrático Medio (MSE) condicionado a log(Lambda).\n",
-               "La primera línea discontinua marca el lambda de mínimo error (lambda.min) y la segunda el criterio parsimonioso (lambda.1se).\n\n",
-               "Ejemplo práctico (wines/Boston): El gráfico te guiará para saber qué nivel de penalización equilibra la balanza de sesgo y varianza.")
+        paste0(
+          "Para Ridge y Lasso, el gráfico representa el Error Cuadrático Medio (MSE) obtenido mediante validación cruzada para distintos valores de Lambda. ",
+          "La primera línea vertical señala el valor que minimiza el error de predicción (lambda.min), mientras que la segunda corresponde al criterio más parsimonioso (lambda.1se).\n\n",
+          
+          "Ejemplo práctico (Dataset 'wine'): Debido a la correlación existente entre muchas variables químicas, una penalización adecuada reduce la complejidad del modelo sin disminuir significativamente su capacidad predictiva. ",
+          "La validación cruzada permite seleccionar el nivel de regularización que ofrece el mejor equilibrio entre ajuste y capacidad de generalización."
+        )
       }
     })
-    
-    # --- 7. PESTAÑA 3: COEFICIENTES (TU CAPTURA DE PUNTOS E INTERVALOS) ---
+    # --- 7. COEFICIENTES  ---
     output$tabla_coeficientes <- DT::renderDT({
       req(modelo_manual_fit(), input$metodo)
       fit <- modelo_manual_fit()
@@ -713,17 +715,22 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     
     output$interp_coefs <- renderText({
       req(input$metodo)
+      
       if(input$metodo == "lasso") {
-        paste0("Bajo la penalización Lasso (L1), al aumentar el Lambda verás cómo las barras de coeficientes de variables ",
-               "irrelevantes colapsan y pasan a valer exactamente CERO, desapareciendo del impacto.\n\n",
-               "Ejemplo práctico: Verás que Lasso conserva los descriptores clave pero elimina los redundantes, depurando el modelo.")
+        paste0(
+          "Bajo la penalización Lasso (L1), al aumentar el valor de Lambda algunos coeficientes disminuyen progresivamente hasta hacerse exactamente cero, eliminando automáticamente aquellas variables con menor contribución al modelo.\n\n",
+          
+          "Ejemplo práctico (Dataset 'wine'): El modelo suele conservar únicamente las variables químicas con mayor capacidad explicativa sobre la variable respuesta, descartando aquellas cuya información resulta redundante debido a la elevada correlación existente entre los predictores."
+        )
       } else {
-        paste0("En Ridge y PCR, las variables se contraen o proyectan, pero todas permanecen en el modelo lineal sin anularse por completo.\n\n",
-               "Ejemplo práctico: Permite ver el impacto relativo estandarizado de cada regresor libre de colinealidad.")
+        paste0(
+          "En Ridge los coeficientes se reducen de forma progresiva sin llegar a anularse, mientras que en PCR el modelo se construye a partir de componentes principales obtenidas como combinaciones lineales de las variables originales.\n\n",
+          
+          "Ejemplo práctico (Dataset 'wine'): Ambos métodos permiten manejar la multicolinealidad característica de las variables químicas del vino. Ridge mantiene todas las variables reduciendo su magnitud, mientras que PCR resume la información en un conjunto reducido de componentes principales."
+        )
       }
     })
-    
-    # --- 8. PESTAÑA 4: PREDICCIÓN ---
+    # --- 8. PREDICCIÓN ---
     output$pred_plot <- renderPlot({
       req(modelo_manual_fit(), input$var_dep, input$var_indep)
       fit <- modelo_manual_fit()
@@ -750,12 +757,11 @@ Regularizacion_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     
     output$interp_pred_reg <- renderText({
       paste0(
-        "Muestra la precisión del ajuste del modelo configurado por el usuario.\n\n",
-        "Ejemplo práctico: Si el Lambda o número de componentes se ha optimizado correctamente con el paso 2, ",
-        "los puntos se ceñirán con gran precisión geométrica en torno a la diagonal roja."
+        "El gráfico compara los valores observados con los valores predichos por el modelo. Cuanto más próximos se sitúen los puntos a la diagonal roja, mayor será la capacidad predictiva obtenida.\n\n",
+        
+        "Ejemplo práctico (Dataset 'wine'): Tras seleccionar un valor adecuado de Lambda o un número óptimo de componentes mediante validación cruzada, es esperable observar una nube de puntos concentrada alrededor de la diagonal, indicando que el modelo reproduce correctamente la relación existente entre las características químicas del vino y la variable respuesta."
       )
     })
-    
   }) 
 } 
 
@@ -767,7 +773,6 @@ Regularizacion_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA DEFINTIVA PARA RESPUESTAS EN UNA LÍNEA ───
     tags$head(
       tags$style(HTML("
         /* Obliga a los contenedores de radio buttons a usar todo el ancho disponible */
@@ -828,7 +833,7 @@ Regularizacion_Auto_UI <- function(id) {
       open = FALSE,
       class = "shadow-sm border-0",
       accordion_panel(
-        title = "➕ Gestión: Añadir pregunta personalizada de  los métodos de regularización y reducción", # Corrigo texto PCA -> DBSCAN
+        title = "➕ Gestión: Añadir pregunta personalizada de  los métodos de regularización y reducción", 
         icon = icon("gear"),
         
         fluidRow(
@@ -844,7 +849,7 @@ Regularizacion_Auto_UI <- function(id) {
           column(width = 3, textInput(ns("op4"), "Opción 4"))
         ),
         
-        actionButton(ns("add"), "Guardar pregunta en el banco de los métodos de regularización y reducción", class = "btn-success btn-sm mt-2") # Corrigo texto PCA -> DBSCAN
+        actionButton(ns("add"), "Guardar pregunta en el banco de los métodos de regularización y reducción", class = "btn-success btn-sm mt-2") 
       )
     )
   )
@@ -853,7 +858,6 @@ Regularizacion_Auto_UI <- function(id) {
 Regularizacion_Auto_Server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
-    # CORRECCIÓN 1: Habías duplicado e inicializado dos veces consecutivas este valor reactivo
     mostrar_respuestas <- reactiveVal(FALSE)
     
     observeEvent(input$ver, {
@@ -1040,10 +1044,7 @@ Regularizacion_Auto_Server <- function(id) {
     })
     
     preguntas_ordenadas <- reactiveVal(NULL)
-    
-    # CORRECCIÓN 3: Cambiado observe() por observeEvent(preguntas(), ...).
-    # Al usar observe() plano con isolate(), Shiny entraba en bucles infinitos de renderizado
-    # o no actualizaba correctamente el set inicial de preguntas al iniciar el módulo.
+
     observeEvent(preguntas(), {
       lista_actual <- preguntas()
       

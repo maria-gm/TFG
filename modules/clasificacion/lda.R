@@ -9,7 +9,7 @@
 LDA_Teoria_UI <- function(id) {
   ns <- NS(id)
   
-  # Estilos CSS personalizados para homogeneizar con el diseño premium
+  # Estilos CSS 
   custom_css <- "
     .theory-card {
       border: 1px solid #e2e8f0;
@@ -32,7 +32,7 @@ LDA_Teoria_UI <- function(id) {
   "
   
   tagList(
-    # Única llamada necesaria para activar MathJax en toda la página
+    #  activar MathJax en toda la página
     withMathJax(),
     tags$head(tags$style(HTML(custom_css))),
     
@@ -40,7 +40,7 @@ LDA_Teoria_UI <- function(id) {
       style = "padding: 30px; background-color: #fcfdfe;",
       
       # =====================================
-      # CABECERA ESTILO PREMIUM
+      # CABECERA 
       # =====================================
       tags$div(
         style = "margin-bottom: 25px;",
@@ -55,7 +55,7 @@ LDA_Teoria_UI <- function(id) {
       ),
       
       # =====================================
-      # TARJETAS PRINCIPALES (ESTILO PASTEL ADAPTADO)
+      # TARJETAS PRINCIPALES 
       # =====================================
       bslib::layout_column_wrap(
         width = 1/3, 
@@ -95,7 +95,7 @@ LDA_Teoria_UI <- function(id) {
           )
         ),
         
-        # 3. CRITERIO DE PREFERENCIA
+        # 3. Comparacion con logística
         bslib::card(
           style = "border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);",
           bslib::card_header(
@@ -181,7 +181,7 @@ LDA_Teoria_UI <- function(id) {
       ),
       
       # =====================================
-      # APARTADO 3.5.4: MÉTRICAS
+      #  MÉTRICAS
       # =====================================
       h4(icon("chart-simple"), "3.5.4 Métricas de evaluación", style = "color: #1e40af; margin-bottom: 12px; font-weight: 700;"),
       bslib::card(
@@ -222,11 +222,6 @@ LDA_Teoria_Server <- function(id){
   moduleServer(id, function(input, output, session){ })
 }
 
-
-# =============================================================================
-# MODULO: ANALISIS DISCRIMINANTE LINEAL (LDA) - UI
-# =============================================================================
-
 LDA_Analisis_UI <- function(id) {
   ns <- NS(id)
   
@@ -264,7 +259,7 @@ LDA_Analisis_UI <- function(id) {
       #--------------------------------------------------
       column(
         width = 9,
-        # Banner de Alerta Único para el módulo expuesto al inicio de la interfaz
+        # Banner de Alerta
         uiOutput(ns("alerta_lda")),
         br(),
         
@@ -272,7 +267,7 @@ LDA_Analisis_UI <- function(id) {
           id = ns("tabs_lda"),
           
           #================================================
-          # 1. DATOS (TABLAS CORREGIDAS CON SCROLL NATAL)
+          # 1. DATOS 
           #================================================
           tabPanel(
             "Datos",
@@ -349,22 +344,22 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     filas_omitidas <- reactiveVal(0)
     
     # ==========================================================================
-    # FUNCIONES LOCALES DE VALIDACIÓN (Encapsuladas en el Server)
+    # FUNCIONES LOCALES DE VALIDACIÓN 
     # ==========================================================================
     validar_datos_lda <- function(df) {
       if (is.null(df) || nrow(df) == 0) return("No se han cargado datos.")
       
-      # Buscar variables categóricas o factores con al menos 2 niveles únicos
+      # Buscar variables categóricas o factores con al menos 2 niveles 
       vars_target <- names(df)[sapply(df, function(x) {
         val_unicos <- length(unique(x[!is.na(x)]))
-        val_unicos >= 2 && val_unicos <= 10 # Limite de grupos razonable para LDA
+        val_unicos >= 2 && val_unicos <= 10 # Limite de grupos 
       })]
       
       if (length(vars_target) == 0) {
         return("El dataset no contiene una variable objetivo categórica adecuada (con un mínimo de 2 categorías válidas).")
       }
       
-      # Comprobar si hay variables numéricas suficientes para actuar como predictores
+      # Comprobar si hay variables numéricas suficientes 
       vars_num <- names(df)[sapply(df, is.numeric)]
       if (length(vars_num) == 0) {
         return("El análisis requiere variables cuantitativas continuas intercorrelacionadas para actuar como predictores (X).")
@@ -389,7 +384,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     }
     
     # ==========================================================================
-    # LOGICA REACTIVA DE VALIDACIÓN COMPARTIDA
+    # LOGICA DE VALIDACIÓN 
     # ==========================================================================
     evaluacion_lda <- reactive({
       df <- if (!is.null(datos()) && nrow(datos()) > 0) datos() else datos_ejemplo
@@ -400,14 +395,14 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       return(list(valido = TRUE, datos = df))
     })
     
-    # Renderizado del Banner en UI
+    # Renderizado del Banner 
     output$alerta_lda <- renderUI({
       eval <- evaluacion_lda()
       if (!eval$valido) mensaje_error_lda(eval$mensaje) else NULL
     })
     
     #--------------------------------------------------
-    # 1. TRATAMIENTO DE DATOS REACTIVOS
+    # 1. TRATAMIENTO DE DATOS 
     #--------------------------------------------------
     datos_base <- reactive({
       req(evaluacion_lda()$valido)
@@ -432,7 +427,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     #--------------------------------------------------
-    # 2. SELECTORES INTERACTIVOS DIRECTOS
+    # 2. SELECTORES 
     #--------------------------------------------------
     output$target_ui <- renderUI({
       req(evaluacion_lda()$valido)
@@ -462,7 +457,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     #--------------------------------------------------
-    # 3. GENERACIÓN DE DATASETS (ESTANDARIZACIÓN AUTOMÁTICA)
+    # 3.  DATASETS 
     #--------------------------------------------------
     datos_std <- reactive({
       req(evaluacion_lda()$valido)
@@ -476,9 +471,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       df
     })
     
-    #--------------------------------------------------
-    # CONFIGURACIÓN CORRECTA DE BARRAS (NATURALES DE DT)
-    #--------------------------------------------------
+
     output$dataset <- DT::renderDT({
       req(evaluacion_lda()$valido)
       req(datos_base())
@@ -516,7 +509,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     #--------------------------------------------------
-    # 4. EJECUCIÓN DEL MODELO AUTOMÁTICO
+    # 4. MODELO 
     #--------------------------------------------------
     modelo_lda <- reactive({
       req(evaluacion_lda()$valido)
@@ -549,7 +542,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     #--------------------------------------------------
-    # 5. RENDERIZADO DE GRÁFICOS (1D Y 2D)
+    # 5. GRÁFICOS 
     #--------------------------------------------------
     output$lda_plot <- renderPlot({
       req(evaluacion_lda()$valido)
@@ -585,7 +578,7 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
     })
     
     #--------------------------------------------------
-    # 6. TABLAS DE RESULTADOS CON DT
+    # 6. TABLAS DE RESULTADOS 
     #--------------------------------------------------
     output$conf_matrix <- DT::renderDT({
       req(evaluacion_lda()$valido)
@@ -611,7 +604,6 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
       # Accuracy
       accuracy <- sum(diag(matriz)) / sum(matriz)
       
-      # Solo clasificación binaria
       if (nrow(matriz) == 2) {
         TP <- matriz[2,2]
         TN <- matriz[1,1]
@@ -706,7 +698,6 @@ LDA_Analisis_Server <- function(id, datos, datos_ejemplo = NULL) {
              "convirtiéndose en huellas dactilares críticas para discriminar el origen botánico.")
     })
     
-    # Lógica de notificación dinámica para valores NA omitidos
     output$ui_dl_lda <- renderUI({
       req(evaluacion_lda()$valido)
       req(datos_base())
@@ -734,7 +725,6 @@ LDA_Auto_UI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # ─── SOLUCIÓN REFORZADA PARA EL ANCHO DE LOS RADIO BUTTONS ───
     tags$head(
       tags$style(HTML("
         /* Ataca directamente a todas las variaciones de radio buttons de Shiny */
